@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/notification-record.schema.json",
+  "title": "Simulated notification delivery record",
+  "description": "Record written by the notification worker. Deliveries are SIMULATED only - no SMS, email or paid third-party service is ever contacted.",
+  "type": "object",
+  "required": ["notificationId", "alertId", "audience", "channel", "status", "simulated", "createdAt"],
+  "properties": {
+    "notificationId": { "type": "string", "minLength": 8 },
+    "alertId": { "type": "string", "minLength": 8 },
+    "jobId": { "type": ["string", "null"] },
+    "sourceEventId": { "type": ["string", "null"] },
+    "audience": { "enum": ["passengers", "operators", "controlRoom", "authority"] },
+    "channel": { "enum": ["simulatedPush", "simulatedDisplay", "simulatedOpsConsole"] },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "recipientCount": { "type": "integer", "minimum": 0 },
+    "status": { "enum": ["delivered", "failed", "suppressed"] },
+    "simulated": { "const": true },
+    "attempts": { "type": "integer", "minimum": 1 },
+    "message": { "type": "string" },
+    "processingMs": { "type": "number", "minimum": 0 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

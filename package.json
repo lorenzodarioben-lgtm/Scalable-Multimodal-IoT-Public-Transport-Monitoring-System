@@ -1,0 +1,42 @@
+{
+  "name": "sit314-transport-iot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scalable multimodal IoT public transport monitoring system (SIT314 Distinction Project)",
+  "engines": { "node": ">=20" },
+  "workspaces": [
+    "shared",
+    "simulator",
+    "services/telemetry-processor",
+    "services/route-impact-worker",
+    "services/notification-worker"
+  ],
+  "scripts": {
+    "test": "node --test --test-reporter=spec shared/test services/*/test simulator/test",
+    "test:all": "npm run test",
+    "simulate": "node simulator/src/cli.js",
+    "broker": "node scripts/local-broker.js",
+    "bridge": "node scripts/normalized-bridge.js",
+    "processor": "node services/telemetry-processor/src/index.js",
+    "route-worker": "node services/route-impact-worker/src/index.js",
+    "notification-worker": "node services/notification-worker/src/index.js",
+    "autoscaler": "node scripts/local-autoscaler.js",
+    "experiment": "node experiments/runner/run-experiment.js",
+    "queue:stats": "node scripts/queue-stats.js",
+    "state:dump": "node scripts/state-dump.js",
+    "verify-env": "node scripts/verify-env.js",
+    "demo:local": "node scripts/demo-local.js",
+    "demo:checkpoint": "node scripts/demo-checkpoint.js",
+    "evidence": "node scripts/evidence.js"
+  },
+  "dependencies": {
+    "@sit314/shared": "*",
+    "@sit314/simulator": "*",
+    "@sit314/telemetry-processor": "*",
+    "@sit314/route-impact-worker": "*",
+    "@sit314/notification-worker": "*",
+    "aedes": "^0.51.3",
+    "mqtt": "^5.10.1"
+  }
+}

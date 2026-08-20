@@ -1,0 +1,20 @@
+{
+  "name": "@sit314/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/simulator.js",
+  "exports": {
+    ".": "./src/simulator.js",
+    "./config": "./src/config.js",
+    "./generators": "./src/generators/index.js",
+    "./rng": "./src/rng.js",
+    "./scenarios": "./src/scenarios/index.js",
+    "./mqtt-client": "./src/mqtt-client.js"
+  },
+  "dependencies": {
+    "@sit314/shared": "*",
+    "mqtt": "^5.10.1",
+    "yargs": "^17.7.2"
+  }
+}

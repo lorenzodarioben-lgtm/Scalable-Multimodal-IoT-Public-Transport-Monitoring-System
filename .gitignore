@@ -1,0 +1,34 @@
+# ---- dependencies ----
+node_modules/
+npm-debug.log*
+package-lock.json.bak
+
+# ---- secrets / credentials ----
+.env
+.env.*
+!.env.example
+certs/*
+!certs/README.md
+!certs/.gitkeep
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+private-*
+credentials
+credentials.*
+aws-credentials*
+
+# ---- generated experiment artifacts (can be large) ----
+artifacts/
+local-data/
+node-red/data/
+*.log
+!errors.log.example
+
+# ---- os / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,26 @@
+{
+  "name": "@sit314/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./config": "./config/index.js",
+    "./logging": "./logging/index.js",
+    "./validation": "./validation/index.js",
+    "./queues": "./aws/queues.js",
+    "./store": "./aws/store.js",
+    "./metrics": "./aws/metrics.js",
+    "./util": "./util/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.1125.0",
+    "@aws-sdk/client-dynamodb": "^3.1125.0",
+    "@aws-sdk/client-ecs": "^3.1125.0",
+    "@aws-sdk/client-sqs": "^3.1125.0",
+    "@aws-sdk/lib-dynamodb": "^3.1125.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

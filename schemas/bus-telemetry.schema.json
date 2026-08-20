@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/bus-telemetry.schema.json",
+  "title": "Bus telemetry",
+  "description": "Raw telemetry published by a simulated bus on transport/raw/bus/<vehicleId>.",
+  "type": "object",
+  "required": [
+    "eventId", "eventType", "transportMode", "vehicleId", "serviceId", "routeId",
+    "timestamp", "latitude", "longitude", "speedKph", "occupancy", "capacity",
+    "delaySeconds", "health", "modeData"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "eventType": { "const": "telemetry" },
+    "transportMode": { "const": "bus" },
+    "vehicleId": { "type": "string", "pattern": "^BUS-[0-9]{3,6}$" },
+    "serviceId": { "type": "string", "minLength": 1 },
+    "routeId": { "type": "string", "minLength": 1 },
+    "locationId": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+    "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+    "speedKph": { "type": "number", "minimum": 0, "maximum": 120 },
+    "occupancy": { "type": "integer", "minimum": 0 },
+    "capacity": { "type": "integer", "exclusiveMinimum": 0, "maximum": 200 },
+    "delaySeconds": { "type": "integer", "minimum": -600, "maximum": 14400 },
+    "health": { "enum": ["normal", "degraded", "breakdown"] },
+    "modeData": {
+      "type": "object",
+      "required": ["roadSegmentId", "nextStopId"],
+      "properties": {
+        "roadSegmentId": { "type": "string", "minLength": 1 },
+        "nextStopId": { "type": "string", "minLength": 1 },
+        "wheelchairRampOk": { "type": "boolean" },
+        "doorsOpen": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/alert.schema.json",
+  "title": "Operational alert",
+  "description": "Alert emitted by the route-impact worker when a calculated impact crosses the alerting threshold. Placed on the notification queue.",
+  "type": "object",
+  "required": ["alertId", "jobId", "calculationId", "sourceEventId", "transportMode", "severity", "audience", "message", "createdAt"],
+  "properties": {
+    "alertId": { "type": "string", "minLength": 8 },
+    "jobId": { "type": "string", "minLength": 8 },
+    "calculationId": { "type": "string", "minLength": 8 },
+    "sourceEventId": { "type": "string", "minLength": 8 },
+    "incidentId": { "type": ["string", "null"] },
+    "transportMode": { "enum": ["bus", "tram", "train", "multimodal"] },
+    "routeId": { "type": ["string", "null"] },
+    "locationId": { "type": ["string", "null"] },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "audience": { "enum": ["passengers", "operators", "controlRoom", "authority"] },
+    "etaMinutes": { "type": ["number", "null"] },
+    "impactLevel": { "type": ["string", "null"] },
+    "message": { "type": "string", "minLength": 1 },
+    "recipientBatch": { "type": "integer", "minimum": 0 },
+    "recipientCount": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}
