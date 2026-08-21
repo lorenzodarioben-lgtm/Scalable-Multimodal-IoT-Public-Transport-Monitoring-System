@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/tram-telemetry.schema.json",
+  "title": "Tram telemetry",
+  "description": "Raw telemetry published by a simulated tram on transport/raw/tram/<vehicleId>.",
+  "type": "object",
+  "required": [
+    "eventId", "eventType", "transportMode", "vehicleId", "serviceId", "routeId",
+    "timestamp", "latitude", "longitude", "speedKph", "occupancy", "capacity",
+    "delaySeconds", "health", "modeData"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "eventType": { "const": "telemetry" },
+    "transportMode": { "const": "tram" },
+    "vehicleId": { "type": "string", "pattern": "^TRAM-[0-9]{3,6}$" },
+    "serviceId": { "type": "string", "minLength": 1 },
+    "routeId": { "type": "string", "minLength": 1 },
+    "locationId": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+    "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+    "speedKph": { "type": "number", "minimum": 0, "maximum": 80 },
+    "occupancy": { "type": "integer", "minimum": 0 },
+    "capacity": { "type": "integer", "exclusiveMinimum": 0, "maximum": 300 },
+    "delaySeconds": { "type": "integer", "minimum": -600, "maximum": 14400 },
+    "health": { "enum": ["normal", "degraded", "blocked"] },
+    "modeData": {
+      "type": "object",
+      "required": ["trackSegmentId", "direction", "nextStopId"],
+      "properties": {
+        "trackSegmentId": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["inbound", "outbound"] },
+        "nextStopId": { "type": "string", "minLength": 1 },
+        "couplingCount": { "type": "integer", "minimum": 1, "maximum": 3 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

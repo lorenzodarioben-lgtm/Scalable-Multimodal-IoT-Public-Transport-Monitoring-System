@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/analysis-job.schema.json",
+  "title": "Route impact / ETA analysis job",
+  "description": "One independent unit of route-impact work produced by disruption fan-out in the telemetry processor. Independence is what allows many ECS tasks to work in parallel.",
+  "type": "object",
+  "required": ["jobId", "sourceEventId", "incidentId", "transportMode", "taskType", "priority", "createdAt"],
+  "properties": {
+    "jobId": { "type": "string", "minLength": 8 },
+    "incidentId": { "type": "string", "minLength": 8 },
+    "sourceEventId": { "type": "string", "minLength": 8 },
+    "transportMode": { "enum": ["bus", "tram", "train", "multimodal"] },
+    "vehicleId": { "type": ["string", "null"] },
+    "routeId": { "type": ["string", "null"] },
+    "affectedLocationId": { "type": ["string", "null"] },
+    "hopsFromIncident": { "type": "integer", "minimum": 0 },
+    "taskType": { "enum": ["routeImpactEta"] },
+    "priority": { "enum": ["low", "normal", "high", "critical"] },
+    "reason": { "type": "string" },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "context": {
+      "type": "object",
+      "properties": {
+        "delaySeconds": { "type": ["integer", "null"] },
+        "occupancyRatio": { "type": ["number", "null"] },
+        "crowdingLevel": { "type": ["string", "null"] },
+        "direction": { "type": ["string", "null"] },
+        "segmentId": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "notificationFanout": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

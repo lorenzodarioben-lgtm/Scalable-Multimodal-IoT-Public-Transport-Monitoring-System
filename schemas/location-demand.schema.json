@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/location-demand.schema.json",
+  "title": "Location demand event",
+  "description": "Passenger demand measured at a stop or station, published on transport/raw/demand/<locationId>.",
+  "type": "object",
+  "required": [
+    "eventId", "eventType", "locationType", "locationId", "routeIds",
+    "timestamp", "passengerCount", "demandLevel"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "eventType": { "const": "locationDemand" },
+    "locationType": { "enum": ["busStop", "tramStop", "station"] },
+    "locationId": { "type": "string", "minLength": 1 },
+    "routeIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "passengerCount": { "type": "integer", "minimum": 0, "maximum": 5000 },
+    "demandLevel": { "enum": ["low", "moderate", "high", "critical"] },
+    "waitingTimeSeconds": { "type": "integer", "minimum": 0, "maximum": 7200 },
+    "shelterCapacity": { "type": "integer", "minimum": 0, "maximum": 2000 }
+  },
+  "additionalProperties": false
+}

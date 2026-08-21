@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/normalized-event.schema.json",
+  "title": "Normalised transport event",
+  "description": "Shared internal envelope produced by Node-RED after mode-specific validation. Mode-specific fields are preserved under modeData so no information is destroyed.",
+  "type": "object",
+  "required": [
+    "eventId", "sourceEventType", "transportMode", "entityId",
+    "timestamp", "metrics", "health", "modeData", "receivedAt", "schemaVersion"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "eventId": { "type": "string", "minLength": 8 },
+    "sourceEventType": { "enum": ["telemetry", "locationDemand"] },
+    "transportMode": { "enum": ["bus", "tram", "train", "demand"] },
+    "entityId": { "type": "string", "minLength": 1 },
+    "serviceId": { "type": ["string", "null"] },
+    "routeId": { "type": ["string", "null"] },
+    "routeIds": { "type": "array", "items": { "type": "string" } },
+    "locationId": { "type": ["string", "null"] },
+    "locationType": { "type": ["string", "null"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "receivedAt": { "type": "string", "format": "date-time" },
+    "position": {
+      "type": ["object", "null"],
+      "properties": {
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "speedKph": { "type": ["number", "null"] },
+        "occupancy": { "type": ["integer", "null"] },
+        "capacity": { "type": ["integer", "null"] },
+        "delaySeconds": { "type": ["integer", "null"] },
+        "passengerCount": { "type": ["integer", "null"] },
+        "waitingTimeSeconds": { "type": ["integer", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "health": { "type": "string", "minLength": 1 },
+    "demandLevel": { "type": ["string", "null"] },
+    "modeData": { "type": "object" },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "validatedBy": { "type": "string" },
+        "branch": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

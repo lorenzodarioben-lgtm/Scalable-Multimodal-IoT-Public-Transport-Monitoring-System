@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sit314.local/schemas/train-telemetry.schema.json",
+  "title": "Train telemetry",
+  "description": "Raw telemetry published by a simulated train on transport/raw/train/<vehicleId>.",
+  "type": "object",
+  "required": [
+    "eventId", "eventType", "transportMode", "vehicleId", "serviceId", "routeId",
+    "timestamp", "latitude", "longitude", "speedKph", "occupancy", "capacity",
+    "delaySeconds", "health", "modeData"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "eventType": { "const": "telemetry" },
+    "transportMode": { "const": "train" },
+    "vehicleId": { "type": "string", "pattern": "^TRAIN-[0-9]{3,6}$" },
+    "serviceId": { "type": "string", "minLength": 1 },
+    "routeId": { "type": "string", "minLength": 1 },
+    "locationId": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+    "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+    "speedKph": { "type": "number", "minimum": 0, "maximum": 160 },
+    "occupancy": { "type": "integer", "minimum": 0 },
+    "capacity": { "type": "integer", "exclusiveMinimum": 0, "maximum": 1200 },
+    "delaySeconds": { "type": "integer", "minimum": -600, "maximum": 14400 },
+    "health": { "enum": ["normal", "degraded", "cancelled"] },
+    "modeData": {
+      "type": "object",
+      "required": ["stationId", "platform", "carriageCount", "nextStationId"],
+      "properties": {
+        "stationId": { "type": "string", "minLength": 1 },
+        "platform": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "carriageCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "nextStationId": { "type": "string", "minLength": 1 },
+        "expressService": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
