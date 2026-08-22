@@ -1,0 +1,286 @@
+[
+    {
+        "id": "sit314-transport-flow",
+        "type": "tab",
+        "label": "SIT314 transport validation and normalisation",
+        "disabled": false,
+        "info": "# SIT314 multimodal transport processing\n\nRaw MQTT telemetry arrives on `transport/raw/#` from AWS IoT Core (or the\nlocal broker during development).\n\nThe flow:\n1. identifies the event mode,\n2. validates it in a mode-specific branch (bus / tram / train / demand),\n3. normalises accepted events into the shared envelope,\n4. republishes them on `transport/normalized/<mode>`.\n\nRejected events go to `transport/rejected/<mode>` with a reason and never\nreach the telemetry queue. An AWS IoT rule subscribes to\n`transport/normalized/+` and forwards to the telemetry SQS queue.",
+        "env": []
+    },
+    {
+        "id": "sit314-mqtt-broker",
+        "type": "mqtt-broker",
+        "name": "transport-broker",
+        "broker": "${MQTT_HOST}",
+        "port": "${MQTT_PORT}",
+        "clientid": "${MQTT_CLIENT_ID}",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "willTopic": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "raw-in",
+        "type": "mqtt in",
+        "z": "sit314-transport-flow",
+        "name": "MQTT in: transport/raw/#",
+        "topic": "transport/raw/#",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "sit314-mqtt-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "keep-raw-topic"
+            ]
+        ]
+    },
+    {
+        "id": "keep-raw-topic",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "remember source topic",
+        "func": "msg.rawTopic = msg.topic;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 220,
+        "wires": [
+            [
+                "identify-mode"
+            ]
+        ]
+    },
+    {
+        "id": "identify-mode",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "identify mode",
+        "func": "// Node-RED function node: IDENTIFY MODE\n//\n// What: inspects the raw MQTT payload and routes it to the correct\n//       mode-specific validation branch.\n// Why:  this is where Variety becomes visible in the flow. Four structurally\n//       different payload shapes arrive on transport/raw/#, and each one is\n//       sent down its own branch instead of through one generic handler.\n//\n// Outputs: 1 bus | 2 tram | 3 train | 4 demand | 5 unroutable\nvar payload = msg.payload;\n\n// Node-RED may deliver a Buffer or a string if the MQTT node is not set to\n// parse JSON. Parsing defensively keeps the flow robust.\nif (Buffer.isBuffer(payload)) { payload = payload.toString('utf8'); }\nif (typeof payload === 'string') {\n    try { payload = JSON.parse(payload); }\n    catch (e) {\n        msg.rejection = { mode: 'unknown', reason: 'payload is not valid JSON' };\n        return [null, null, null, null, msg];\n    }\n}\n\nif (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {\n    msg.rejection = { mode: 'unknown', reason: 'payload is not a JSON object' };\n    return [null, null, null, null, msg];\n}\n\nmsg.payload = payload;\nmsg.receivedAt = new Date().toISOString();\n\nif (payload.eventType === 'locationDemand') {\n    msg.transportMode = 'demand';\n    return [null, null, null, msg, null];\n}\n\nif (payload.eventType === 'telemetry') {\n    if (payload.transportMode === 'bus') { msg.transportMode = 'bus'; return [msg, null, null, null, null]; }\n    if (payload.transportMode === 'tram') { msg.transportMode = 'tram'; return [null, msg, null, null, null]; }\n    if (payload.transportMode === 'train') { msg.transportMode = 'train'; return [null, null, msg, null, null]; }\n}\n\nmsg.rejection = {\n    mode: String(payload.transportMode || 'unknown'),\n    reason: 'unrecognised eventType/transportMode combination'\n};\nreturn [null, null, null, null, msg];",
+        "outputs": 5,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 220,
+        "wires": [
+            [
+                "validate-bus"
+            ],
+            [
+                "validate-tram"
+            ],
+            [
+                "validate-train"
+            ],
+            [
+                "validate-demand"
+            ],
+            [
+                "reject"
+            ]
+        ]
+    },
+    {
+        "id": "validate-bus",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "validate bus",
+        "func": "// Node-RED function node: VALIDATE BUS\n//\n// Bus-specific rules: health is normal|degraded|breakdown, and modeData must\n// carry roadSegmentId and nextStopId. A bus is road-based, so its disruption\n// state is a breakdown - it has no track segment and no platform.\n//\n// Outputs: 1 accepted | 2 rejected\nvar MAX_OCCUPANCY_RATIO = 1.5;\nfunction isNonEmptyString(v) { return typeof v === 'string' && v.length > 0; }\nfunction isFiniteNumber(v) { return typeof v === 'number' && isFinite(v); }\nfunction isInteger(v) { return isFiniteNumber(v) && Math.floor(v) === v; }\n\nfunction checkVehicleCommon(p, errors) {\n    if (!isNonEmptyString(p.eventId)) errors.push('eventId is required');\n    if (!isNonEmptyString(p.vehicleId)) errors.push('vehicleId is required');\n    if (!isNonEmptyString(p.routeId)) errors.push('routeId is required');\n    if (!isNonEmptyString(p.serviceId)) errors.push('serviceId is required');\n    if (!isNonEmptyString(p.timestamp) || isNaN(Date.parse(p.timestamp))) {\n        errors.push('timestamp must be a valid ISO-8601 date');\n    }\n    if (!isFiniteNumber(p.latitude) || p.latitude < -90 || p.latitude > 90) {\n        errors.push('latitude must be between -90 and 90');\n    }\n    if (!isFiniteNumber(p.longitude) || p.longitude < -180 || p.longitude > 180) {\n        errors.push('longitude must be between -180 and 180');\n    }\n    if (!isFiniteNumber(p.speedKph) || p.speedKph < 0) errors.push('speedKph must be >= 0');\n    if (!isInteger(p.occupancy) || p.occupancy < 0) errors.push('occupancy must be >= 0');\n    if (!isInteger(p.capacity) || p.capacity <= 0) errors.push('capacity must be > 0');\n    if (isInteger(p.occupancy) && isInteger(p.capacity) && p.capacity > 0\n        && p.occupancy > p.capacity * MAX_OCCUPANCY_RATIO) {\n        errors.push('occupancy ' + p.occupancy + ' exceeds ' + MAX_OCCUPANCY_RATIO\n            + 'x capacity ' + p.capacity);\n    }\n    if (!isInteger(p.delaySeconds)) errors.push('delaySeconds must be an integer');\n    if (p.modeData === null || typeof p.modeData !== 'object' || Array.isArray(p.modeData)) {\n        errors.push('modeData object is required');\n    }\n}\nvar p = msg.payload;\nvar errors = [];\n\ncheckVehicleCommon(p, errors);\n\nif (p.transportMode !== 'bus') errors.push('transportMode must be bus');\nif (['normal', 'degraded', 'breakdown'].indexOf(p.health) === -1) {\n    errors.push(\"health must be one of normal, degraded, breakdown (got '\" + p.health + \"')\");\n}\nif (p.modeData && typeof p.modeData === 'object') {\n    if (!isNonEmptyString(p.modeData.roadSegmentId)) errors.push('modeData.roadSegmentId is required for a bus');\n    if (!isNonEmptyString(p.modeData.nextStopId)) errors.push('modeData.nextStopId is required for a bus');\n}\nif (p.speedKph > 120) errors.push('speedKph above the plausible bus maximum of 120');\n\nif (errors.length > 0) {\n    msg.rejection = { mode: 'bus', reason: errors.join('; '), errors: errors };\n    return [null, msg];\n}\nmsg.validatedBy = 'node-red:validate-bus';\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 100,
+        "wires": [
+            [
+                "normalize"
+            ],
+            [
+                "reject"
+            ]
+        ]
+    },
+    {
+        "id": "validate-tram",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "validate tram",
+        "func": "// Node-RED function node: VALIDATE TRAM\n//\n// Tram-specific rules: health is normal|degraded|blocked, and modeData must\n// carry trackSegmentId, direction and nextStopId. A tram runs on rails, so it\n// cannot be diverted - a blockage is a property of a track segment plus a\n// direction, which is why those two fields are mandatory here and absent for a bus.\n//\n// Outputs: 1 accepted | 2 rejected\nvar MAX_OCCUPANCY_RATIO = 1.5;\nfunction isNonEmptyString(v) { return typeof v === 'string' && v.length > 0; }\nfunction isFiniteNumber(v) { return typeof v === 'number' && isFinite(v); }\nfunction isInteger(v) { return isFiniteNumber(v) && Math.floor(v) === v; }\n\nfunction checkVehicleCommon(p, errors) {\n    if (!isNonEmptyString(p.eventId)) errors.push('eventId is required');\n    if (!isNonEmptyString(p.vehicleId)) errors.push('vehicleId is required');\n    if (!isNonEmptyString(p.routeId)) errors.push('routeId is required');\n    if (!isNonEmptyString(p.serviceId)) errors.push('serviceId is required');\n    if (!isNonEmptyString(p.timestamp) || isNaN(Date.parse(p.timestamp))) {\n        errors.push('timestamp must be a valid ISO-8601 date');\n    }\n    if (!isFiniteNumber(p.latitude) || p.latitude < -90 || p.latitude > 90) {\n        errors.push('latitude must be between -90 and 90');\n    }\n    if (!isFiniteNumber(p.longitude) || p.longitude < -180 || p.longitude > 180) {\n        errors.push('longitude must be between -180 and 180');\n    }\n    if (!isFiniteNumber(p.speedKph) || p.speedKph < 0) errors.push('speedKph must be >= 0');\n    if (!isInteger(p.occupancy) || p.occupancy < 0) errors.push('occupancy must be >= 0');\n    if (!isInteger(p.capacity) || p.capacity <= 0) errors.push('capacity must be > 0');\n    if (isInteger(p.occupancy) && isInteger(p.capacity) && p.capacity > 0\n        && p.occupancy > p.capacity * MAX_OCCUPANCY_RATIO) {\n        errors.push('occupancy ' + p.occupancy + ' exceeds ' + MAX_OCCUPANCY_RATIO\n            + 'x capacity ' + p.capacity);\n    }\n    if (!isInteger(p.delaySeconds)) errors.push('delaySeconds must be an integer');\n    if (p.modeData === null || typeof p.modeData !== 'object' || Array.isArray(p.modeData)) {\n        errors.push('modeData object is required');\n    }\n}\nvar p = msg.payload;\nvar errors = [];\n\ncheckVehicleCommon(p, errors);\n\nif (p.transportMode !== 'tram') errors.push('transportMode must be tram');\nif (['normal', 'degraded', 'blocked'].indexOf(p.health) === -1) {\n    errors.push(\"health must be one of normal, degraded, blocked (got '\" + p.health + \"')\");\n}\nif (p.modeData && typeof p.modeData === 'object') {\n    if (!isNonEmptyString(p.modeData.trackSegmentId)) errors.push('modeData.trackSegmentId is required for a tram');\n    if (['inbound', 'outbound'].indexOf(p.modeData.direction) === -1) {\n        errors.push('modeData.direction must be inbound or outbound');\n    }\n    if (!isNonEmptyString(p.modeData.nextStopId)) errors.push('modeData.nextStopId is required for a tram');\n}\nif (p.speedKph > 80) errors.push('speedKph above the plausible tram maximum of 80');\n\nif (errors.length > 0) {\n    msg.rejection = { mode: 'tram', reason: errors.join('; '), errors: errors };\n    return [null, msg];\n}\nmsg.validatedBy = 'node-red:validate-tram';\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 180,
+        "wires": [
+            [
+                "normalize"
+            ],
+            [
+                "reject"
+            ]
+        ]
+    },
+    {
+        "id": "validate-train",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "validate train",
+        "func": "// Node-RED function node: VALIDATE TRAIN\n//\n// Train-specific rules: health is normal|degraded|cancelled, and modeData must\n// carry stationId, platform, carriageCount and nextStationId. A train stops at\n// stations with numbered platforms and has a variable carriage count, which is\n// what determines its capacity - none of these concepts exist for a bus.\n//\n// Outputs: 1 accepted | 2 rejected\nvar MAX_OCCUPANCY_RATIO = 1.5;\nfunction isNonEmptyString(v) { return typeof v === 'string' && v.length > 0; }\nfunction isFiniteNumber(v) { return typeof v === 'number' && isFinite(v); }\nfunction isInteger(v) { return isFiniteNumber(v) && Math.floor(v) === v; }\n\nfunction checkVehicleCommon(p, errors) {\n    if (!isNonEmptyString(p.eventId)) errors.push('eventId is required');\n    if (!isNonEmptyString(p.vehicleId)) errors.push('vehicleId is required');\n    if (!isNonEmptyString(p.routeId)) errors.push('routeId is required');\n    if (!isNonEmptyString(p.serviceId)) errors.push('serviceId is required');\n    if (!isNonEmptyString(p.timestamp) || isNaN(Date.parse(p.timestamp))) {\n        errors.push('timestamp must be a valid ISO-8601 date');\n    }\n    if (!isFiniteNumber(p.latitude) || p.latitude < -90 || p.latitude > 90) {\n        errors.push('latitude must be between -90 and 90');\n    }\n    if (!isFiniteNumber(p.longitude) || p.longitude < -180 || p.longitude > 180) {\n        errors.push('longitude must be between -180 and 180');\n    }\n    if (!isFiniteNumber(p.speedKph) || p.speedKph < 0) errors.push('speedKph must be >= 0');\n    if (!isInteger(p.occupancy) || p.occupancy < 0) errors.push('occupancy must be >= 0');\n    if (!isInteger(p.capacity) || p.capacity <= 0) errors.push('capacity must be > 0');\n    if (isInteger(p.occupancy) && isInteger(p.capacity) && p.capacity > 0\n        && p.occupancy > p.capacity * MAX_OCCUPANCY_RATIO) {\n        errors.push('occupancy ' + p.occupancy + ' exceeds ' + MAX_OCCUPANCY_RATIO\n            + 'x capacity ' + p.capacity);\n    }\n    if (!isInteger(p.delaySeconds)) errors.push('delaySeconds must be an integer');\n    if (p.modeData === null || typeof p.modeData !== 'object' || Array.isArray(p.modeData)) {\n        errors.push('modeData object is required');\n    }\n}\nvar p = msg.payload;\nvar errors = [];\n\ncheckVehicleCommon(p, errors);\n\nif (p.transportMode !== 'train') errors.push('transportMode must be train');\nif (['normal', 'degraded', 'cancelled'].indexOf(p.health) === -1) {\n    errors.push(\"health must be one of normal, degraded, cancelled (got '\" + p.health + \"')\");\n}\nif (p.modeData && typeof p.modeData === 'object') {\n    if (!isNonEmptyString(p.modeData.stationId)) errors.push('modeData.stationId is required for a train');\n    if (!isInteger(p.modeData.platform) || p.modeData.platform < 1 || p.modeData.platform > 20) {\n        errors.push('modeData.platform must be an integer between 1 and 20');\n    }\n    if (!isInteger(p.modeData.carriageCount) || p.modeData.carriageCount < 1 || p.modeData.carriageCount > 12) {\n        errors.push('modeData.carriageCount must be an integer between 1 and 12');\n    }\n    if (!isNonEmptyString(p.modeData.nextStationId)) errors.push('modeData.nextStationId is required for a train');\n}\nif (p.speedKph > 160) errors.push('speedKph above the plausible train maximum of 160');\n\nif (errors.length > 0) {\n    msg.rejection = { mode: 'train', reason: errors.join('; '), errors: errors };\n    return [null, msg];\n}\nmsg.validatedBy = 'node-red:validate-train';\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 260,
+        "wires": [
+            [
+                "normalize"
+            ],
+            [
+                "reject"
+            ]
+        ]
+    },
+    {
+        "id": "validate-demand",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "validate demand",
+        "func": "// Node-RED function node: VALIDATE LOCATION DEMAND\n//\n// Demand events are structurally different from telemetry: there is no vehicle,\n// no speed and no capacity. They describe how many people are waiting at a\n// place, so this branch validates counts, a location type and a demand level.\n//\n// Outputs: 1 accepted | 2 rejected\nvar p = msg.payload;\nvar errors = [];\n\nfunction isNonEmptyString(v) { return typeof v === 'string' && v.length > 0; }\nfunction isInteger(v) { return typeof v === 'number' && isFinite(v) && Math.floor(v) === v; }\n\nif (!isNonEmptyString(p.eventId)) errors.push('eventId is required');\nif (!isNonEmptyString(p.locationId)) errors.push('locationId is required');\nif (['busStop', 'tramStop', 'station'].indexOf(p.locationType) === -1) {\n    errors.push(\"locationType must be one of busStop, tramStop, station (got '\" + p.locationType + \"')\");\n}\nif (!Array.isArray(p.routeIds) || p.routeIds.length === 0) {\n    errors.push('routeIds must be a non-empty array');\n} else if (!p.routeIds.every(isNonEmptyString)) {\n    errors.push('routeIds must contain non-empty strings');\n}\nif (!isNonEmptyString(p.timestamp) || isNaN(Date.parse(p.timestamp))) {\n    errors.push('timestamp must be a valid ISO-8601 date');\n}\nif (!isInteger(p.passengerCount) || p.passengerCount < 0) errors.push('passengerCount must be >= 0');\nif (['low', 'moderate', 'high', 'critical'].indexOf(p.demandLevel) === -1) {\n    errors.push(\"demandLevel must be one of low, moderate, high, critical (got '\" + p.demandLevel + \"')\");\n}\nif (p.waitingTimeSeconds !== undefined && (!isInteger(p.waitingTimeSeconds) || p.waitingTimeSeconds < 0)) {\n    errors.push('waitingTimeSeconds must be >= 0 when present');\n}\n\nif (errors.length > 0) {\n    msg.rejection = { mode: 'demand', reason: errors.join('; '), errors: errors };\n    return [null, msg];\n}\nmsg.validatedBy = 'node-red:validate-demand';\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 340,
+        "wires": [
+            [
+                "normalize"
+            ],
+            [
+                "reject"
+            ]
+        ]
+    },
+    {
+        "id": "normalize",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "normalise to shared envelope",
+        "func": "// Node-RED function node: NORMALISE\n//\n// What: converts an accepted, mode-specific raw event into the shared\n//       normalised envelope, and sets the outbound MQTT topic.\n// Why:  downstream services should not have to know four payload shapes. The\n//       envelope gives them one uniform structure, while modeData preserves\n//       every mode-specific field so no information is destroyed. This is the\n//       last step before the event reaches the queue.\n//\n// Output topic: transport/normalized/{bus|tram|train|demand}\nvar p = msg.payload;\nvar mode = msg.transportMode;\nvar receivedAt = msg.receivedAt || new Date().toISOString();\n\nvar normalized = {\n    schemaVersion: '1.0',\n    eventId: p.eventId,\n    sourceEventType: p.eventType,\n    transportMode: mode,\n    entityId: mode === 'demand' ? p.locationId : p.vehicleId,\n    serviceId: p.serviceId === undefined ? null : p.serviceId,\n    routeId: p.routeId === undefined ? null : p.routeId,\n    routeIds: p.routeIds || (p.routeId ? [p.routeId] : []),\n    locationId: p.locationId === undefined ? null : p.locationId,\n    locationType: p.locationType === undefined ? null : p.locationType,\n    timestamp: p.timestamp,\n    receivedAt: receivedAt,\n    position: null,\n    metrics: {},\n    health: 'normal',\n    demandLevel: null,\n    modeData: {},\n    validation: { validatedBy: msg.validatedBy || 'node-red', branch: mode }\n};\n\nif (mode === 'demand') {\n    normalized.metrics = {\n        passengerCount: p.passengerCount === undefined ? null : p.passengerCount,\n        waitingTimeSeconds: p.waitingTimeSeconds === undefined ? null : p.waitingTimeSeconds\n    };\n    normalized.demandLevel = p.demandLevel === undefined ? null : p.demandLevel;\n    normalized.modeData = {\n        locationType: p.locationType,\n        shelterCapacity: p.shelterCapacity === undefined ? null : p.shelterCapacity\n    };\n} else {\n    normalized.position = { latitude: p.latitude, longitude: p.longitude };\n    normalized.metrics = {\n        speedKph: p.speedKph === undefined ? null : p.speedKph,\n        occupancy: p.occupancy === undefined ? null : p.occupancy,\n        capacity: p.capacity === undefined ? null : p.capacity,\n        delaySeconds: p.delaySeconds === undefined ? null : p.delaySeconds\n    };\n    normalized.health = p.health;\n    // Copy so the mode-specific fields survive normalisation intact.\n    normalized.modeData = Object.assign({}, p.modeData);\n}\n\nmsg.payload = normalized;\nmsg.topic = 'transport/normalized/' + mode;\n\n// Evidence-friendly one-liner. node.warn is used so it is visible in the\n// Node-RED debug sidebar without needing a debug node wired to every branch.\nvar label = mode === 'demand'\n    ? normalized.entityId + ' passengers=' + normalized.metrics.passengerCount\n    : normalized.entityId + ' health=' + normalized.health + ' delay=' + normalized.metrics.delaySeconds + 's';\nnode.status({ fill: 'green', shape: 'dot', text: 'accepted ' + mode + ' ' + normalized.entityId });\nnode.warn('[ACCEPTED] mode=' + mode + ' eventId=' + normalized.eventId + ' ' + label);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 180,
+        "wires": [
+            [
+                "normalized-out",
+                "debug-accepted"
+            ]
+        ]
+    },
+    {
+        "id": "normalized-out",
+        "type": "mqtt out",
+        "z": "sit314-transport-flow",
+        "name": "MQTT out: transport/normalized/<mode>",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "broker": "sit314-mqtt-broker",
+        "x": 1380,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "debug-accepted",
+        "type": "debug",
+        "z": "sit314-transport-flow",
+        "name": "accepted",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1360,
+        "y": 230,
+        "wires": []
+    },
+    {
+        "id": "reject",
+        "type": "function",
+        "z": "sit314-transport-flow",
+        "name": "reject with reason",
+        "func": "// Node-RED function node: REJECT\n//\n// What: formats a rejected event, publishes it to transport/rejected/<mode>\n//       and logs a readable reason.\n// Why:  invalid data must never reach the telemetry queue, and the rejection\n//       must be explainable. The printed block is the evidence that the\n//       validation branches are genuinely doing work.\nvar rejection = msg.rejection || { mode: 'unknown', reason: 'unspecified' };\nvar source = msg.payload || {};\n\nvar record = {\n    rejectedAt: new Date().toISOString(),\n    mode: rejection.mode,\n    eventId: source.eventId || null,\n    entityId: source.vehicleId || source.locationId || null,\n    reason: rejection.reason,\n    errors: rejection.errors || [rejection.reason],\n    injectedFault: source.__injectedFault || null,\n    rawTopic: msg.rawTopic || msg.topic || null\n};\n\nmsg.payload = record;\nmsg.topic = 'transport/rejected/' + rejection.mode;\n\nnode.status({ fill: 'red', shape: 'ring', text: 'rejected ' + rejection.mode });\nnode.warn('[REJECTED]\\n  mode=' + record.mode\n    + '\\n  eventId=' + record.eventId\n    + '\\n  reason=' + record.reason);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 430,
+        "wires": [
+            [
+                "rejected-out",
+                "debug-rejected"
+            ]
+        ]
+    },
+    {
+        "id": "rejected-out",
+        "type": "mqtt out",
+        "z": "sit314-transport-flow",
+        "name": "MQTT out: transport/rejected/<mode>",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "broker": "sit314-mqtt-broker",
+        "x": 1380,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "debug-rejected",
+        "type": "debug",
+        "z": "sit314-transport-flow",
+        "name": "rejected",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1360,
+        "y": 470,
+        "wires": []
+    }
+]
