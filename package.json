@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Scalable multimodal IoT public transport monitoring system (SIT314 Distinction Project)",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "shared",
     "simulator",
@@ -13,7 +15,7 @@
     "services/notification-worker"
   ],
   "scripts": {
-    "test": "node --test --test-reporter=spec shared/test services/*/test simulator/test",
+    "test": "node --test --test-reporter=spec \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"services/*/test/*.test.js\"",
     "test:all": "npm run test",
     "simulate": "node simulator/src/cli.js",
     "broker": "node scripts/local-broker.js",
@@ -28,7 +30,8 @@
     "verify-env": "node scripts/verify-env.js",
     "demo:local": "node scripts/demo-local.js",
     "demo:checkpoint": "node scripts/demo-checkpoint.js",
-    "evidence": "node scripts/evidence.js"
+    "evidence": "node scripts/evidence.js",
+    "test:tap": "node --test \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"services/*/test/*.test.js\""
   },
   "dependencies": {
     "@sit314/shared": "*",

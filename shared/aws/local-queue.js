@@ -11,14 +11,20 @@
  *       The workers themselves contain no local/AWS branching - they only see
  *       this interface, so the identical business logic runs against real SQS.
  *
- * This is deliberately NOT a general AWS emulator. It is roughly 200 lines that
- * reproduce one queue's semantics, and the AWS adapter is a peer implementation
- * of the same five methods.
+ * This is deliberately NOT a general AWS emulator. It is one queue's semantics,
+ * and the AWS adapter in queues.js is a peer implementation of the same methods.
  *
- * Concurrency model: a message is a file. Claiming a message is a single
- * `rename()` from `pending/` into `inflight/`. rename() is atomic, so exactly
- * one polling process can win; the loser sees ENOENT and moves on. This is what
- * makes "run five workers against one queue" genuinely concurrent.
+ * CONCURRENCY MODEL
+ * A message is a file in `pending/`. Claiming it means creating
+ * `inflight/<messageId>.json` with the exclusive-create flag 'wx'. Exclusive
+ * create is atomic on both Windows (CREATE_NEW) and POSIX (O_EXCL), so exactly
+ * one polling process can win and the losers get EEXIST.
+ *
+ * Note: rename() is deliberately NOT used as the claim primitive. On Windows,
+ * concurrent renames of the same source file can each report success even
+ * though only one destination is actually produced, which silently delivers one
+ * message to several consumers. This was observed on the development machine
+ * and is why the claim is an exclusive create.
  */
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -44,7 +50,6 @@ export class LocalQueue {
     this.dlqName = options.dlqName ?? null;
     this.maxReceiveCount = options.maxReceiveCount ?? 3;
     this.visibilityTimeoutSeconds = options.visibilityTimeoutSeconds ?? 30;
-    this.sequence = 0;
     fs.mkdirSync(this.pendingDir, { recursive: true });
     fs.mkdirSync(this.inflightDir, { recursive: true });
   }
@@ -53,10 +58,16 @@ export class LocalQueue {
     return `local://${this.name}`;
   }
 
-  #pendingFileName(enqueuedMs, messageId) {
-    this.sequence = (this.sequence + 1) % 1_000_000;
-    const seq = String(this.sequence).padStart(6, '0');
-    return `${String(enqueuedMs).padStart(15, '0')}-${seq}-${messageId}.json`;
+  /**
+   * Deterministic pending file name: sorting by name gives FIFO order, and
+   * re-writing the same message produces the same path instead of a duplicate.
+   */
+  #pendingPath(enqueuedMs, messageId) {
+    return path.join(this.pendingDir, `${String(enqueuedMs).padStart(15, '0')}-${messageId}.json`);
+  }
+
+  #inflightPath(messageId) {
+    return path.join(this.inflightDir, `${messageId}.json`);
   }
 
   /** Write-then-rename so a reader never observes a half-written message. */
@@ -74,13 +85,10 @@ export class LocalQueue {
       body: typeof body === 'string' ? body : JSON.stringify(body),
       attributes,
       enqueuedAt,
-      firstEnqueuedAt: attributes.firstEnqueuedAt ?? enqueuedAt,
+      firstEnqueuedAt: enqueuedAt,
       receiveCount: 0,
     };
-    await this.#atomicWrite(
-      path.join(this.pendingDir, this.#pendingFileName(enqueuedAt, messageId)),
-      record,
-    );
+    await this.#atomicWrite(this.#pendingPath(enqueuedAt, messageId), record);
     return { messageId };
   }
 
@@ -88,6 +96,14 @@ export class LocalQueue {
     const results = [];
     for (const body of bodies) results.push(await this.sendMessage(body));
     return { successful: results.length, failed: 0, results };
+  }
+
+  /** Puts a record back on the pending side (used by redelivery). */
+  async #requeue(record) {
+    await this.#atomicWrite(
+      this.#pendingPath(record.firstEnqueuedAt, record.messageId),
+      { ...record, visibleAt: undefined, receiptHandle: undefined },
+    );
   }
 
   /**
@@ -106,23 +122,21 @@ export class LocalQueue {
     }
     const now = Date.now();
     for (const file of files) {
+      if (!file.endsWith('.json')) continue;
       const full = path.join(this.inflightDir, file);
       let record;
       try {
         record = JSON.parse(await fsp.readFile(full, 'utf8'));
       } catch {
-        continue; // being written or already claimed by another reaper
+        continue; // being written, or already removed by another reaper
       }
       if (!record.visibleAt || record.visibleAt > now) continue;
+
       if (record.receiveCount >= this.maxReceiveCount && this.dlqName) {
-        // Claim the expired message with an atomic rename before redriving it,
-        // so two reapers can never write the same message to the DLQ twice.
-        const claimPath = path.join(this.dir, `.redrive-${randomUUID()}`);
-        try {
-          await fsp.rename(full, claimPath);
-        } catch {
-          continue; // another process claimed it
-        }
+        // Claim the expired message by removing the in-flight file first, so
+        // two reapers can never write the same message to the DLQ twice.
+        const claimed = await fsp.rm(full).then(() => true).catch(() => false);
+        if (!claimed) continue;
         const dlq = new LocalQueue(this.dlqName, {
           baseDir: this.baseDir,
           dlqName: null,
@@ -133,20 +147,16 @@ export class LocalQueue {
           redrivenFrom: this.name,
           receiveCount: record.receiveCount,
         });
-        await fsp.unlink(claimPath).catch(() => {});
         deadLettered += 1;
         continue;
       }
-      const target = path.join(
-        this.pendingDir,
-        this.#pendingFileName(record.firstEnqueuedAt, record.messageId),
-      );
-      try {
-        await fsp.rename(full, target);
-        requeued += 1;
-      } catch {
-        // another process reaped it first
-      }
+
+      await this.#requeue(record);
+      // Releasing the in-flight file last makes the operation safe to repeat:
+      // a crash between the two steps only ever duplicates a pending file with
+      // an identical path, which overwrites rather than multiplies.
+      await fsp.rm(full).catch(() => {});
+      requeued += 1;
     }
     return { requeued, deadLettered };
   }
@@ -182,30 +192,34 @@ export class LocalQueue {
     for (const file of files) {
       if (claimed.length >= maxMessages) break;
       const src = path.join(this.pendingDir, file);
-      const receiptHandle = `${randomUUID()}.json`;
-      const dst = path.join(this.inflightDir, receiptHandle);
       let record;
       try {
         record = JSON.parse(await fsp.readFile(src, 'utf8'));
       } catch {
-        continue;
+        continue; // consumed by someone else between readdir and readFile
       }
+
+      const inflight = {
+        ...record,
+        receiveCount: record.receiveCount + 1,
+        visibleAt: Date.now() + visibilityTimeoutSeconds * 1000,
+        receiptHandle: record.messageId,
+      };
       try {
-        await fsp.rename(src, dst); // atomic claim - loser gets ENOENT
-      } catch {
-        continue;
+        // Exclusive create: atomic on Windows and POSIX. Exactly one claimant.
+        await fsp.writeFile(this.#inflightPath(record.messageId), JSON.stringify(inflight), { flag: 'wx' });
+      } catch (err) {
+        if (err.code === 'EEXIST') continue; // another consumer won the race
+        throw err;
       }
-      record.receiveCount += 1;
-      record.visibleAt = Date.now() + visibilityTimeoutSeconds * 1000;
-      record.receiptHandle = receiptHandle;
-      try {
-        await fsp.writeFile(dst, JSON.stringify(record), 'utf8');
-      } catch { /* ignore */ }
+      // The claim is now held, so removing the pending copy is safe.
+      await fsp.rm(src).catch(() => {});
+
       claimed.push({
         messageId: record.messageId,
-        receiptHandle,
+        receiptHandle: record.messageId,
         body: record.body,
-        receiveCount: record.receiveCount,
+        receiveCount: inflight.receiveCount,
         enqueuedAt: record.firstEnqueuedAt,
         attributes: record.attributes || {},
       });
@@ -216,7 +230,7 @@ export class LocalQueue {
   /** Remove a message. Called ONLY after the message has been fully processed. */
   async deleteMessage(receiptHandle) {
     try {
-      await fsp.unlink(path.join(this.inflightDir, receiptHandle));
+      await fsp.unlink(this.#inflightPath(receiptHandle));
       return true;
     } catch {
       return false;
@@ -229,9 +243,9 @@ export class LocalQueue {
     return { deleted };
   }
 
-  /** Make a message immediately visible again (used to fail fast on error). */
+  /** Make a message visible again sooner (used to fail fast on error). */
   async changeMessageVisibility(receiptHandle, timeoutSeconds) {
-    const full = path.join(this.inflightDir, receiptHandle);
+    const full = this.#inflightPath(receiptHandle);
     try {
       const record = JSON.parse(await fsp.readFile(full, 'utf8'));
       record.visibleAt = Date.now() + timeoutSeconds * 1000;
