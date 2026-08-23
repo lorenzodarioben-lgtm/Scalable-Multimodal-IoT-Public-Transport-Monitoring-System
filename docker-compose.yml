@@ -1,0 +1,112 @@
+# Local development stack for the SIT314 transport monitoring system.
+#
+# This runs the LOCAL variant of the pipeline: a local MQTT broker stands in for
+# AWS IoT Core, and the services use the file-backed queue/store adapters. It
+# exists so the whole pipeline can be demonstrated on one machine.
+#
+#   docker compose up broker node-red          # ingestion + validation only
+#   docker compose --profile workers up        # add the three services
+#
+# For the AWS variant, set QUEUE_BACKEND/STORE_BACKEND/METRICS_BACKEND to `aws`
+# and MQTT_MODE to `aws`; see docs/AWS_DEPLOYMENT.md.
+#
+# No secrets appear in this file. Certificates are mounted read-only from
+# ./certs, which is excluded from Git.
+
+name: sit314-transport
+
+services:
+  broker:
+    build:
+      context: .
+      dockerfile: node-red/Dockerfile.broker
+    image: sit314-transport-broker
+    container_name: sit314-broker
+    ports:
+      - "1883:1883"
+    environment:
+      MQTT_BIND_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(1883,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Node-RED performs the mode-specific validation and normalisation.
+  # The flow is mounted from the repository so what is committed is what runs.
+  node-red:
+    image: nodered/node-red:4.0
+    container_name: sit314-node-red
+    depends_on:
+      broker:
+        condition: service_healthy
+    ports:
+      - "1880:1880"
+    environment:
+      MQTT_HOST: broker
+      MQTT_PORT: "1883"
+      MQTT_CLIENT_ID: sit314-node-red
+      FLOWS: flows.json
+    volumes:
+      - ./node-red/flows.json:/data/flows.json:ro
+      - node-red-data:/data/lib
+
+  # ---- application services (opt in with: --profile workers) --------------
+
+  telemetry-processor:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: services/telemetry-processor/Dockerfile
+    image: sit314-transport-telemetry-processor
+    environment:
+      QUEUE_BACKEND: ${QUEUE_BACKEND:-local}
+      STORE_BACKEND: ${STORE_BACKEND:-local}
+      METRICS_BACKEND: ${METRICS_BACKEND:-local}
+      LOCAL_DATA_DIR: /data
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+    volumes:
+      - local-data:/data
+    restart: unless-stopped
+
+  route-impact-worker:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: services/route-impact-worker/Dockerfile
+    image: sit314-transport-route-impact-worker
+    environment:
+      QUEUE_BACKEND: ${QUEUE_BACKEND:-local}
+      STORE_BACKEND: ${STORE_BACKEND:-local}
+      METRICS_BACKEND: ${METRICS_BACKEND:-local}
+      LOCAL_DATA_DIR: /data
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+      # Documented TEST PARAMETER, default off.
+      WORKER_PROCESSING_DELAY_MS: ${WORKER_PROCESSING_DELAY_MS:-0}
+    volumes:
+      - local-data:/data
+    # `docker compose up --scale route-impact-worker=3` is the local analogue of
+    # scaling the ECS service; on AWS this is done by Application Auto Scaling.
+    restart: unless-stopped
+
+  notification-worker:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: services/notification-worker/Dockerfile
+    image: sit314-transport-notification-worker
+    environment:
+      QUEUE_BACKEND: ${QUEUE_BACKEND:-local}
+      STORE_BACKEND: ${STORE_BACKEND:-local}
+      METRICS_BACKEND: ${METRICS_BACKEND:-local}
+      LOCAL_DATA_DIR: /data
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+    volumes:
+      - local-data:/data
+    restart: unless-stopped
+
+volumes:
+  node-red-data:
+  local-data:

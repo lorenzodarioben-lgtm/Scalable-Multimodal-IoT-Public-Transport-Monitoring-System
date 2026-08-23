@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SIT314 multimodal transport monitoring - DynamoDB tables.
+
+  Four small single-key tables, deliberately simple rather than a clever
+  single-table design, because each one has a distinct purpose that is easy to
+  explain:
+
+    processed-events  idempotency ledger, keyed by eventId
+    current-state     latest known state per vehicle or location, keyed by entityId
+    analysis-results  one route-impact calculation, keyed by jobId
+    notifications     one simulated delivery record, keyed by notificationId
+
+  All four use PAY_PER_REQUEST (on-demand) billing so an idle student project
+  costs nothing and a load test does not need capacity planning.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-transport
+  Owner:
+    Type: String
+    Default: Lorenzo
+  Environment:
+    Type: String
+    Default: Student
+
+Resources:
+  # Idempotency ledger. The processor writes here with
+  # ConditionExpression: attribute_not_exists(eventId). The first writer wins;
+  # every later delivery of the same event is recognised as a duplicate and
+  # produces no downstream work.
+  ProcessedEventsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub '${ResourcePrefix}-processed-events'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: eventId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: eventId, KeyType: HASH }
+      # Idempotency records are only needed for as long as a message could
+      # still be redelivered; TTL keeps the table small at no cost.
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  # Latest known state per entity. Written with
+  # ConditionExpression: attribute_not_exists(entityId) OR #ts < :ts
+  # so an out-of-order telemetry event cannot overwrite fresher state.
+  CurrentStateTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub '${ResourcePrefix}-current-state'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: entityId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: entityId, KeyType: HASH }
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  AnalysisResultsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub '${ResourcePrefix}-analysis-results'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: jobId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: jobId, KeyType: HASH }
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub '${ResourcePrefix}-notifications'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: notificationId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: notificationId, KeyType: HASH }
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+Outputs:
+  ProcessedEventsTableName:
+    Value: !Ref ProcessedEventsTable
+    Export: { Name: !Sub '${AWS::StackName}-ProcessedEventsTable' }
+  ProcessedEventsTableArn:
+    Value: !GetAtt ProcessedEventsTable.Arn
+    Export: { Name: !Sub '${AWS::StackName}-ProcessedEventsTableArn' }
+  CurrentStateTableName:
+    Value: !Ref CurrentStateTable
+    Export: { Name: !Sub '${AWS::StackName}-CurrentStateTable' }
+  CurrentStateTableArn:
+    Value: !GetAtt CurrentStateTable.Arn
+    Export: { Name: !Sub '${AWS::StackName}-CurrentStateTableArn' }
+  AnalysisResultsTableName:
+    Value: !Ref AnalysisResultsTable
+    Export: { Name: !Sub '${AWS::StackName}-AnalysisResultsTable' }
+  AnalysisResultsTableArn:
+    Value: !GetAtt AnalysisResultsTable.Arn
+    Export: { Name: !Sub '${AWS::StackName}-AnalysisResultsTableArn' }
+  NotificationsTableName:
+    Value: !Ref NotificationsTable
+    Export: { Name: !Sub '${AWS::StackName}-NotificationsTable' }
+  NotificationsTableArn:
+    Value: !GetAtt NotificationsTable.Arn
+    Export: { Name: !Sub '${AWS::StackName}-NotificationsTableArn' }

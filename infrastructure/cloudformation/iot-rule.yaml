@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SIT314 multimodal transport monitoring - AWS IoT rule from the normalised MQTT
+  topic to the telemetry SQS queue.
+
+  This is the integration point between Node-RED and the queue:
+
+    simulator --MQTT/TLS--> AWS IoT Core (transport/raw/#)
+                              |
+                              v
+                          Node-RED  (validate per mode, normalise)
+                              |
+                              v
+                        AWS IoT Core (transport/normalized/<mode>)
+                              |
+                              v
+                        THIS RULE  -> SQS telemetry queue
+
+  Using a managed IoT rule rather than a Node-RED SQS contrib node keeps the
+  queue delivery on a supported AWS integration, while Node-RED remains the
+  processing stage immediately before the queue.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-transport
+  QueuesStackName:
+    Type: String
+    Description: Name of the deployed queues stack, used to import the queue URL/ARN.
+  ExistingIotRuleRoleArn:
+    Type: String
+    Default: ''
+    Description: >
+      OPTIONAL. ARN of an existing role the IoT rule may assume to write to SQS.
+      Supply this in restricted accounts (for example AWS Academy) where
+      iam:CreateRole is denied - typically the provided lab role. Leave empty to
+      let this template create a least-privilege role scoped to the one queue.
+  Owner:
+    Type: String
+    Default: Lorenzo
+  Environment:
+    Type: String
+    Default: Student
+
+Conditions:
+  CreateRole: !Equals [!Ref ExistingIotRuleRoleArn, '']
+
+Resources:
+  # Least-privilege role: it can send messages to exactly one queue and do
+  # nothing else. Created only when the account permits role creation.
+  IotRuleRole:
+    Type: AWS::IAM::Role
+    Condition: CreateRole
+    Properties:
+      RoleName: !Sub '${ResourcePrefix}-iot-rule-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: iot.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PublishToTelemetryQueue
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource:
+                  Fn::ImportValue: !Sub '${QueuesStackName}-TelemetryQueueArn'
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  NormalisedToTelemetryQueueRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: !Sub
+        - '${Prefix}_normalized_to_telemetry'
+        - Prefix: !Join ['_', !Split ['-', !Ref ResourcePrefix]]
+      TopicRulePayload:
+        Description: >
+          Forwards every normalised transport event published by Node-RED to the
+          telemetry SQS queue.
+        AwsIotSqlVersion: '2016-03-23'
+        # SELECT * keeps the normalised envelope intact; the '+' wildcard covers
+        # transport/normalized/{bus,tram,train,demand}.
+        Sql: "SELECT * FROM 'transport/normalized/+'"
+        RuleDisabled: false
+        Actions:
+          - Sqs:
+              QueueUrl:
+                Fn::ImportValue: !Sub '${QueuesStackName}-TelemetryQueueUrl'
+              # Base64 is not needed; the processor expects raw JSON bodies.
+              UseBase64: false
+              RoleArn: !If
+                - CreateRole
+                - !GetAtt IotRuleRole.Arn
+                - !Ref ExistingIotRuleRoleArn
+        # If the rule action itself fails, record it in CloudWatch Logs rather
+        # than dropping the event silently.
+        ErrorAction:
+          CloudwatchLogs:
+            LogGroupName: !Sub '/aws/iot/${ResourcePrefix}-rule-errors'
+            RoleArn: !If
+              - CreateRole
+              - !GetAtt IotRuleRole.Arn
+              - !Ref ExistingIotRuleRoleArn
+
+  RuleErrorLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/aws/iot/${ResourcePrefix}-rule-errors'
+      RetentionInDays: 7
+
+Outputs:
+  RuleName:
+    Value: !Ref NormalisedToTelemetryQueueRule
+  RuleRoleArn:
+    Value: !If [CreateRole, !GetAtt IotRuleRole.Arn, !Ref ExistingIotRuleRoleArn]
+    Description: Role the IoT rule assumes to write to SQS.

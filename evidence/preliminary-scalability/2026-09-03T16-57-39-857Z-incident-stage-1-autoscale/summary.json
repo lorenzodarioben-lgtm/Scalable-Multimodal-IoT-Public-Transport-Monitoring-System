@@ -1,0 +1,123 @@
+{
+  "runId": "2026-09-03T16-57-39-857Z-incident-stage-1-autoscale",
+  "stage": "incident-stage-1",
+  "startedAt": "2026-09-03T16:57:39.857Z",
+  "finishedAt": "2026-09-03T16:59:21.902Z",
+  "seed": 3142026,
+  "config": {
+    "name": "incident-stage-1",
+    "description": "Stage 1 - bus breakdown affecting 5 bus stops. 50 analysis jobs and 200 notifications per incident.",
+    "type": "incident",
+    "seed": 3142026,
+    "incident": {
+      "scenario": "bus-breakdown",
+      "transportMode": "bus",
+      "reason": "breakdown",
+      "severity": "high",
+      "vehicleId": "BUS-007",
+      "routeId": "703",
+      "affectedLocations": 5,
+      "jobsPerIncident": 50,
+      "notificationsPerIncident": 200
+    },
+    "arrival": {
+      "mode": "sustained",
+      "incidentIntervalSeconds": 5
+    },
+    "durationSeconds": 45,
+    "warmupSeconds": 10,
+    "worker": {
+      "mode": "autoscale",
+      "fixedTasks": 1,
+      "minTasks": 1,
+      "maxTasks": 5,
+      "concurrency": 4,
+      "processingDelayMs": 50,
+      "targetBacklogPerTask": 75,
+      "evaluationIntervalMs": 10000,
+      "scaleOutCooldownSeconds": 30,
+      "scaleInCooldownSeconds": 60,
+      "processingCpuIterations": 15000000
+    },
+    "sla": {
+      "p95LatencyMs": 5000,
+      "oldestMessageAgeSeconds": 10,
+      "finalWindowSeconds": 300
+    }
+  },
+  "results": {
+    "totalJobsInjected": 550,
+    "incidentsInjected": 11,
+    "resultsProduced": 550,
+    "duplicateJobsSkipped": 4,
+    "duplicateResults": 0,
+    "processingFailures": 0,
+    "unprocessedInQueue": 0,
+    "jobsAccountedFor": 550,
+    "jobsLost": 0,
+    "elapsedSeconds": 101.7,
+    "jobsPerSecondInjected": 5.41,
+    "jobsPerSecondProcessed": 5.41,
+    "meanProcessingMs": 545.05,
+    "p95ProcessingMs": 857,
+    "peakQueueDepth": 290,
+    "endingQueueDepth": 0,
+    "peakOldestAgeSeconds": 51,
+    "dlqDepth": 0,
+    "minTasksObserved": 1,
+    "maxTasksObserved": 4,
+    "scaleOutEvents": 2,
+    "scaleInEvents": 1,
+    "injectionErrors": 0
+  },
+  "stability": {
+    "queueGrowingInFinalWindow": true,
+    "finalWindowSeconds": 45,
+    "windowStartSeconds": 10,
+    "windowEndSeconds": 55,
+    "note": "Evaluated over the injection phase only; the post-injection drain is excluded.",
+    "stable": false,
+    "breachedCriteria": [
+      "age of oldest message reached 50s, above 10s"
+    ],
+    "verdict": "UNSTABLE"
+  },
+  "scaling": {
+    "samples": 10,
+    "minTasksObserved": 1,
+    "maxTasksObserved": 4,
+    "finalTasks": 0,
+    "peakQueueDepth": 240,
+    "endingQueueDepth": 0,
+    "scaleOutEvents": 2,
+    "scaleInEvents": 1,
+    "events": [
+      {
+        "at": "2026-09-03T16:58:00.257Z",
+        "action": "scaleOut:1",
+        "from": 1,
+        "to": 2,
+        "backlogPerTask": 130
+      },
+      {
+        "at": "2026-09-03T16:58:30.305Z",
+        "action": "scaleOut:2",
+        "from": 2,
+        "to": 4,
+        "backlogPerTask": 120
+      },
+      {
+        "at": "2026-09-03T16:58:40.340Z",
+        "action": "scaleIn:1",
+        "from": 4,
+        "to": 3,
+        "backlogPerTask": 50
+      }
+    ]
+  },
+  "environment": {
+    "queueBackend": "local",
+    "storeBackend": "local",
+    "note": "Local backends unless QUEUE_BACKEND/STORE_BACKEND are set to aws."
+  }
+}

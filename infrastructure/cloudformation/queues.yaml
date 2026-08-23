@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SIT314 multimodal transport monitoring - SQS queues and dead-letter queues.
+
+  Three queues decouple the four processing stages. Decoupling is what makes the
+  system scalable: a burst of analysis jobs is absorbed by the queue instead of
+  overwhelming the workers, and the queue depth becomes the signal that drives
+  Application Auto Scaling.
+
+  Each working queue has a dead-letter queue and a redrive policy, so a message
+  that repeatedly fails is quarantined for inspection instead of being retried
+  forever or silently lost.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-transport
+    Description: Prefix applied to every resource name created by this project.
+  MaxReceiveCount:
+    Type: Number
+    Default: 3
+    MinValue: 1
+    MaxValue: 10
+    Description: >
+      Attempts before a message is moved to its dead-letter queue. Finite by
+      design - an unprocessable message must not block the queue indefinitely.
+  TelemetryVisibilityTimeout:
+    Type: Number
+    Default: 60
+    Description: >
+      Must exceed the worst-case processing time for one telemetry message.
+      A breakdown fans out into hundreds of job enqueues, so this is generous.
+  AnalysisVisibilityTimeout:
+    Type: Number
+    Default: 60
+    Description: Visibility timeout for a single route-impact calculation.
+  NotificationVisibilityTimeout:
+    Type: Number
+    Default: 30
+    Description: Visibility timeout for one simulated notification delivery.
+  MessageRetentionSeconds:
+    Type: Number
+    Default: 345600
+    Description: Four days. Long enough to inspect a failed experiment run.
+  Owner:
+    Type: String
+    Default: Lorenzo
+  Environment:
+    Type: String
+    Default: Student
+
+Resources:
+  # ---- dead-letter queues (created first, referenced by the redrive policies)
+
+  TelemetryDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-telemetry-dlq'
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  AnalysisDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-analysis-dlq'
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  NotificationsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-notifications-dlq'
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  # ---- working queues
+
+  TelemetryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-telemetry'
+      VisibilityTimeout: !Ref TelemetryVisibilityTimeout
+      MessageRetentionPeriod: !Ref MessageRetentionSeconds
+      # Long polling: the consumer waits for work instead of spinning on empty
+      # receives, which cuts both cost and idle CPU.
+      ReceiveMessageWaitTimeSeconds: 20
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt TelemetryDlq.Arn
+        maxReceiveCount: !Ref MaxReceiveCount
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  AnalysisQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-analysis'
+      VisibilityTimeout: !Ref AnalysisVisibilityTimeout
+      MessageRetentionPeriod: !Ref MessageRetentionSeconds
+      ReceiveMessageWaitTimeSeconds: 20
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AnalysisDlq.Arn
+        maxReceiveCount: !Ref MaxReceiveCount
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  NotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-notifications'
+      VisibilityTimeout: !Ref NotificationVisibilityTimeout
+      MessageRetentionPeriod: !Ref MessageRetentionSeconds
+      ReceiveMessageWaitTimeSeconds: 20
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NotificationsDlq.Arn
+        maxReceiveCount: !Ref MaxReceiveCount
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+Outputs:
+  TelemetryQueueUrl:
+    Value: !Ref TelemetryQueue
+    Export: { Name: !Sub '${AWS::StackName}-TelemetryQueueUrl' }
+  TelemetryQueueArn:
+    Value: !GetAtt TelemetryQueue.Arn
+    Export: { Name: !Sub '${AWS::StackName}-TelemetryQueueArn' }
+  AnalysisQueueUrl:
+    Value: !Ref AnalysisQueue
+    Export: { Name: !Sub '${AWS::StackName}-AnalysisQueueUrl' }
+  AnalysisQueueArn:
+    Value: !GetAtt AnalysisQueue.Arn
+    Export: { Name: !Sub '${AWS::StackName}-AnalysisQueueArn' }
+  AnalysisQueueName:
+    Value: !GetAtt AnalysisQueue.QueueName
+    Export: { Name: !Sub '${AWS::StackName}-AnalysisQueueName' }
+  NotificationsQueueUrl:
+    Value: !Ref NotificationsQueue
+    Export: { Name: !Sub '${AWS::StackName}-NotificationsQueueUrl' }
+  NotificationsQueueArn:
+    Value: !GetAtt NotificationsQueue.Arn
+    Export: { Name: !Sub '${AWS::StackName}-NotificationsQueueArn' }
+  TelemetryDlqUrl:
+    Value: !Ref TelemetryDlq
+  AnalysisDlqUrl:
+    Value: !Ref AnalysisDlq
+  NotificationsDlqUrl:
+    Value: !Ref NotificationsDlq

@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1
+# Local MQTT broker (development stand-in for AWS IoT Core).
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY shared/package.json ./shared/
+COPY simulator/package.json ./simulator/
+COPY services/telemetry-processor/package.json ./services/telemetry-processor/
+COPY services/route-impact-worker/package.json ./services/route-impact-worker/
+COPY services/notification-worker/package.json ./services/notification-worker/
+RUN npm ci --omit=dev --ignore-scripts
+COPY schemas ./schemas
+COPY shared ./shared
+COPY scripts ./scripts
+EXPOSE 1883
+STOPSIGNAL SIGTERM
+CMD ["node", "scripts/local-broker.js"]

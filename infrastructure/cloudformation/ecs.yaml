@@ -1,0 +1,421 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SIT314 multimodal transport monitoring - ECS Fargate cluster, task definitions
+  and services for the queue-consuming workers.
+
+  COST AND NETWORKING NOTE
+  These workers POLL SQS. They receive no inbound traffic, so there is no load
+  balancer and no target group - that alone removes the largest fixed cost from
+  the design. They are placed in PUBLIC subnets with a public IP so that they
+  can reach the SQS, DynamoDB and CloudWatch endpoints without a NAT gateway,
+  which would cost far more than the rest of this project combined. The security
+  group allows no inbound traffic at all. The honest trade-off is documented in
+  docs/SECURITY.md: a private-subnet design with VPC endpoints would be
+  preferable in production, and is the first thing to change if this were not a
+  cost-constrained student deployment.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-transport
+  QueuesStackName:
+    Type: String
+    Description: Deployed queues stack name (for ARN imports).
+  TablesStackName:
+    Type: String
+    Description: Deployed DynamoDB stack name (for ARN imports).
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC to run tasks in - the account default VPC is fine.
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public subnets in the chosen VPC.
+  RouteImpactImage:
+    Type: String
+    Description: ECR image URI for the route-impact worker (repo:tag).
+  TelemetryProcessorImage:
+    Type: String
+    Default: ''
+    Description: ECR image URI for the telemetry processor. Empty = do not deploy it.
+  NotificationWorkerImage:
+    Type: String
+    Default: ''
+    Description: ECR image URI for the notification worker. Empty = do not deploy it.
+  ExistingExecutionRoleArn:
+    Type: String
+    Default: ''
+    Description: >
+      OPTIONAL. Existing task EXECUTION role (pulls images, writes logs). Supply
+      this in restricted accounts such as AWS Academy where iam:CreateRole is
+      denied - typically the provided LabRole. Leave empty to create one.
+  ExistingTaskRoleArn:
+    Type: String
+    Default: ''
+    Description: >
+      OPTIONAL. Existing task role granting the application its SQS/DynamoDB/
+      CloudWatch permissions. Leave empty to create a least-privilege role.
+  TaskCpu:
+    Type: String
+    Default: '256'
+    AllowedValues: ['256', '512', '1024']
+    Description: 256 = 0.25 vCPU, the smallest Fargate size.
+  TaskMemory:
+    Type: String
+    Default: '512'
+    AllowedValues: ['512', '1024', '2048']
+    Description: 512 MB, the smallest size compatible with 0.25 vCPU.
+  RouteImpactDesiredCount:
+    Type: Number
+    Default: 1
+    Description: >
+      Start at the autoscaling minimum. Do NOT leave five tasks running after a
+      test - scaling.yaml returns the service toward this minimum.
+  WorkerConcurrency:
+    Type: Number
+    Default: 4
+    Description: Jobs processed in parallel inside one task.
+  WorkerProcessingDelayMs:
+    Type: Number
+    Default: 0
+    Description: >
+      Documented TEST PARAMETER (see docs/SCALABILITY_TESTING.md). Adds a fixed
+      service time per job so queue build-up and scaling are observable at an
+      affordable workload size. Default 0 = off.
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+    Description: Short retention keeps CloudWatch Logs costs negligible.
+  AwsRegionOverride:
+    Type: String
+    Default: ''
+    Description: Leave empty to use the stack region.
+  Owner:
+    Type: String
+    Default: Lorenzo
+  Environment:
+    Type: String
+    Default: Student
+
+Conditions:
+  CreateExecutionRole: !Equals [!Ref ExistingExecutionRoleArn, '']
+  CreateTaskRole: !Equals [!Ref ExistingTaskRoleArn, '']
+  DeployTelemetryProcessor: !Not [!Equals [!Ref TelemetryProcessorImage, '']]
+  DeployNotificationWorker: !Not [!Equals [!Ref NotificationWorkerImage, '']]
+  UseRegionOverride: !Not [!Equals [!Ref AwsRegionOverride, '']]
+
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ResourcePrefix}-cluster'
+      ClusterSettings:
+        # Task-level CloudWatch metrics; needed to show task counts over time.
+        - { Name: containerInsights, Value: enabled }
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  # No inbound rules: these tasks never accept a connection.
+  WorkerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ResourcePrefix}-worker-sg'
+      GroupDescription: Outbound-only security group for SQS-polling workers.
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS to AWS service endpoints (SQS, DynamoDB, CloudWatch).
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateExecutionRole
+    Properties:
+      RoleName: !Sub '${ResourcePrefix}-execution-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+
+  # Application permissions, scoped to this project's queues and tables only.
+  TaskRole:
+    Type: AWS::IAM::Role
+    Condition: CreateTaskRole
+    Properties:
+      RoleName: !Sub '${ResourcePrefix}-task-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: QueueAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:DeleteMessageBatch
+                  - sqs:ChangeMessageVisibility
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:SendMessage
+                  - sqs:SendMessageBatch
+                Resource:
+                  - Fn::ImportValue: !Sub '${QueuesStackName}-TelemetryQueueArn'
+                  - Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueArn'
+                  - Fn::ImportValue: !Sub '${QueuesStackName}-NotificationsQueueArn'
+        - PolicyName: TableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - Fn::ImportValue: !Sub '${TablesStackName}-ProcessedEventsTableArn'
+                  - Fn::ImportValue: !Sub '${TablesStackName}-CurrentStateTableArn'
+                  - Fn::ImportValue: !Sub '${TablesStackName}-AnalysisResultsTableArn'
+                  - Fn::ImportValue: !Sub '${TablesStackName}-NotificationsTableArn'
+        - PolicyName: PublishMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: SIT314/Transport
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+
+  RouteImpactLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/ecs/${ResourcePrefix}-route-impact'
+      RetentionInDays: !Ref LogRetentionDays
+
+  TelemetryProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: DeployTelemetryProcessor
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/ecs/${ResourcePrefix}-telemetry-processor'
+      RetentionInDays: !Ref LogRetentionDays
+
+  NotificationWorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: DeployNotificationWorker
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/ecs/${ResourcePrefix}-notification-worker'
+      RetentionInDays: !Ref LogRetentionDays
+
+  RouteImpactTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${ResourcePrefix}-route-impact'
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      ExecutionRoleArn: !If [CreateExecutionRole, !GetAtt ExecutionRole.Arn, !Ref ExistingExecutionRoleArn]
+      TaskRoleArn: !If [CreateTaskRole, !GetAtt TaskRole.Arn, !Ref ExistingTaskRoleArn]
+      ContainerDefinitions:
+        - Name: route-impact-worker
+          Image: !Ref RouteImpactImage
+          Essential: true
+          # SIGTERM is handled by the worker runtime: it stops claiming new
+          # messages, finishes what it holds, and exits. Anything it had claimed
+          # but not finished simply becomes visible again for another task.
+          StopTimeout: 60
+          Environment:
+            - { Name: QUEUE_BACKEND, Value: aws }
+            - { Name: STORE_BACKEND, Value: aws }
+            - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
+            - Name: AWS_REGION
+              Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']
+            - { Name: WORKER_CONCURRENCY, Value: !Ref WorkerConcurrency }
+            - { Name: WORKER_PROCESSING_DELAY_MS, Value: !Ref WorkerProcessingDelayMs }
+            - { Name: WORKER_WAIT_TIME_SECONDS, Value: '20' }
+            - { Name: FAILURE_INJECTION_ENABLED, Value: 'false' }
+            - { Name: LOG_LEVEL, Value: info }
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref RouteImpactLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: route-impact
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+
+  RouteImpactService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub '${ResourcePrefix}-route-impact'
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref RouteImpactTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref RouteImpactDesiredCount
+      # No load balancer: this service is queue-driven, not request-driven.
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 200
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref SubnetIds
+          SecurityGroups: [!Ref WorkerSecurityGroup]
+      PropagateTags: SERVICE
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
+
+  TelemetryProcessorTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: DeployTelemetryProcessor
+    Properties:
+      Family: !Sub '${ResourcePrefix}-telemetry-processor'
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      ExecutionRoleArn: !If [CreateExecutionRole, !GetAtt ExecutionRole.Arn, !Ref ExistingExecutionRoleArn]
+      TaskRoleArn: !If [CreateTaskRole, !GetAtt TaskRole.Arn, !Ref ExistingTaskRoleArn]
+      ContainerDefinitions:
+        - Name: telemetry-processor
+          Image: !Ref TelemetryProcessorImage
+          Essential: true
+          StopTimeout: 60
+          Environment:
+            - { Name: QUEUE_BACKEND, Value: aws }
+            - { Name: STORE_BACKEND, Value: aws }
+            - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
+            - Name: AWS_REGION
+              Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']
+            - { Name: WORKER_CONCURRENCY, Value: !Ref WorkerConcurrency }
+            - { Name: WORKER_WAIT_TIME_SECONDS, Value: '20' }
+            - { Name: FAILURE_INJECTION_ENABLED, Value: 'false' }
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref TelemetryProcessorLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: telemetry-processor
+
+  TelemetryProcessorService:
+    Type: AWS::ECS::Service
+    Condition: DeployTelemetryProcessor
+    Properties:
+      ServiceName: !Sub '${ResourcePrefix}-telemetry-processor'
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TelemetryProcessorTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 200
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref SubnetIds
+          SecurityGroups: [!Ref WorkerSecurityGroup]
+
+  NotificationWorkerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: DeployNotificationWorker
+    Properties:
+      Family: !Sub '${ResourcePrefix}-notification-worker'
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      ExecutionRoleArn: !If [CreateExecutionRole, !GetAtt ExecutionRole.Arn, !Ref ExistingExecutionRoleArn]
+      TaskRoleArn: !If [CreateTaskRole, !GetAtt TaskRole.Arn, !Ref ExistingTaskRoleArn]
+      ContainerDefinitions:
+        - Name: notification-worker
+          Image: !Ref NotificationWorkerImage
+          Essential: true
+          StopTimeout: 60
+          Environment:
+            - { Name: QUEUE_BACKEND, Value: aws }
+            - { Name: STORE_BACKEND, Value: aws }
+            - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
+            - Name: AWS_REGION
+              Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']
+            - { Name: WORKER_CONCURRENCY, Value: !Ref WorkerConcurrency }
+            - { Name: FAILURE_INJECTION_ENABLED, Value: 'false' }
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref NotificationWorkerLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: notification-worker
+
+  NotificationWorkerService:
+    Type: AWS::ECS::Service
+    Condition: DeployNotificationWorker
+    Properties:
+      ServiceName: !Sub '${ResourcePrefix}-notification-worker'
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref NotificationWorkerTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 200
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref SubnetIds
+          SecurityGroups: [!Ref WorkerSecurityGroup]
+
+Outputs:
+  ClusterName:
+    Value: !Ref Cluster
+    Export: { Name: !Sub '${AWS::StackName}-ClusterName' }
+  RouteImpactServiceName:
+    Value: !GetAtt RouteImpactService.Name
+    Export: { Name: !Sub '${AWS::StackName}-RouteImpactServiceName' }
+  RouteImpactScalableId:
+    Description: Resource id used by Application Auto Scaling in scaling.yaml.
+    Value: !Sub
+      - 'service/${ClusterName}/${ServiceName}'
+      - ClusterName: !Ref Cluster
+        ServiceName: !GetAtt RouteImpactService.Name
+    Export: { Name: !Sub '${AWS::StackName}-RouteImpactScalableId' }
+  TaskRoleArnUsed:
+    Value: !If [CreateTaskRole, !GetAtt TaskRole.Arn, !Ref ExistingTaskRoleArn]
+  ExecutionRoleArnUsed:
+    Value: !If [CreateExecutionRole, !GetAtt ExecutionRole.Arn, !Ref ExistingExecutionRoleArn]
+  WorkerSecurityGroupId:
+    Value: !Ref WorkerSecurityGroup

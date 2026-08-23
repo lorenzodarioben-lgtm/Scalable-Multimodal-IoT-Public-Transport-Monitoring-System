@@ -1,0 +1,317 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SIT314 multimodal transport monitoring - Application Auto Scaling for the
+  route-impact / ETA ECS service (min 1, max 5).
+
+  WHAT "BACKLOG PER TASK" MEANS
+  Queue depth on its own is not a scaling signal: 400 queued jobs is a crisis
+  for one worker and routine for five. The meaningful quantity is how much work
+  each running task is responsible for:
+
+      BacklogPerTask = ApproximateNumberOfMessagesVisible / max(RunningTaskCount, 1)
+
+  Target tracking then keeps that ratio near a target (default 75 jobs per
+  task). Backlog rises -> ratio rises -> more tasks start -> the ratio falls
+  because the same backlog is divided by more workers -> the queue drains ->
+  the ratio falls below target -> the service scales back toward one task.
+
+  SQS does not publish this ratio, so a small scheduled Lambda computes it from
+  the queue attributes and the ECS running task count and publishes it as a
+  custom CloudWatch metric.
+
+  If Lambda creation is blocked by account permissions, set ScalingMode to
+  QueueDepth. That fallback tracks raw queue depth instead, which is a weaker
+  signal - it is NOT backlog per task and the report must say so. See
+  docs/IMPLEMENTATION_DECISIONS.md.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-transport
+  EcsStackName:
+    Type: String
+    Description: Deployed ECS stack name (for the scalable resource id import).
+  QueuesStackName:
+    Type: String
+    Description: Deployed queues stack name (for the analysis queue name import).
+  ScalingMode:
+    Type: String
+    Default: BacklogPerTask
+    AllowedValues: [BacklogPerTask, QueueDepth]
+    Description: >
+      BacklogPerTask (preferred) requires permission to create a Lambda and an
+      EventBridge rule. QueueDepth is the documented fallback for restricted
+      accounts.
+  MinTasks:
+    Type: Number
+    Default: 1
+    MinValue: 1
+  MaxTasks:
+    Type: Number
+    Default: 5
+    MaxValue: 5
+    Description: Capped at 5 by the approved experiment design and by cost.
+  TargetBacklogPerTask:
+    Type: Number
+    Default: 75
+    Description: >
+      Preliminary target from the approved design (50-100 queued jobs per active
+      task). Calibrate against baseline measurements before the final runs.
+  TargetQueueDepth:
+    Type: Number
+    Default: 200
+    Description: Used only when ScalingMode is QueueDepth.
+  ScaleOutCooldown:
+    Type: Number
+    Default: 60
+    Description: Short, so a burst is answered quickly during a demo.
+  ScaleInCooldown:
+    Type: Number
+    Default: 180
+    Description: Longer than scale-out, to avoid oscillating on a spiky queue.
+  MetricNamespace:
+    Type: String
+    Default: SIT314/Transport
+  ExistingLambdaRoleArn:
+    Type: String
+    Default: ''
+    Description: >
+      OPTIONAL. Existing role for the metric Lambda (for example an AWS Academy
+      LabRole). Leave empty to create a least-privilege role.
+  Owner:
+    Type: String
+    Default: Lorenzo
+  Environment:
+    Type: String
+    Default: Student
+
+Conditions:
+  UseBacklogPerTask: !Equals [!Ref ScalingMode, BacklogPerTask]
+  UseQueueDepth: !Equals [!Ref ScalingMode, QueueDepth]
+  CreateLambdaRole: !And
+    - !Condition UseBacklogPerTask
+    - !Equals [!Ref ExistingLambdaRoleArn, '']
+
+Resources:
+  # ---- the scalable target: min 1, max 5 ---------------------------------
+  RouteImpactScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      ServiceNamespace: ecs
+      ScalableDimension: ecs:service:DesiredCount
+      ResourceId:
+        Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactScalableId'
+      MinCapacity: !Ref MinTasks
+      MaxCapacity: !Ref MaxTasks
+
+  # ---- preferred policy: track backlog per active task -------------------
+  BacklogPerTaskPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: UseBacklogPerTask
+    Properties:
+      PolicyName: !Sub '${ResourcePrefix}-backlog-per-task'
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref RouteImpactScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: !Ref TargetBacklogPerTask
+        ScaleOutCooldown: !Ref ScaleOutCooldown
+        ScaleInCooldown: !Ref ScaleInCooldown
+        DisableScaleIn: false
+        CustomizedMetricSpecification:
+          MetricName: BacklogPerTask
+          Namespace: !Ref MetricNamespace
+          Statistic: Average
+          Unit: Count
+          Dimensions:
+            - Name: ServiceName
+              Value:
+                Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactServiceName'
+
+  # ---- documented fallback: track raw queue depth ------------------------
+  QueueDepthPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: UseQueueDepth
+    Properties:
+      PolicyName: !Sub '${ResourcePrefix}-queue-depth-fallback'
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref RouteImpactScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: !Ref TargetQueueDepth
+        ScaleOutCooldown: !Ref ScaleOutCooldown
+        ScaleInCooldown: !Ref ScaleInCooldown
+        DisableScaleIn: false
+        CustomizedMetricSpecification:
+          MetricName: ApproximateNumberOfMessagesVisible
+          Namespace: AWS/SQS
+          Statistic: Average
+          Unit: Count
+          Dimensions:
+            - Name: QueueName
+              Value:
+                Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueName'
+
+  # ---- the metric publisher ----------------------------------------------
+  BacklogLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: CreateLambdaRole
+    Properties:
+      RoleName: !Sub '${ResourcePrefix}-backlog-metric-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ReadQueueAndServiceThenPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [sqs:GetQueueAttributes, sqs:GetQueueUrl]
+                Resource:
+                  Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueArn'
+              - Effect: Allow
+                Action: [ecs:DescribeServices]
+                Resource: '*'
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: !Ref MetricNamespace
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+
+  BacklogMetricFunction:
+    Type: AWS::Lambda::Function
+    Condition: UseBacklogPerTask
+    Properties:
+      FunctionName: !Sub '${ResourcePrefix}-backlog-metric'
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Timeout: 20
+      MemorySize: 128
+      Role: !If
+        - CreateLambdaRole
+        - !GetAtt BacklogLambdaRole.Arn
+        - !Ref ExistingLambdaRoleArn
+      Environment:
+        Variables:
+          QUEUE_URL:
+            Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueUrl'
+          CLUSTER_NAME:
+            Fn::ImportValue: !Sub '${EcsStackName}-ClusterName'
+          SERVICE_NAME:
+            Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactServiceName'
+          METRIC_NAMESPACE: !Ref MetricNamespace
+      Code:
+        ZipFile: |
+          // Publishes BacklogPerTask for the route-impact service.
+          // BacklogPerTask = visible analysis jobs / max(running tasks, 1)
+          // The AWS SDK v3 is provided by the nodejs20.x runtime.
+          const { SQSClient, GetQueueAttributesCommand } = require('@aws-sdk/client-sqs');
+          const { ECSClient, DescribeServicesCommand } = require('@aws-sdk/client-ecs');
+          const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
+
+          const sqs = new SQSClient({});
+          const ecs = new ECSClient({});
+          const cw = new CloudWatchClient({});
+
+          exports.handler = async () => {
+            const { QUEUE_URL, CLUSTER_NAME, SERVICE_NAME, METRIC_NAMESPACE } = process.env;
+
+            const attrs = await sqs.send(new GetQueueAttributesCommand({
+              QueueUrl: QUEUE_URL,
+              AttributeNames: ['ApproximateNumberOfMessages', 'ApproximateAgeOfOldestMessage'],
+            }));
+            const visible = Number(attrs.Attributes?.ApproximateNumberOfMessages ?? 0);
+            const oldestAge = Number(attrs.Attributes?.ApproximateAgeOfOldestMessage ?? 0);
+
+            const svc = await ecs.send(new DescribeServicesCommand({
+              cluster: CLUSTER_NAME, services: [SERVICE_NAME],
+            }));
+            // runningCount can briefly be 0 during a deployment; clamping to 1
+            // keeps the ratio finite and avoids a divide-by-zero scale storm.
+            const running = Math.max(svc.services?.[0]?.runningCount ?? 0, 1);
+            const backlogPerTask = visible / running;
+
+            const timestamp = new Date();
+            const dims = [{ Name: 'ServiceName', Value: SERVICE_NAME }];
+            await cw.send(new PutMetricDataCommand({
+              Namespace: METRIC_NAMESPACE,
+              MetricData: [
+                { MetricName: 'BacklogPerTask', Value: backlogPerTask, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
+                { MetricName: 'AnalysisQueueVisible', Value: visible, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
+                { MetricName: 'AnalysisQueueOldestAgeSeconds', Value: oldestAge, Unit: 'Seconds', Timestamp: timestamp, Dimensions: dims },
+                { MetricName: 'RunningTaskCount', Value: running, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
+              ],
+            }));
+
+            console.log(JSON.stringify({ visible, running, backlogPerTask, oldestAge }));
+            return { visible, running, backlogPerTask, oldestAge };
+          };
+      Tags:
+        - { Key: Project, Value: SIT314-Transport-IoT }
+        - { Key: Owner, Value: !Ref Owner }
+
+  # One invocation per minute is the finest granularity EventBridge offers and
+  # is well inside the Lambda free tier (about 43,200 invocations per month).
+  BacklogScheduleRule:
+    Type: AWS::Events::Rule
+    Condition: UseBacklogPerTask
+    Properties:
+      Name: !Sub '${ResourcePrefix}-backlog-metric-schedule'
+      Description: Publishes BacklogPerTask every minute for autoscaling.
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+        - Id: BacklogMetricFunction
+          Arn: !GetAtt BacklogMetricFunction.Arn
+
+  BacklogSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Condition: UseBacklogPerTask
+    Properties:
+      FunctionName: !GetAtt BacklogMetricFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt BacklogScheduleRule.Arn
+
+  # ---- an alarm that makes DLQ arrivals impossible to miss ----------------
+  AnalysisDlqAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ResourcePrefix}-analysis-dlq-not-empty'
+      AlarmDescription: >
+        Valid workload must never reach the dead-letter queue during normal
+        load. Any message here is a reliability finding for the report.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !Sub '${ResourcePrefix}-analysis-dlq'
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  ScalableTargetId:
+    Value: !Ref RouteImpactScalableTarget
+  ScalingMode:
+    Value: !Ref ScalingMode
+  MinTasks:
+    Value: !Ref MinTasks
+  MaxTasks:
+    Value: !Ref MaxTasks
+  TargetValue:
+    Value: !If [UseBacklogPerTask, !Ref TargetBacklogPerTask, !Ref TargetQueueDepth]
+  BacklogMetricFunctionName:
+    Condition: UseBacklogPerTask
+    Value: !Ref BacklogMetricFunction

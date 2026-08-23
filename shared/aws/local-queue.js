@@ -50,6 +50,12 @@ export class LocalQueue {
     this.dlqName = options.dlqName ?? null;
     this.maxReceiveCount = options.maxReceiveCount ?? 3;
     this.visibilityTimeoutSeconds = options.visibilityTimeoutSeconds ?? 30;
+    // Nothing can become visible again sooner than the visibility timeout, so
+    // reaping more often than half of it cannot find anything new. Capped at
+    // one second so redelivery still feels prompt.
+    this.reapIntervalMs = options.reapIntervalMs
+      ?? Math.min(1000, Math.max(0, (this.visibilityTimeoutSeconds * 1000) / 2));
+    this._lastReapAt = 0;
     fs.mkdirSync(this.pendingDir, { recursive: true });
     fs.mkdirSync(this.inflightDir, { recursive: true });
   }
@@ -111,7 +117,21 @@ export class LocalQueue {
    * have been received more than `maxReceiveCount` times. This is the local
    * equivalent of the SQS redrive policy.
    */
-  async reapExpired() {
+  /**
+   * @param {boolean} force reap even if one ran very recently.
+   *
+   * Reaping reads every in-flight record, so running it on every poll of every
+   * consumer is pure overhead that grows with the number of workers. There is
+   * never any need to reap more often than half the visibility timeout, since
+   * nothing can expire faster than that - see `reapIntervalMs`.
+   */
+  async reapExpired(force = false) {
+    const now0 = Date.now();
+    if (!force && this._lastReapAt && now0 - this._lastReapAt < this.reapIntervalMs) {
+      return { requeued: 0, deadLettered: 0, skipped: true };
+    }
+    this._lastReapAt = now0;
+
     let requeued = 0;
     let deadLettered = 0;
     let files;
@@ -188,8 +208,29 @@ export class LocalQueue {
     } catch {
       return [];
     }
+
+    // Contention control. Real SQS hands each consumer a different set of
+    // messages; a shared directory does not. Without this, N concurrent
+    // consumers all scan from the head of the queue, race for the same few
+    // files, and N-1 of them lose every race - which made adding workers
+    // REDUCE throughput. Two adjustments fix it while keeping delivery
+    // approximately FIFO:
+    //   1. only consider a bounded window at the head of the queue, so the
+    //      per-poll cost does not grow with a backlog of thousands, and
+    //      SQS itself only guarantees approximate ordering anyway;
+    //   2. start each consumer at a random offset inside that window, so
+    //      concurrent consumers mostly claim different messages.
+    const windowSize = Math.max(maxMessages * 8, 64);
+    const window = files.slice(0, windowSize);
+    const offset = window.length > maxMessages
+      ? Math.floor(Math.random() * window.length)
+      : 0;
+    const ordered = offset === 0
+      ? window
+      : [...window.slice(offset), ...window.slice(0, offset)];
+
     const claimed = [];
-    for (const file of files) {
+    for (const file of ordered) {
       if (claimed.length >= maxMessages) break;
       const src = path.join(this.pendingDir, file);
       let record;
@@ -248,6 +289,13 @@ export class LocalQueue {
     const full = this.#inflightPath(receiptHandle);
     try {
       const record = JSON.parse(await fsp.readFile(full, 'utf8'));
+      if (timeoutSeconds <= 0) {
+        // Release it now rather than waiting for the next reap, matching the
+        // SQS behaviour where a zero visibility timeout is immediate.
+        await this.#requeue(record);
+        await fsp.rm(full).catch(() => {});
+        return true;
+      }
       record.visibleAt = Date.now() + timeoutSeconds * 1000;
       await fsp.writeFile(full, JSON.stringify(record), 'utf8');
       return true;

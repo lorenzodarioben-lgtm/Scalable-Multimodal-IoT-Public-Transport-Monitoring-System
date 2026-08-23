@@ -6,5 +6,10 @@
   "main": "src/index.js",
   "dependencies": {
     "@sit314/shared": "*"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./worker": "./src/worker.js",
+    "./eta": "./src/eta.js"
   }
 }
