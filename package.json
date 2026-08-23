@@ -15,7 +15,7 @@
     "services/notification-worker"
   ],
   "scripts": {
-    "test": "node --test --test-reporter=spec \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\"",
+    "test": "node --test --test-reporter=spec \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\" \"infrastructure/test/*.test.js\" \"experiments/test/*.test.js\"",
     "test:all": "npm run test",
     "simulate": "node simulator/src/cli.js",
     "broker": "node scripts/local-broker.js",
@@ -31,7 +31,7 @@
     "demo:local": "node scripts/demo-local.js",
     "demo:checkpoint": "node scripts/demo-checkpoint.js",
     "evidence": "node scripts/evidence.js",
-    "test:tap": "node --test \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\"",
+    "test:tap": "node --test \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\" \"infrastructure/test/*.test.js\" \"experiments/test/*.test.js\"",
     "flows:build": "node node-red/build-flows.js",
     "flows:check": "node node-red/build-flows.js --check",
     "node-red": "node-red --settings node-red/settings.cjs --userDir node-red/data",
@@ -47,6 +47,7 @@
     "mqtt": "^5.10.1"
   },
   "devDependencies": {
-    "node-red": "^5.0.6"
+    "node-red": "^5.0.6",
+    "yaml": "^2.9.0"
   }
 }

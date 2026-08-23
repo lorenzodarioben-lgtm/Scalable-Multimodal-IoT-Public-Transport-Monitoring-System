@@ -1,0 +1,20 @@
+{
+  "name": "telemetry-growth-stage-6",
+  "description": "250 vehicles reporting every 2s (~145 events/s). Mix is 60% bus, 25% tram, 15% train.",
+  "type": "telemetry-growth",
+  "expectedEventsPerSecond": 145,
+  "simulator": {
+    "buses": 150,
+    "trams": 63,
+    "trains": 37,
+    "locations": 40,
+    "intervalMs": 2000,
+    "durationMs": 600000,
+    "seed": 3142026,
+    "scenario": "normal",
+    "target": "mqtt",
+    "quiet": true,
+    "printEveryNth": 50,
+    "summaryIntervalMs": 15000
+  }
+}

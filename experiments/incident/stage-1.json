@@ -1,0 +1,40 @@
+{
+  "name": "incident-stage-1",
+  "description": "Stage 1 - bus breakdown affecting 5 bus stops. 50 analysis jobs and 200 notifications per incident.",
+  "type": "incident",
+  "seed": 3142026,
+  "incident": {
+    "scenario": "bus-breakdown",
+    "transportMode": "bus",
+    "reason": "breakdown",
+    "severity": "high",
+    "vehicleId": "BUS-007",
+    "routeId": "703",
+    "affectedLocations": 5,
+    "jobsPerIncident": 50,
+    "notificationsPerIncident": 200
+  },
+  "arrival": {
+    "mode": "sustained",
+    "incidentIntervalSeconds": 10
+  },
+  "durationSeconds": 600,
+  "warmupSeconds": 30,
+  "worker": {
+    "mode": "fixed",
+    "fixedTasks": 1,
+    "minTasks": 1,
+    "maxTasks": 5,
+    "concurrency": 4,
+    "processingDelayMs": 50,
+    "targetBacklogPerTask": 75,
+    "evaluationIntervalMs": 10000,
+    "scaleOutCooldownSeconds": 30,
+    "scaleInCooldownSeconds": 60
+  },
+  "sla": {
+    "p95LatencyMs": 5000,
+    "oldestMessageAgeSeconds": 10,
+    "finalWindowSeconds": 300
+  }
+}

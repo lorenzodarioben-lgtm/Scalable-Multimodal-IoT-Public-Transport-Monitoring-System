@@ -1,0 +1,40 @@
+{
+  "name": "incident-stage-3",
+  "description": "Stage 3 - train cancellation affecting 20 stations and selected connections. 750 analysis jobs and 5000 notifications per incident.",
+  "type": "incident",
+  "seed": 3142026,
+  "incident": {
+    "scenario": "train-cancellation",
+    "transportMode": "train",
+    "reason": "cancelled",
+    "severity": "critical",
+    "vehicleId": "TRAIN-002",
+    "routeId": "BELGRAVE",
+    "affectedLocations": 20,
+    "jobsPerIncident": 750,
+    "notificationsPerIncident": 5000
+  },
+  "arrival": {
+    "mode": "sustained",
+    "incidentIntervalSeconds": 10
+  },
+  "durationSeconds": 600,
+  "warmupSeconds": 30,
+  "worker": {
+    "mode": "fixed",
+    "fixedTasks": 1,
+    "minTasks": 1,
+    "maxTasks": 5,
+    "concurrency": 4,
+    "processingDelayMs": 50,
+    "targetBacklogPerTask": 75,
+    "evaluationIntervalMs": 10000,
+    "scaleOutCooldownSeconds": 30,
+    "scaleInCooldownSeconds": 60
+  },
+  "sla": {
+    "p95LatencyMs": 5000,
+    "oldestMessageAgeSeconds": 10,
+    "finalWindowSeconds": 300
+  }
+}

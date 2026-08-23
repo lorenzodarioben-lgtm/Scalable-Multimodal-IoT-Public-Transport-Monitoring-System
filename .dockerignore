@@ -1,0 +1,22 @@
+# Never copy secrets or local state into an image.
+.env
+.env.*
+certs/
+*.pem
+*.key
+*.crt
+credentials*
+
+# Build/runtime noise
+node_modules/
+**/node_modules/
+.git/
+.gitignore
+artifacts/
+local-data/
+evidence/
+node-red/data/
+docs/
+*.log
+.vscode/
+.idea/

@@ -78,7 +78,7 @@ test('redrive policy moves a repeatedly failing message to the DLQ', async () =>
     await q.receiveMessages({ waitTimeSeconds: 0, visibilityTimeoutSeconds: 0 });
     await sleep(10);
   }
-  const result = await q.reapExpired();
+  const result = await q.reapExpired(true);
   assert.equal(result.deadLettered, 1, 'message should have been dead-lettered');
 
   const dlq = new LocalQueue('poison-queue-dlq', { baseDir: dir, dlqName: null });
