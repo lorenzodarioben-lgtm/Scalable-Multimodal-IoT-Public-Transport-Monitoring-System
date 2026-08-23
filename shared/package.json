@@ -12,7 +12,8 @@
     "./queues": "./aws/queues.js",
     "./store": "./aws/store.js",
     "./metrics": "./aws/metrics.js",
-    "./util": "./util/index.js"
+    "./util": "./util/index.js",
+    "./worker": "./worker/index.js"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.1125.0",
