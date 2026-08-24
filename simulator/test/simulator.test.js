@@ -19,9 +19,16 @@ function capturingPublisher() {
   return { publisher, captured };
 }
 
+// The run is bounded by --max-events rather than by --duration-ms so the tests
+// are not wall-clock dependent. A duration-bounded run completes however many
+// ticks fit in the elapsed time, which varies when the test files run in
+// parallel and the machine is loaded; that made the determinism assertions
+// flaky. 15 entities per tick (6+3+2 vehicles + 4 demand locations) x 5 ticks
+// = 75 events, and the generous duration never becomes the binding constraint.
 const baseCfg = {
   buses: 6, trams: 3, trains: 2, locations: 4,
-  'interval-ms': 50, 'duration-ms': 260, 'summary-interval-ms': 100000, quiet: true,
+  'interval-ms': 50, 'duration-ms': 5000, 'max-events': 75,
+  'summary-interval-ms': 100000, quiet: true,
 };
 
 async function runOnce(overrides = {}) {
