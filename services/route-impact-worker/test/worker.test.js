@@ -237,20 +237,26 @@ test('an invalid job is rejected as non-retryable', async () => {
 });
 
 test('the configurable processing cost is off by default and applied when set', async () => {
+  // "Off by default" is asserted structurally rather than by timing. Comparing
+  // an un-delayed run against a delayed one is unreliable when the test files
+  // run in parallel, because scheduling delay on the baseline can exceed the
+  // injected delay itself.
   const off = harness();
-  const t0 = Date.now();
+  assert.equal(off.worker.settings.processingDelayMs, 0);
+  assert.equal(off.worker.settings.processingCpuIterations, 0);
   await off.worker.handle(job({ jobId: 'job-fast-00001' }));
-  const fastMs = Date.now() - t0;
   off.cleanup();
 
+  // The delayed direction is safe to assert on the clock: an injected sleep can
+  // only ever make the run slower, never faster.
   const on = harness({ worker: { settings: { processingDelayMs: 60 } } });
   const t1 = Date.now();
   const outcome = await on.worker.handle(job({ jobId: 'job-slow-00001' }));
   const slowMs = Date.now() - t1;
   on.cleanup();
 
+  assert.equal(on.worker.settings.processingDelayMs, 60);
   assert.ok(slowMs >= 55, `expected the injected cost to apply, took ${slowMs}ms`);
-  assert.ok(slowMs > fastMs);
   // The test parameter must not change the calculated answer.
   assert.equal(
     outcome.result.etaMinutes,
