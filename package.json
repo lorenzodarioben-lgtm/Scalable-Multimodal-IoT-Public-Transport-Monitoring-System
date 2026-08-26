@@ -30,6 +30,7 @@
     "verify-env": "node scripts/verify-env.js",
     "demo:local": "node scripts/demo-local.js",
     "demo:checkpoint": "node scripts/demo-checkpoint.js",
+    "demo:reliability": "node scripts/demo-reliability.js",
     "evidence": "node scripts/evidence.js",
     "test:tap": "node --test \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\" \"infrastructure/test/*.test.js\" \"experiments/test/*.test.js\"",
     "flows:build": "node node-red/build-flows.js",
