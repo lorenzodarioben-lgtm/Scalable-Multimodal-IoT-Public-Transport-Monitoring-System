@@ -30,6 +30,8 @@ Parameters:
   ExistingIotRuleRoleArn:
     Type: String
     Default: ''
+    AllowedPattern: '^$|^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$'
+    ConstraintDescription: Must be empty or a valid IAM role ARN.
     Description: >
       OPTIONAL. ARN of an existing role the IoT rule may assume to write to SQS.
       Supply this in restricted accounts (for example AWS Academy) where

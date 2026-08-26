@@ -44,6 +44,8 @@ Parameters:
   ExistingExecutionRoleArn:
     Type: String
     Default: ''
+    AllowedPattern: '^$|^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$'
+    ConstraintDescription: Must be empty or a valid IAM role ARN.
     Description: >
       OPTIONAL. Existing task EXECUTION role (pulls images, writes logs). Supply
       this in restricted accounts such as AWS Academy where iam:CreateRole is
@@ -51,6 +53,8 @@ Parameters:
   ExistingTaskRoleArn:
     Type: String
     Default: ''
+    AllowedPattern: '^$|^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$'
+    ConstraintDescription: Must be empty or a valid IAM role ARN.
     Description: >
       OPTIONAL. Existing task role granting the application its SQS/DynamoDB/
       CloudWatch permissions. Leave empty to create a least-privilege role.
@@ -168,16 +172,18 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
+              # SQS has no separate IAM actions for the batch APIs:
+              # SendMessageBatch is authorised by sqs:SendMessage and
+              # DeleteMessageBatch by sqs:DeleteMessage. Listing the batch
+              # names would grant nothing, so only the real actions appear here.
               - Effect: Allow
                 Action:
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
-                  - sqs:DeleteMessageBatch
                   - sqs:ChangeMessageVisibility
                   - sqs:GetQueueAttributes
                   - sqs:GetQueueUrl
                   - sqs:SendMessage
-                  - sqs:SendMessageBatch
                 Resource:
                   - Fn::ImportValue: !Sub '${QueuesStackName}-TelemetryQueueArn'
                   - Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueArn'

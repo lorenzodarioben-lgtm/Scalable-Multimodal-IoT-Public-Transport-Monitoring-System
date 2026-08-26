@@ -33,6 +33,7 @@
     "demo:reliability": "node scripts/demo-reliability.js",
     "evidence": "node scripts/evidence.js",
     "test:tap": "node --test \"shared/test/*.test.js\" \"simulator/test/*.test.js\" \"node-red/test/*.test.js\" \"services/*/test/*.test.js\" \"infrastructure/test/*.test.js\" \"experiments/test/*.test.js\"",
+    "lint:infra": "cfn-lint infrastructure/cloudformation/*.yaml",
     "flows:build": "node node-red/build-flows.js",
     "flows:check": "node node-red/build-flows.js --check",
     "node-red": "node-red --settings node-red/settings.cjs --userDir node-red/data",
