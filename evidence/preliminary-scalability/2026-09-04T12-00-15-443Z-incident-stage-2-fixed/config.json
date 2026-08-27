@@ -1,0 +1,44 @@
+{
+  "name": "incident-stage-2",
+  "description": "Stage 2 - tram track blockage affecting 15 tram stops / track segments. 250 analysis jobs and 1000 notifications per incident.",
+  "type": "incident",
+  "seed": 3142026,
+  "incident": {
+    "scenario": "tram-blockage",
+    "transportMode": "tram",
+    "reason": "blocked",
+    "severity": "high",
+    "vehicleId": "TRAM-003",
+    "routeId": "75",
+    "affectedLocations": 15,
+    "jobsPerIncident": 250,
+    "notificationsPerIncident": 1000
+  },
+  "arrival": {
+    "mode": "sustained",
+    "incidentIntervalSeconds": 10,
+    "incidents": 3
+  },
+  "durationSeconds": 600,
+  "warmupSeconds": 10,
+  "worker": {
+    "mode": "fixed",
+    "fixedTasks": 1,
+    "minTasks": 1,
+    "maxTasks": 5,
+    "concurrency": 4,
+    "processingDelayMs": 50,
+    "targetBacklogPerTask": 75,
+    "evaluationIntervalMs": 10000,
+    "scaleOutCooldownSeconds": 30,
+    "scaleInCooldownSeconds": 60,
+    "processingCpuIterations": 15000000
+  },
+  "sla": {
+    "p95LatencyMs": 5000,
+    "oldestMessageAgeSeconds": 10,
+    "finalWindowSeconds": 300
+  },
+  "label": "local-preliminary-stage2-fixed-countbound",
+  "resolvedFrom": "experiments\\incident\\stage-2.json"
+}

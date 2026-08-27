@@ -71,6 +71,9 @@ export function resolveStage(config, args) {
   if (args['incident-interval-seconds']) {
     stage.arrival.incidentIntervalSeconds = Number(args['incident-interval-seconds']);
   }
+  // Bound injection by incident COUNT instead of by elapsed time. Use this for
+  // any fixed-vs-autoscale comparison so both arms inject an identical workload.
+  if (args.incidents) stage.arrival.incidents = Number(args.incidents);
   if (args.seed) stage.seed = Number(args.seed);
   if (args.label) stage.label = args.label;
   return stage;
@@ -263,14 +266,37 @@ async function main() {
   })();
 
   // ---- inject the workload ---------------------------------------------
+  //
+  // Two ways to bound injection:
+  //
+  //   time-bounded  (default)  inject for warmup+duration seconds
+  //   count-bounded (--incidents N) inject exactly N incidents
+  //
+  // Count-bounded exists because a time-bounded run does NOT guarantee both
+  // arms of an A/B comparison receive the same workload. Enqueuing an incident
+  // is itself work, and it slows down when several workers are competing for
+  // the same queue, so the autoscaled arm can fit fewer incidents into the same
+  // wall-clock window than the fixed arm. That was observed directly: a
+  // time-bounded stage 2 injected 1500 jobs with one worker but only 750 with
+  // five. Comparing those two runs would be meaningless. Use --incidents for
+  // any fixed-vs-autoscale comparison; the time bound is fine for a single
+  // soak run where only the arrival RATE matters.
   const totalSeconds = stage.warmupSeconds + stage.durationSeconds;
   const endAt = runStart + totalSeconds * 1000;
+  const targetIncidents = stage.arrival.incidents ?? null;
   let incidentSequence = 0;
   const injectionErrors = [];
 
-  process.stdout.write(`[EXPERIMENT] warm-up ${stage.warmupSeconds}s, then measuring for ${stage.durationSeconds}s\n\n`);
+  const stillInjecting = () => (targetIncidents !== null
+    ? incidentSequence < targetIncidents
+    : Date.now() < endAt);
 
-  while (Date.now() < endAt) {
+  process.stdout.write(targetIncidents !== null
+    ? `[EXPERIMENT] warm-up ${stage.warmupSeconds}s, then injecting exactly `
+      + `${targetIncidents} incidents (${targetIncidents * stage.incident.jobsPerIncident} jobs)\n\n`
+    : `[EXPERIMENT] warm-up ${stage.warmupSeconds}s, then measuring for ${stage.durationSeconds}s\n\n`);
+
+  while (stillInjecting()) {
     const cycleStart = Date.now();
     incidentSequence += 1;
     const jobs = generateIncidentJobs(stage.incident, incidentSequence, runId);
@@ -286,7 +312,11 @@ async function main() {
       injectionErrors.push(err.message);
     }
     const wait = Math.max(0, intervalSeconds * 1000 - (Date.now() - cycleStart));
-    await sleep(Math.min(wait, Math.max(0, endAt - Date.now())));
+    // A count-bounded run always waits the full interval, so the arrival rate
+    // stays as configured; only a time-bounded run is cut short by the deadline.
+    await sleep(targetIncidents !== null
+      ? wait
+      : Math.min(wait, Math.max(0, endAt - Date.now())));
   }
 
   const injectionEndSeconds = round((Date.now() - runStart) / 1000, 1);
