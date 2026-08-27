@@ -72,7 +72,7 @@ Set these once at the start of the session:
 ```powershell
 $env:AWS_REGION = "us-east-1"          # or the region your lab provides
 $Prefix         = "sit314-transport"
-$LabRole        = ""                   # e.g. "arn:aws:iam::123456789012:role/LabRole"
+$LabRole        = ""                   # e.g. "arn:aws:iam::<account-id>:role/LabRole"
 ```
 
 Leave `$LabRole` empty if the account allows role creation. In AWS Academy it

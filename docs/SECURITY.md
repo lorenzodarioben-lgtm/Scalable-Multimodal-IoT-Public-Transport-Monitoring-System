@@ -182,6 +182,43 @@ Uncontrolled spend is a real risk on a student account:
   stacks it will delete, and requires the operator to type `DELETE`. It deletes
   only stacks named `<prefix>-*` and never enumerates account resources by type.
 
+## Dependency audit
+
+Run against the tree that actually ships in the ECS worker images:
+
+```bash
+npm audit --omit=dev
+```
+
+**Result: 0 vulnerabilities.** The production dependency surface is small on
+purpose — `ajv` plus the AWS SDK v3 clients, and `mqtt` for the simulator.
+
+The full tree including development tooling reports 10 moderate advisories and no
+high or critical ones:
+
+```bash
+npm audit
+```
+
+Every one of those traces back to two development-only packages:
+
+| Root | Why it is present | Advisories |
+|---|---|---|
+| `aedes` | Local MQTT broker, the development stand-in for AWS IoT Core | `hyperid` → `uuid` buffer bounds check |
+| `node-red` | The flow editor, run locally | `express`/`body-parser`/`qs` DoS and array-limit bypass |
+
+Neither is deployed. `aedes` was previously declared in the root `dependencies`,
+which meant `npm ci --omit=dev` inside the service Dockerfiles installed it into
+the deployed images even though nothing there imports it. It is now a
+`devDependency`, so the worker images no longer carry it or its transitive
+advisories. `node-red/Dockerfile.broker` installs dev dependencies deliberately,
+because that image *is* the local broker and is never pushed to ECR.
+
+These advisories are **not** being fixed by forcing upgrades. `npm audit fix
+--force` would install `aedes@1.1.2`, a breaking major change to a local
+development convenience, for no benefit to the deployed system. Reassessing this
+is only worthwhile if aedes or Node-RED ever move into a deployed path.
+
 ## Checklist before submitting
 
 ```bash

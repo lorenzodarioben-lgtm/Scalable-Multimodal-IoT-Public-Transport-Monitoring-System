@@ -8,7 +8,10 @@ COPY simulator/package.json ./simulator/
 COPY services/telemetry-processor/package.json ./services/telemetry-processor/
 COPY services/route-impact-worker/package.json ./services/route-impact-worker/
 COPY services/notification-worker/package.json ./services/notification-worker/
-RUN npm ci --omit=dev --ignore-scripts
+# Dev dependencies ARE installed here, unlike the service images. The broker is
+# aedes, which is a development-only stand-in for AWS IoT Core and therefore
+# lives in devDependencies so it never enters a deployed worker image.
+RUN npm ci --ignore-scripts
 COPY schemas ./schemas
 COPY shared ./shared
 COPY scripts ./scripts
