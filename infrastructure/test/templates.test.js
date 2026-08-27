@@ -179,3 +179,73 @@ test('every template tags its resources for the project', () => {
     assert.match(text, /SIT314-Transport-IoT/, `${name}: resources must carry the project tag`);
   }
 });
+
+// ---------------------------------------------------------------- deployability
+
+test('every template Description is within the CloudFormation 1024-char limit', () => {
+  // A longer Description is rejected at create-stack time, so this is a deploy
+  // blocker rather than a style issue.
+  for (const [name, doc] of Object.entries(templates)) {
+    const length = String(doc.Description ?? '').length;
+    assert.ok(length <= 1024, `${name}: Description is ${length} chars, limit is 1024`);
+  }
+});
+
+/** Walks a parsed template collecting every Fn::ImportValue string. */
+function collectImports(node, found = []) {
+  if (Array.isArray(node)) {
+    for (const item of node) collectImports(item, found);
+  } else if (node && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'Fn::ImportValue' && typeof value === 'string') found.push(value);
+      else collectImports(value, found);
+    }
+  }
+  return found;
+}
+
+/** Export names declared by a template, as `${AWS::StackName}-<suffix>` suffixes. */
+function collectExports(doc) {
+  const suffixes = new Set();
+  for (const output of Object.values(doc.Outputs || {})) {
+    const name = output?.Export?.Name;
+    if (typeof name !== 'string') continue;
+    const match = name.match(/^\$\{AWS::StackName\}-(.+)$/);
+    if (match) suffixes.add(match[1]);
+  }
+  return suffixes;
+}
+
+test('every cross-stack import is matched by an export in the producing stack', () => {
+  // The stacks are deployed in dependency order and pass values by export name.
+  // A typo here only surfaces as a failed create-stack, so it is checked here.
+  const producedBy = {
+    QueuesStackName: 'queues.yaml',
+    TablesStackName: 'dynamodb.yaml',
+    EcsStackName: 'ecs.yaml',
+  };
+  const exportsByTemplate = Object.fromEntries(
+    Object.entries(templates).map(([name, doc]) => [name, collectExports(doc)]),
+  );
+
+  let checked = 0;
+  for (const [name, doc] of Object.entries(templates)) {
+    for (const imported of collectImports(doc)) {
+      const match = imported.match(/^\$\{(\w+)\}-(.+)$/);
+      assert.ok(match, `${name}: import "${imported}" is not of the form \${StackNameParam}-Suffix`);
+      const [, param, suffix] = match;
+      const source = producedBy[param];
+      assert.ok(source, `${name}: import uses unknown stack parameter ${param}`);
+      assert.ok(
+        doc.Parameters?.[param],
+        `${name}: imports \${${param}} but does not declare it as a parameter`,
+      );
+      assert.ok(
+        exportsByTemplate[source].has(suffix),
+        `${name}: imports ${suffix} from ${param}, but ${source} does not export it`,
+      );
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 10, `expected the stacks to be linked by imports, found ${checked}`);
+});

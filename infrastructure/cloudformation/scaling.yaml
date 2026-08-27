@@ -1,28 +1,44 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >
+# CloudFormation caps Description at 1024 characters, so the full explanation
+# lives here as comments and the Description itself stays short.
+#
+# WHAT "BACKLOG PER TASK" MEANS
+# Queue depth on its own is not a scaling signal: 400 queued jobs is a crisis
+# for one worker and routine for five. The meaningful quantity is how much work
+# each running task is responsible for:
+#
+#     BacklogPerTask = ApproximateNumberOfMessagesVisible / max(RunningTaskCount, 1)
+#
+# Target tracking then keeps that ratio near a target (default 75 jobs per
+# task). Backlog rises -> ratio rises -> more tasks start -> the ratio falls
+# because the same backlog is divided by more workers -> the queue drains ->
+# the ratio falls below target -> the service scales back toward one task.
+#
+# SQS does not publish this ratio, so a small scheduled Lambda computes it from
+# the queue attributes and the ECS running task count and publishes it as a
+# custom CloudWatch metric.
+#
+# If Lambda creation is blocked by account permissions, set ScalingMode to
+# QueueDepth. That fallback tracks raw queue depth instead, which is a weaker
+# signal - it is NOT backlog per task and the report must say so. See
+# docs/IMPLEMENTATION_DECISIONS.md.
+Description: >-
   SIT314 multimodal transport monitoring - Application Auto Scaling for the
-  route-impact / ETA ECS service (min 1, max 5).
+  route-impact / ETA ECS service (min 1, max 5), driven by a custom
+  BacklogPerTask CloudWatch metric with a QueueDepth fallback.
 
-  WHAT "BACKLOG PER TASK" MEANS
-  Queue depth on its own is not a scaling signal: 400 queued jobs is a crisis
-  for one worker and routine for five. The meaningful quantity is how much work
-  each running task is responsible for:
-
-      BacklogPerTask = ApproximateNumberOfMessagesVisible / max(RunningTaskCount, 1)
-
-  Target tracking then keeps that ratio near a target (default 75 jobs per
-  task). Backlog rises -> ratio rises -> more tasks start -> the ratio falls
-  because the same backlog is divided by more workers -> the queue drains ->
-  the ratio falls below target -> the service scales back toward one task.
-
-  SQS does not publish this ratio, so a small scheduled Lambda computes it from
-  the queue attributes and the ECS running task count and publishes it as a
-  custom CloudWatch metric.
-
-  If Lambda creation is blocked by account permissions, set ScalingMode to
-  QueueDepth. That fallback tracks raw queue depth instead, which is a weaker
-  signal - it is NOT backlog per task and the report must say so. See
-  docs/IMPLEMENTATION_DECISIONS.md.
+Metadata:
+  # W1030 is a false positive here. It reports that ExistingLambdaRoleArn's
+  # default ('') is not a valid role ARN where it is used in
+  # BacklogMetricFunction.Role, but that Fn::If branch is unreachable when the
+  # parameter is empty: CreateLambdaRole is true exactly when the parameter IS
+  # empty, so the !Ref branch is only taken with a real ARN. The parameter's
+  # AllowedPattern ("empty, or a valid IAM role ARN") is the actual safeguard
+  # and is enforced by CloudFormation at deploy time.
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W1030
 
 Parameters:
   ResourcePrefix:
@@ -75,6 +91,8 @@ Parameters:
   ExistingLambdaRoleArn:
     Type: String
     Default: ''
+    AllowedPattern: '^$|^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$'
+    ConstraintDescription: Must be empty or a valid IAM role ARN.
     Description: >
       OPTIONAL. Existing role for the metric Lambda (for example an AWS Academy
       LabRole). Leave empty to create a least-privilege role.
@@ -191,7 +209,7 @@ Resources:
     Condition: UseBacklogPerTask
     Properties:
       FunctionName: !Sub '${ResourcePrefix}-backlog-metric'
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       Handler: index.handler
       Timeout: 20
       MemorySize: 128
@@ -212,7 +230,7 @@ Resources:
         ZipFile: |
           // Publishes BacklogPerTask for the route-impact service.
           // BacklogPerTask = visible analysis jobs / max(running tasks, 1)
-          // The AWS SDK v3 is provided by the nodejs20.x runtime.
+          // The AWS SDK v3 is provided by the nodejs22.x runtime.
           const { SQSClient, GetQueueAttributesCommand } = require('@aws-sdk/client-sqs');
           const { ECSClient, DescribeServicesCommand } = require('@aws-sdk/client-ecs');
           const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
@@ -257,6 +275,7 @@ Resources:
       Tags:
         - { Key: Project, Value: SIT314-Transport-IoT }
         - { Key: Owner, Value: !Ref Owner }
+        - { Key: Environment, Value: !Ref Environment }
 
   # One invocation per minute is the finest granularity EventBridge offers and
   # is well inside the Lambda free tier (about 43,200 invocations per month).
