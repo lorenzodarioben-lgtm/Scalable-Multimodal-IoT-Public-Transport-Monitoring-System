@@ -55,6 +55,237 @@ aws ecs update-service --cluster sit314-transport-cluster \
   --service sit314-transport-route-impact --desired-count 0
 ```
 
+## Live session runbook (PowerShell)
+
+The sections after this one explain each stack in detail. **This runbook is the
+short version**: sixteen numbered steps to execute in one deliberate AWS session,
+each with the verification that must actually be read before moving on. AWS
+Academy credit is limited, so the goal is to spend as little live time as
+possible.
+
+Nothing in this runbook has been executed — the project has never contacted AWS.
+Treat each verification as a gate: if the output is not what the step says to
+expect, stop and diagnose rather than continuing.
+
+Set these once at the start of the session:
+
+```powershell
+$env:AWS_REGION = "us-east-1"          # or the region your lab provides
+$Prefix         = "sit314-transport"
+$LabRole        = ""                   # e.g. "arn:aws:iam::123456789012:role/LabRole"
+```
+
+Leave `$LabRole` empty if the account allows role creation. In AWS Academy it
+usually does not — fill it in and pass it to every `-Existing*RoleArn`.
+
+### 1. Identity check
+
+```powershell
+aws sts get-caller-identity
+```
+
+Expect an Account, UserId and Arn. **Do not paste this output into the repository**
+— the account id must not be committed.
+
+### 2. Region verification
+
+```powershell
+aws configure get region
+$env:AWS_REGION
+```
+
+Both should agree. If `aws configure get region` is empty the CLI falls back to
+`$env:AWS_REGION`, so make sure that is set.
+
+### 3. Deploy the queues
+
+```powershell
+./infrastructure/scripts/deploy.ps1 -Stacks queues -Prefix $Prefix
+```
+
+### 4. Verify the queues
+
+```powershell
+aws sqs list-queues --queue-name-prefix $Prefix
+aws sqs get-queue-attributes --attribute-names All --queue-url (aws sqs get-queue-url --queue-name "$Prefix-analysis" --output text)
+```
+
+Expect six queues (three working, three DLQ) and a `RedrivePolicy` on the analysis
+queue naming `$Prefix-analysis-dlq` with a finite `maxReceiveCount`.
+
+### 5. Deploy the tables
+
+```powershell
+./infrastructure/scripts/deploy.ps1 -Stacks tables -Prefix $Prefix
+```
+
+### 6. Verify the tables
+
+```powershell
+aws dynamodb list-tables
+aws dynamodb describe-table --table-name "$Prefix-current-state" --query "Table.{Status:TableStatus,Keys:KeySchema,Billing:BillingModeSummary.BillingMode}"
+```
+
+Expect four tables, `ACTIVE`, `PAY_PER_REQUEST`, and `entityId` as the single
+partition key.
+
+### 7. IoT integration
+
+```powershell
+aws iot describe-endpoint --endpoint-type iot:Data-ATS
+```
+
+Put the returned endpoint in `.env` as `AWS_IOT_ENDPOINT`, create the certificate
+and policy (see the AWS IoT Core section below), then deploy the rule:
+
+```powershell
+./infrastructure/scripts/deploy.ps1 -Stacks iot-rule -Prefix $Prefix -ExistingIotRuleRoleArn $LabRole
+```
+
+Verify ingestion — subscribe to `transport/raw/#` in the IoT MQTT test client, then:
+
+```powershell
+$env:MQTT_MODE = "aws"
+npm run simulate -- --buses 3 --trams 2 --trains 1 --locations 2 --duration-seconds 20 --target mqtt
+```
+
+Expect messages in the test client. Then confirm the rule is delivering, with
+Node-RED pointed at AWS IoT Core:
+
+```powershell
+aws sqs get-queue-attributes --attribute-names ApproximateNumberOfMessages --queue-url (aws sqs get-queue-url --queue-name "$Prefix-telemetry" --output text)
+```
+
+Expect a non-zero depth.
+
+### 8. Docker build
+
+Docker Desktop must already be running — see the blocker note in `HANDOFF.md`.
+
+```powershell
+docker info --format "{{.ServerVersion}}"
+docker build -f services/route-impact-worker/Dockerfile -t "$Prefix-route-impact-worker" .
+```
+
+Confirm no secret entered the image:
+
+```powershell
+docker run --rm "$Prefix-route-impact-worker" sh -c "ls -a /app | grep -E '(^|/)\.env$|(^|/)certs$' || echo CLEAN"
+```
+
+Expect `CLEAN`.
+
+### 9. ECR push
+
+```powershell
+./infrastructure/scripts/build-and-push.ps1 -Services route-impact-worker -Prefix $Prefix
+aws ecr describe-images --repository-name "$Prefix-route-impact-worker" --query "imageDetails[].imageTags"
+```
+
+Expect the `latest` tag. Record the image URI for the next step.
+
+### 10. ECS deployment
+
+```powershell
+$Image   = "<accountid>.dkr.ecr.$env:AWS_REGION.amazonaws.com/$Prefix-route-impact-worker:latest"
+$Vpc     = aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text
+$Subnets = (aws ec2 describe-subnets --filters "Name=vpc-id,Values=$Vpc" --query "Subnets[].SubnetId" --output text) -split "\s+"
+
+./infrastructure/scripts/deploy.ps1 -Stacks ecs -Prefix $Prefix -RouteImpactImage $Image -VpcId $Vpc -SubnetIds $Subnets -ExistingExecutionRoleArn $LabRole -ExistingTaskRoleArn $LabRole
+```
+
+### 11. Verify the route-impact service
+
+```powershell
+aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-impact" --query "services[0].{Desired:desiredCount,Running:runningCount,Status:status}"
+aws logs tail "/ecs/$Prefix-route-impact" --since 5m
+```
+
+Expect `Running: 1`, `Status: ACTIVE`, and `[ANALYSIS]` lines once jobs exist. A
+task that starts then immediately stops is almost always a missing task-role
+permission — read the reason rather than guessing:
+
+```powershell
+aws ecs describe-tasks --cluster "$Prefix-cluster" --tasks (aws ecs list-tasks --cluster "$Prefix-cluster" --desired-status STOPPED --query "taskArns[0]" --output text) --query "tasks[0].stoppedReason"
+```
+
+### 12. Autoscaling deployment
+
+```powershell
+./infrastructure/scripts/deploy.ps1 -Stacks scaling -Prefix $Prefix -ScalingMode BacklogPerTask -MinTasks 1 -MaxTasks 5 -TargetBacklogPerTask 75 -ExistingLambdaRoleArn $LabRole
+```
+
+If Lambda or EventBridge creation is denied, redeploy with the documented fallback
+and record the deviation in `docs/IMPLEMENTATION_DECISIONS.md`:
+
+```powershell
+./infrastructure/scripts/deploy.ps1 -Stacks scaling -Prefix $Prefix -ScalingMode QueueDepth
+```
+
+### 13. Verify min 1 / max 5
+
+```powershell
+aws application-autoscaling describe-scalable-targets --service-namespace ecs --query "ScalableTargets[?contains(ResourceId,'$Prefix')].{Id:ResourceId,Min:MinCapacity,Max:MaxCapacity}"
+aws application-autoscaling describe-scaling-policies --service-namespace ecs --query "ScalingPolicies[?contains(ResourceId,'$Prefix')].{Name:PolicyName,Target:TargetTrackingScalingPolicyConfiguration.TargetValue}"
+```
+
+Expect `Min: 1`, `Max: 5`, and the `backlog-per-task` policy with target 75. This
+output is evidence item E09 — capture it.
+
+Confirm the custom metric is actually arriving before trusting the policy:
+
+```powershell
+aws cloudwatch list-metrics --namespace SIT314/Transport --metric-name BacklogPerTask
+```
+
+An empty result means the Lambda is not publishing and the policy has nothing to
+scale on.
+
+### 14. Controlled workload
+
+```powershell
+$env:QUEUE_BACKEND = "aws"; $env:STORE_BACKEND = "aws"; $env:METRICS_BACKEND = "aws"
+npm run experiment -- --config experiments/incident/stage-1.json --worker-mode autoscale
+```
+
+Start with stage 1 only. Do not run stages 3 or 4 until stage 1 has completed
+cleanly against AWS.
+
+### 15. Evidence collection
+
+```powershell
+aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-impact" --query "services[0].{Running:runningCount,Desired:desiredCount}"
+aws cloudwatch get-metric-statistics --namespace SIT314/Transport --metric-name BacklogPerTask --start-time (Get-Date).AddMinutes(-30).ToString("s") --end-time (Get-Date).ToString("s") --period 60 --statistics Average
+npm run evidence -- --promote latest
+```
+
+Capture the SQS console graphs for `$Prefix-analysis`
+(`ApproximateNumberOfMessagesVisible` and `ApproximateAgeOfOldestMessage`) and the
+ECS task-count graph — evidence items E10 and E11.
+
+### 16. Scale down and clean up
+
+**Do this before ending the session.** Leaving five tasks running burns credit.
+
+```powershell
+aws ecs update-service --cluster "$Prefix-cluster" --service "$Prefix-route-impact" --desired-count 1
+```
+
+When the project is finished, delete the project's own stacks in reverse order:
+
+```powershell
+bash ./infrastructure/scripts/cleanup.sh      # lists what it will delete first
+```
+
+Then confirm nothing is left running:
+
+```powershell
+aws ecs list-services --cluster "$Prefix-cluster"
+aws cloudformation describe-stacks --query "Stacks[?starts_with(StackName,'$Prefix')].StackName"
+```
+
+---
+
 ## Deployment order
 
 Stacks depend on each other, so deploy in this order:
