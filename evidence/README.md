@@ -24,16 +24,23 @@ npm run evidence
 
 ## `preliminary-scalability/`
 
+All results in this directory are **LOCAL PRELIMINARY SCALABILITY RESULTS**. They
+are not AWS ECS measurements and are not the final cloud breaking point.
+
+Each stage below is the local equivalent of Experiment A (one fixed worker) versus
+Experiment B (autoscaled, min 1 / max 5), run on an identical workload and seed.
+
+### Stage 1 — bus breakdown
+
 Two runs of incident stage 1 with an **identical seed (3142026) and an identical
-550-job workload**, differing only in how the route-impact worker was scaled. This
-is the local equivalent of Experiment A versus Experiment B.
+550-job workload**, differing only in how the route-impact worker was scaled.
 
 | Directory | Arm |
 |---|---|
 | `2026-09-03T16-54-39-664Z-incident-stage-1-fixed` | A — exactly 1 worker task |
 | `2026-09-03T16-57-39-857Z-incident-stage-1-autoscale` | B — autoscaled, min 1 / max 5 |
 
-### Headline comparison
+#### Headline comparison
 
 | Metric | A: fixed 1 | B: autoscaled |
 |---|---|---|
@@ -53,6 +60,64 @@ is the local equivalent of Experiment A versus Experiment B.
 | DLQ depth | 0 | 0 |
 | Stability verdict | UNSTABLE | UNSTABLE |
 
+### Stage 2 — tram track blockage
+
+| Directory | Arm |
+|---|---|
+| `2026-09-04T12-00-15-443Z-incident-stage-2-fixed` | A — exactly 1 worker task |
+| `2026-09-04T12-03-55-929Z-incident-stage-2-autoscale` | B — autoscaled, min 1 / max 5 |
+
+Stage 2 is a tram track blockage: 15 affected stops, **250 analysis jobs and 1000
+notifications per incident**. Both arms injected **exactly 3 incidents = 750 jobs**
+with seed 3142026 and identical worker settings, differing only in scaling.
+
+| Metric | A: fixed 1 | B: autoscaled |
+|---|---|---|
+| Jobs injected | 750 | 750 |
+| Results produced | 474 | **750** |
+| Left unprocessed at drain timeout | 280 | **0** |
+| Throughput | 2.93 jobs/s | **7.38 jobs/s** |
+| Elapsed | 161.8 s | **101.6 s** |
+| Mean processing | 511 ms | 548 ms |
+| p95 processing | 1040 ms | **874 ms** |
+| Peak queue depth | 710 | 610 |
+| Peak oldest-message age | 145 s | **83 s** |
+| Ending queue depth | 270 | **0** |
+| Tasks observed | 1 | 1 → 5 |
+| Scale-out / scale-in events | 0 / 0 | 2 / 1 |
+| Jobs lost | 0 | 0 |
+| Duplicate results | 0 | 0 |
+| Duplicate jobs skipped | 0 | 4 |
+| DLQ depth | 0 | 0 |
+| Stability verdict | UNSTABLE | UNSTABLE |
+
+This is a stronger result than stage 1. The single worker **never finished the
+workload at all**: 280 of 750 jobs were still unprocessed when the drain timeout
+was reached, and the queue was still 270 deep. The autoscaled arm completed every
+job and ended with an empty queue, at **2.5× the throughput**, while cutting peak
+oldest-message age by 43%. Nothing was lost or duplicated in either arm.
+
+Both arms are still classed UNSTABLE at this arrival rate by the
+oldest-message-age criterion, so stage 2 sits beyond the local sustainable point
+for both configurations — autoscaling moved the ceiling up substantially without
+reaching the 10-second target.
+
+#### A methodology correction made during this run
+
+The first stage-2 attempt bounded injection by elapsed time, as stage 1 had been.
+That produced **1500 jobs in the fixed arm but only 750 in the autoscaled arm**,
+because enqueuing an incident is itself work and slows down when five workers are
+competing for the same queue. Those two runs are not comparable and were **not**
+promoted into this directory.
+
+The experiment runner now accepts `--incidents N`, which bounds injection by
+count so both arms inject an identical workload regardless of timing. The stage 2
+results above use it. Any future fixed-vs-autoscale comparison must use
+`--incidents`; the time bound remains appropriate for a single soak run where
+only the arrival rate matters.
+
+---
+
 ### What these files are
 
 - `config.json` — the exact stage configuration, including seed, fan-out sizes,
@@ -64,7 +129,7 @@ is the local equivalent of Experiment A versus Experiment B.
 - `scaling.csv` — autoscaler evaluations, including the backlog-per-task value at
   each decision point.
 
-### How to read the result honestly
+#### How to read the stage 1 result
 
 Autoscaling raised sustainable throughput by about **69%** and cut peak
 oldest-message age by **64%** on an identical workload, with **no job loss and no
@@ -76,7 +141,7 @@ Both arms were still classed **UNSTABLE** at this arrival rate, because the age 
 the oldest message stayed above the 10-second threshold. That is the intended
 outcome — the experiment is designed to locate a breaking point, not to be passed.
 
-### Important limitations
+### Important limitations that apply to every run here
 
 - These runs used the **local file-backed queue and store**, not SQS and DynamoDB,
   and the **local autoscaler**, not ECS Application Auto Scaling. They demonstrate
@@ -85,8 +150,9 @@ outcome — the experiment is designed to locate a breaking point, not to be pas
 - A **processing-cost test parameter** was active: 50 ms delay plus fixed CPU work
   per job. It was applied identically to both arms so the comparison remains fair.
   It exists so queue build-up is observable at an affordable workload size.
-- Injection ran for 45 seconds, not the planned 10 minutes, and each arm was run
-  once rather than the planned three repeats.
+- Runs were shortened: stage 1 injected for 45 seconds and stage 2 injected 3
+  incidents, rather than the planned 10-minute stages. Each arm was run once
+  rather than the planned three repeats.
 
 ---
 

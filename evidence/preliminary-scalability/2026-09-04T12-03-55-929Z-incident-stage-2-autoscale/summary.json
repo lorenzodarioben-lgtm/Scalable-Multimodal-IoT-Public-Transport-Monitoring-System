@@ -1,0 +1,125 @@
+{
+  "runId": "2026-09-04T12-03-55-929Z-incident-stage-2-autoscale",
+  "stage": "incident-stage-2",
+  "startedAt": "2026-09-04T12:03:55.929Z",
+  "finishedAt": "2026-09-04T12:05:37.892Z",
+  "seed": 3142026,
+  "config": {
+    "name": "incident-stage-2",
+    "description": "Stage 2 - tram track blockage affecting 15 tram stops / track segments. 250 analysis jobs and 1000 notifications per incident.",
+    "type": "incident",
+    "seed": 3142026,
+    "incident": {
+      "scenario": "tram-blockage",
+      "transportMode": "tram",
+      "reason": "blocked",
+      "severity": "high",
+      "vehicleId": "TRAM-003",
+      "routeId": "75",
+      "affectedLocations": 15,
+      "jobsPerIncident": 250,
+      "notificationsPerIncident": 1000
+    },
+    "arrival": {
+      "mode": "sustained",
+      "incidentIntervalSeconds": 10,
+      "incidents": 3
+    },
+    "durationSeconds": 600,
+    "warmupSeconds": 10,
+    "worker": {
+      "mode": "autoscale",
+      "fixedTasks": 1,
+      "minTasks": 1,
+      "maxTasks": 5,
+      "concurrency": 4,
+      "processingDelayMs": 50,
+      "targetBacklogPerTask": 75,
+      "evaluationIntervalMs": 10000,
+      "scaleOutCooldownSeconds": 30,
+      "scaleInCooldownSeconds": 60,
+      "processingCpuIterations": 15000000
+    },
+    "sla": {
+      "p95LatencyMs": 5000,
+      "oldestMessageAgeSeconds": 10,
+      "finalWindowSeconds": 300
+    },
+    "label": "local-preliminary-stage2-autoscale-countbound"
+  },
+  "results": {
+    "totalJobsInjected": 750,
+    "incidentsInjected": 3,
+    "resultsProduced": 750,
+    "duplicateJobsSkipped": 4,
+    "duplicateResults": 0,
+    "processingFailures": 0,
+    "unprocessedInQueue": 0,
+    "jobsAccountedFor": 750,
+    "jobsLost": 0,
+    "elapsedSeconds": 101.6,
+    "jobsPerSecondInjected": 7.38,
+    "jobsPerSecondProcessed": 7.38,
+    "meanProcessingMs": 547.81,
+    "p95ProcessingMs": 874,
+    "peakQueueDepth": 610,
+    "endingQueueDepth": 0,
+    "peakOldestAgeSeconds": 83,
+    "dlqDepth": 0,
+    "minTasksObserved": 1,
+    "maxTasksObserved": 5,
+    "scaleOutEvents": 2,
+    "scaleInEvents": 1,
+    "injectionErrors": 0
+  },
+  "stability": {
+    "queueGrowingInFinalWindow": true,
+    "finalWindowSeconds": 20,
+    "windowStartSeconds": 10,
+    "windowEndSeconds": 30,
+    "note": "Evaluated over the injection phase only; the post-injection drain is excluded.",
+    "stable": false,
+    "breachedCriteria": [
+      "age of oldest message reached 29s, above 10s"
+    ],
+    "verdict": "UNSTABLE"
+  },
+  "scaling": {
+    "samples": 10,
+    "minTasksObserved": 1,
+    "maxTasksObserved": 5,
+    "finalTasks": 0,
+    "peakQueueDepth": 540,
+    "endingQueueDepth": 40,
+    "scaleOutEvents": 2,
+    "scaleInEvents": 1,
+    "events": [
+      {
+        "at": "2026-09-04T12:04:06.279Z",
+        "action": "scaleOut:2",
+        "from": 1,
+        "to": 3,
+        "backlogPerTask": 217
+      },
+      {
+        "at": "2026-09-04T12:04:36.316Z",
+        "action": "scaleOut:2",
+        "from": 3,
+        "to": 5,
+        "backlogPerTask": 153.33333333333334
+      },
+      {
+        "at": "2026-09-04T12:04:56.343Z",
+        "action": "scaleIn:1",
+        "from": 5,
+        "to": 4,
+        "backlogPerTask": 58
+      }
+    ]
+  },
+  "environment": {
+    "queueBackend": "local",
+    "storeBackend": "local",
+    "note": "Local backends unless QUEUE_BACKEND/STORE_BACKEND are set to aws."
+  }
+}

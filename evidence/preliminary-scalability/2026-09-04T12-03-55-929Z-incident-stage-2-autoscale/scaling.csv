@@ -1,0 +1,11 @@
+timestamp,visibleMessages,inFlightMessages,oldestAgeSeconds,runningTasks,backlogPerTask,desiredTasks,action
+2026-09-04T12:03:56.278Z,0,0,0,1,0,1,none
+2026-09-04T12:04:06.279Z,217,5,10,3,217,3,scaleOut:2
+2026-09-04T12:04:16.294Z,383,14,20,3,127.67,5,scaleOutCooldown
+2026-09-04T12:04:26.304Z,540,27,30,3,180,5,scaleOutCooldown
+2026-09-04T12:04:36.316Z,460,24,40,5,153.33,5,scaleOut:2
+2026-09-04T12:04:46.332Z,380,34,40,5,76,5,none
+2026-09-04T12:04:56.343Z,290,34,50,4,58,4,scaleIn:1
+2026-09-04T12:05:06.350Z,220,31,60,4,55,3,scaleInCooldown
+2026-09-04T12:05:16.354Z,120,40,70,4,30,2,scaleInCooldown
+2026-09-04T12:05:26.358Z,40,36,70,4,10,1,scaleInCooldown
