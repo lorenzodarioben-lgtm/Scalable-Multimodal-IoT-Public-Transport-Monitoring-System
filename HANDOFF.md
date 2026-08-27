@@ -195,6 +195,20 @@ Docker Desktop requires a manual start by the user. Consequences: no image has b
 built, no image has been pushed to ECR, and `docker compose up` has never run. The
 Dockerfiles are therefore unproven.
 
+Launching `Docker Desktop.exe` programmatically was attempted once and did not
+bring the daemon up: several minutes later there were no `docker*` processes at
+all and `com.docker.service` was still `Stopped`. That pattern normally means
+Docker Desktop needs an interactive first-run step (consent, WSL2 update, or
+elevation) that cannot be completed from a non-interactive session. **The user
+must start Docker Desktop from the Start Menu and wait for the whale icon to
+settle before any image work.** Do not spend session time troubleshooting it.
+
+The Dockerfiles were reviewed statically instead, and are sound: multi-stage
+build, `npm ci --omit=dev --ignore-scripts`, a non-root `app` user,
+`STOPSIGNAL SIGTERM` with exec-form `CMD` so the signal reaches node directly,
+and no secret ever copied in (`.dockerignore` excludes `.env`, `certs/`,
+`*.pem`, `*.key`, `*.crt`, `credentials*`, `local-data/` and `artifacts/`).
+
 This blocks steps 5–7 of section 5. It does **not** block anything else — all
 services run directly under Node.js.
 
@@ -333,7 +347,21 @@ the same code that will run against SQS.
 
 ```
 Command: npm test
-Result:  tests 150 | pass 150 | fail 0 | duration ~7.8 s
+Result:  tests 158 | pass 158 | fail 0 | duration ~8 s
+```
+
+The suite was previously intermittently red (roughly 1 run in 3). Two tests were
+wall-clock dependent and failed under the parallel test-file load: the simulator
+determinism test bounded its runs by duration so two same-seed runs completed a
+different number of ticks, and the processing-cost test compared an un-delayed run
+against a delayed one on the clock. Both are fixed, and the suite has since been
+verified green five consecutive times.
+
+Static infrastructure validation is a separate gate:
+
+```
+Command: cfn-lint infrastructure/cloudformation/*.yaml     (npm run lint:infra)
+Result:  no findings across all five templates
 ```
 
 Areas covered: RNG determinism and stream independence; all four generators against
