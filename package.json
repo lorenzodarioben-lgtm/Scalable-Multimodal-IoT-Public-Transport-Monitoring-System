@@ -45,10 +45,10 @@
     "@sit314/shared": "*",
     "@sit314/simulator": "*",
     "@sit314/telemetry-processor": "*",
-    "aedes": "^0.51.3",
     "mqtt": "^5.10.1"
   },
   "devDependencies": {
+    "aedes": "^0.51.3",
     "node-red": "^5.0.6",
     "yaml": "^2.9.0"
   }
