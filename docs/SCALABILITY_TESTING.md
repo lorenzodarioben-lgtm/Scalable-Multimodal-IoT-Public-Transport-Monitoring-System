@@ -84,6 +84,36 @@ Secondary to the incident experiment. Eight stages in
 npm run simulate -- --config experiments/telemetry-growth/stage-5.json --target mqtt
 ```
 
+### Measured generation capacity (LOCAL PRELIMINARY, dry run)
+
+Before the ingestion path can be blamed for anything, the generator itself has to
+be able to produce the load. Measured with `--target stdout` (no broker, no
+Node-RED, no queue), 20 seconds per stage:
+
+| Stage | Vehicles | Interval | Target rate | Achieved | Published / failed |
+|---|---|---|---|---|---|
+| 4 | 100 | 5000 ms | 24 ev/s | 23.96 ev/s | 480 / 0 |
+| 6 | 250 | 2000 ms | 145 ev/s | 144.4 ev/s | 2900 / 0 |
+| 8 | 1000 | 1000 ms | 1100 ev/s | 1088.8 ev/s | 22000 / 0 |
+
+The simulator sustains the top of the approved sequence — 1000 vehicles reporting
+every second — at 99% of nominal, with no failed events. The small shortfall is
+timer drift, not saturation.
+
+Variety holds at that scale. A 5-second stage-8 capture written with `--out`
+contained 5500 events:
+
+| Type | Count | Share of vehicle events |
+|---|---|---|
+| bus | 3000 | 60.0% |
+| tram | 1250 | 25.0% |
+| train | 750 | 15.0% |
+| locationDemand | 500 | n/a |
+
+**These are generation-capacity measurements only.** They say nothing about AWS
+IoT Core ingestion, Node-RED throughput, or SQS. They establish that the
+simulator is not the bottleneck in any later ingestion test.
+
 ## Running an incident stage
 
 ```bash
@@ -170,6 +200,58 @@ Mean latency went from 485 ms to 545 ms with more tasks. Expected: five
 processes contend for CPU cores and for the shared local queue/store files, so
 each individual job is marginally slower even though aggregate throughput is
 much higher. Throughput, not per-job latency, is what scaling buys.
+
+## Stage 2 (LOCAL PRELIMINARY, measured)
+
+Tram track blockage: 15 affected stops, 250 jobs and 1000 notifications per
+incident. Both arms injected **exactly 3 incidents = 750 jobs** using
+`--incidents 3`, seed 3142026, identical worker settings.
+
+| Metric | A: fixed 1 task | B: autoscale 1-5 | Change |
+|---|---|---|---|
+| Jobs injected | 750 | 750 | identical workload |
+| Results produced | 474 | **750** | completed vs abandoned |
+| Left unprocessed at drain timeout | 280 | **0** | — |
+| **Sustained throughput** | **2.93 jobs/s** | **7.38 jobs/s** | **+152%** |
+| Elapsed | 161.8 s | 101.6 s | -37% |
+| Mean processing latency | 511 ms | 548 ms | +7% |
+| p95 processing latency | 1040 ms | 874 ms | -16% |
+| Peak queue depth | 710 | 610 | -14% |
+| Peak age of oldest message | 145 s | 83 s | -43% |
+| Ending queue depth | 270 | **0** | drained |
+| Tasks observed (min/max) | 1 / 1 | 1 / 5 | reached the cap |
+| Scale-out / scale-in events | 0 / 0 | 2 / 1 | scaled both ways |
+| Jobs lost | 0 | 0 | — |
+| Duplicate results | 0 | 0 | — |
+| Redeliveries suppressed | 0 | 4 | idempotency exercised |
+| DLQ messages | 0 | 0 | — |
+| Verdict | UNSTABLE | UNSTABLE | both |
+
+Stage 2 is the clearer result of the two. The single worker **did not finish the
+workload at all** — 280 of 750 jobs were still queued when the drain timeout was
+reached — while the autoscaled service completed every job and ended with an
+empty queue at 2.5x the throughput. Unlike stage 1, this is not a "faster"
+result but a "possible versus impossible" one.
+
+Note that the autoscaled arm reached the **maximum of 5 tasks** and was still
+classed UNSTABLE. Under the approved definition that is criterion 3 territory:
+at stage 2's arrival rate the service is at its cap and still behind, so the
+local breaking point for this service time lies **between stage 1 and stage 2**.
+
+### A methodology correction, and why it matters
+
+The first stage-2 attempt bounded injection by elapsed time, as stage 1 had
+been. That produced **1500 jobs in the fixed arm but only 750 in the autoscaled
+arm**: enqueuing an incident is itself work, and it slows down when five workers
+are competing for the same queue, so fewer incidents fit into the same
+wall-clock window. Those runs were discarded, not promoted.
+
+The runner now takes `--incidents N`, bounding injection by count so both arms
+receive an identical workload regardless of timing. **Every fixed-vs-autoscale
+comparison must use it.** The time bound remains correct for a single soak run
+where only the arrival rate matters. This is exactly the kind of defect that
+would have invalidated the final report's headline comparison if it had gone
+unnoticed on AWS.
 
 ---
 

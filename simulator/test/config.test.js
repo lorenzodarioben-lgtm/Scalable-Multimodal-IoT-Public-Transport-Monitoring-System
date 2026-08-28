@@ -102,3 +102,14 @@ test('expected total events matches the Volume x Velocity model', () => {
   // 17 vehicles x 10 ticks + 10 locations x 10 ticks
   assert.equal(expectedTotalEvents(cfg), 17 * 10 + 10 * 10);
 });
+
+test('--out maps to the outFile setting the simulator actually reads', () => {
+  // The flag name and the setting name differ, so this needs an explicit alias.
+  // Without it the flag was accepted and silently ignored, and no events file
+  // was written - which would quietly invalidate any run relying on --out.
+  const fromFlag = resolveConfig({ out: 'artifacts/events.jsonl' });
+  assert.equal(fromFlag.outFile, 'artifacts/events.jsonl');
+
+  const notSet = resolveConfig({});
+  assert.equal(notSet.outFile, null, 'no events file unless one is requested');
+});

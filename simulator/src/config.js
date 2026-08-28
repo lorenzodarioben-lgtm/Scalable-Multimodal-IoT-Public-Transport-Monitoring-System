@@ -112,6 +112,12 @@ export function resolveConfig(argv = {}) {
     merged.disruptVehicleId = argv['disrupt-vehicle'] ?? argv.disruptVehicle
       ?? fileConfig.disruptVehicle;
   }
+  // The flag is `--out` but the setting is `outFile`, so it needs an explicit
+  // alias like the two above. Without it the flag parsed fine and was then
+  // silently dropped, and no events file was ever written.
+  if (argv.out ?? fileConfig.out ?? fileConfig.outFile) {
+    merged.outFile = argv.out ?? fileConfig.out ?? fileConfig.outFile;
+  }
 
   for (const key of NUMERIC) {
     if (merged[key] !== null && merged[key] !== undefined) merged[key] = Number(merged[key]);
