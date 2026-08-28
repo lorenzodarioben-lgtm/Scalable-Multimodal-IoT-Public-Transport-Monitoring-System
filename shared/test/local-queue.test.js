@@ -125,22 +125,22 @@ test('concurrent consumers never receive the same message twice', async () => {
 
   const consumers = Array.from({ length: 5 }, () => makeQueue(dir, 'race-queue'));
   const seen = [];
+  // An empty short poll does NOT mean the queue is drained. Five consumers race
+  // for a bounded window at a random offset, so a consumer can transiently come
+  // back empty while messages remain - real SQS short polling behaves the same
+  // way, sampling a subset of servers. Terminating on empty polls (however many)
+  // is therefore a guess. The consumers instead run until the workload is
+  // accounted for or a generous deadline expires, which keeps the assertions
+  // below meaningful: if the queue really did lose a message, the deadline trips
+  // and the test still fails.
+  const deadline = Date.now() + 20000;
   await Promise.all(consumers.map(async (c) => {
-    // A single empty short poll does NOT mean the queue is drained: the claim
-    // scan looks at a bounded window at a random offset, so a consumer can come
-    // back empty while other consumers still hold messages. Real SQS short
-    // polling has the same property - it samples a subset of servers. Requiring
-    // several consecutive empty polls is the correct termination condition;
-    // breaking on the first one made this test fail intermittently under load.
-    let consecutiveEmpty = 0;
-    while (consecutiveEmpty < 5) {
+    while (seen.length < total && Date.now() < deadline) {
       const msgs = await c.receiveMessages({ maxMessages: 7, waitTimeSeconds: 0 });
       if (!msgs.length) {
-        consecutiveEmpty += 1;
-        await new Promise((r) => { setTimeout(r, 20); });
+        await new Promise((r) => { setTimeout(r, 10); });
         continue;
       }
-      consecutiveEmpty = 0;
       for (const m of msgs) {
         seen.push(JSON.parse(m.body).n);
         await c.deleteMessage(m.receiptHandle);
