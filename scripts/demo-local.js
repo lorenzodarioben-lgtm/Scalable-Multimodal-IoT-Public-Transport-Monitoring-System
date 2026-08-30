@@ -14,6 +14,8 @@
  * This script creates NO AWS resources and costs nothing.
  *
  * Usage: npm run demo:local
+ *        npm run demo:local -- --check        prerequisites only, changes nothing
+ *        npm run demo:local -- --keep-state   do not clear local-data first
  */
 import process from 'node:process';
 import net from 'node:net';
@@ -36,6 +38,9 @@ const flag = (name, fallback) => {
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
 };
 const keepState = args.includes('--keep-state');
+// --check reports whether the prerequisites are met and exits without starting
+// services, clearing state, or generating any workload.
+const checkOnly = args.includes('--check');
 
 function portOpen(port, host = '127.0.0.1', timeout = 800) {
   return new Promise((resolve) => {
@@ -87,6 +92,28 @@ async function main() {
     Pipeline: 'simulator -> broker -> Node-RED -> bridge -> queues -> services',
     'State directory': LOCAL_DATA_DIR,
   })}\n`);
+
+  // ---- prerequisite-only mode --------------------------------------------
+  // Deliberately before the state reset: --check must not modify anything.
+  if (checkOnly) {
+    const broker = await portOpen(MQTT.localPort);
+    const nodeRed = await portOpen(1880);
+    process.stdout.write('\nPrerequisites:\n');
+    // The broker is not a blocker - the demo starts one if none is listening.
+    process.stdout.write(`${broker ? '[OK  ]' : '[AUTO]'} MQTT broker on ${MQTT.localPort}`
+      + `${broker ? '' : '   not running; the demo will start it'}\n`);
+    process.stdout.write(`${nodeRed ? '[OK  ]' : '[MISS]'} Node-RED on 1880`
+      + `${nodeRed ? '' : '            start it with: npm run node-red'}\n`);
+    process.stdout.write(`[OK  ] AWS required: no    (fully local, nothing is billed)\n`);
+    if (!nodeRed) {
+      process.stdout.write('\nNode-RED performs the mode-specific validation and normalisation.\n'
+        + 'Without it nothing reaches the telemetry queue, so the demo would\n'
+        + 'produce an empty pipeline.\n');
+      process.exit(1);
+    }
+    process.stdout.write('\nAll prerequisites met. Run `npm run demo:local` to execute the demo.\n');
+    process.exit(0);
+  }
 
   if (!keepState && fs.existsSync(LOCAL_DATA_DIR)) {
     fs.rmSync(LOCAL_DATA_DIR, { recursive: true, force: true });
