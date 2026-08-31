@@ -74,14 +74,27 @@ Executed on this machine, output observed.
   notifications table. Observed result:
 
   ```
-  Events processed (ProcessedEvents): 309
+  Events processed (ProcessedEvents): 311
   Entities tracked (CurrentState):    27
-  Route impact results:               412
-  Simulated notifications:            1604
+  Route impact results:               362
+  Simulated notifications:            1404
   Telemetry DLQ / Analysis DLQ / Notifications DLQ: 0 / 0 / 0
   ```
 
-- **Test suite: 150 tests, 150 pass, 0 fail** (`npm test`, ~7.8 s).
+  Re-verified 2026-09-04. An earlier run gave 309 / 27 / 412 / 1604; the totals
+  vary slightly because how many breakdown ticks fit in the fixed 24-second
+  window depends on wall-clock timing. The DLQ counts are always zero.
+
+- **Test suite: 159 tests, 159 pass, 0 fail** (`npm test`, ~8 s).
+- **Static infrastructure validation clean**: `npm run lint:infra` (cfn-lint)
+  reports no findings across all five CloudFormation stacks.
+- **Reliability behaviour**, via `npm run demo:reliability`: duplicate event
+  suppressed, stale write refused, failed message retained and retried, poison
+  message dead-lettered while a healthy message alongside it completed.
+- **Stage 2 incident A/B** on an identical 750-job workload (see section 8).
+- **Telemetry-growth generation capacity**: the simulator sustains stage 8
+  (1000 vehicles every 1 s) at 1088.8 of 1100 events/s with no failures, and the
+  mode mix holds at exactly 60% bus / 25% tram / 15% train.
 - Deterministic seeded RNG; identical seed reproduces the workload.
 - All four generators produce schema-valid payloads (bus, tram, train, demand).
 - Simulator CLI: entity counts, interval, duration, seed, scenario, target,
@@ -105,7 +118,8 @@ Executed on this machine, output observed.
 - Graceful SIGTERM shutdown in all three services.
 - Local backlog-per-task autoscaler spawning and stopping real worker processes
   between min 1 and max 5.
-- **Preliminary A/B scalability experiment** — see section 8.
+- **Preliminary A/B scalability experiments for stages 1 and 2** — see section 8.
+- `npm run demo:local -- --check` reports prerequisites without touching state.
 - `npm run verify-env`, `npm run queue:stats`, `npm run state:dump`,
   `npm run evidence`, `npm run demo:checkpoint --check` all run correctly.
 
@@ -217,7 +231,7 @@ continue with work that does not need it.
 
 ---
 
-## 8. Preliminary A/B scalability experiment
+## 8. Preliminary A/B scalability experiments (LOCAL PRELIMINARY)
 
 ### Methodology
 
@@ -289,11 +303,50 @@ happened during scaling activity and the conditional write absorbed it.
 Both arms were classed UNSTABLE by the oldest-message-age criterion. That is the
 intended outcome — the experiment locates a breaking point rather than being passed.
 
+### Stage 2 results (measured, 2026-09-04)
+
+Tram track blockage, 250 jobs and 1000 notifications per incident. Both arms
+injected **exactly 3 incidents = 750 jobs** with `--incidents 3`, seed 3142026.
+
+| Metric | A: fixed 1 task | B: autoscaled 1→5 |
+|---|---|---|
+| Jobs injected | 750 | 750 |
+| Results produced | 474 | **750** |
+| Left unprocessed at drain timeout | 280 | **0** |
+| Throughput | 2.93 jobs/s | **7.38 jobs/s** |
+| Elapsed | 161.8 s | **101.6 s** |
+| p95 processing | 1040 ms | **874 ms** |
+| Peak queue depth | 710 | 610 |
+| Peak oldest-message age | 145 s | **83 s** |
+| Ending queue depth | 270 | **0** |
+| Tasks observed | 1 | 1 → 5 |
+| Scale-out / scale-in events | 0 / 0 | 2 / 1 |
+| Jobs lost / duplicate results / DLQ | 0 / 0 / 0 | 0 / 0 / 0 |
+| Verdict | UNSTABLE | UNSTABLE |
+
+The single worker **did not finish the workload**; the autoscaled service
+completed every job and drained the queue at 2.5x the throughput. The autoscaled
+arm reached the cap of 5 tasks and was still UNSTABLE, which is criterion 3 of the
+breaking-point definition. **The LOCAL preliminary breaking point therefore lies
+between stage 1 and stage 2.** This is a local-harness result, not a prediction of
+the AWS breaking point.
+
+### A methodology defect found and fixed
+
+Injection had been bounded by elapsed time. That gave the two arms *different*
+workloads — 1500 jobs fixed versus 750 autoscaled — because enqueuing an incident
+is itself work and slows when five workers compete for the same queue. Those runs
+were discarded, not promoted. The runner now takes `--incidents N` to bound
+injection by count. **Every fixed-vs-autoscale comparison must use it**, including
+on AWS; the time bound is only appropriate for a single soak run.
+
 ### Stored at
 
 ```
 evidence/preliminary-scalability/2026-09-03T16-54-39-664Z-incident-stage-1-fixed/
 evidence/preliminary-scalability/2026-09-03T16-57-39-857Z-incident-stage-1-autoscale/
+evidence/preliminary-scalability/2026-09-04T12-00-15-443Z-incident-stage-2-fixed/
+evidence/preliminary-scalability/2026-09-04T12-03-55-929Z-incident-stage-2-autoscale/
 ```
 
 Each contains `config.json`, `summary.json`, `metrics.csv` (per-second queue depth,
@@ -305,7 +358,9 @@ oldest age, task count) and `scaling.csv` (autoscaler decisions).
 - Local autoscaler, **not** ECS Application Auto Scaling.
 - A processing-cost test parameter was active (50 ms + fixed CPU work per job),
   applied identically to both arms.
-- 45 s injection, not 600 s; one repeat per arm, not three.
+- Shortened workloads: stage 1 injected for 45 s, stage 2 injected 3 incidents,
+  rather than the planned 10-minute stages. One repeat per arm, not three.
+- Stages 3 and 4 are configured and runnable but have not been executed.
 
 ---
 
@@ -425,6 +480,8 @@ an account ID. No template creates an IAM user or an access key.
 | `npm run evidence` | List or promote experiment evidence |
 | `npm run demo:local` | Whole local pipeline in one command |
 | `npm run demo:checkpoint` | Checkpoint demo with backend preflight |
+| `npm run demo:reliability` | Duplicate / stale / retry / DLQ evidence (E12) |
+| `npm run lint:infra` | cfn-lint over the CloudFormation stacks |
 | `npm run flows:build` / `flows:check` | Generate / verify `node-red/flows.json` |
 
 **Infrastructure scripts** (`infrastructure/scripts/`): `deploy.ps1`, `deploy.sh`,

@@ -226,12 +226,32 @@ Deployment sequence: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md).
 npm test
 ```
 
-150 tests currently pass, covering the RNG determinism, all four generators, CLI
+159 tests currently pass, covering the RNG determinism, all four generators, CLI
 and config resolution, corruption injection, schema validation, the real Node-RED
 function-node source, the local queue's visibility-timeout and DLQ redrive
 behaviour, conditional-write idempotency, the telemetry processor's disruption
 detection and fan-out, the route-impact ETA model, the notification worker, and the
 CloudFormation templates.
+
+Static infrastructure validation is a separate gate (requires `cfn-lint`, which is
+installed with `pip install --user cfn-lint`):
+
+```bash
+npm run lint:infra
+```
+
+It reports no findings across all five stacks. It is fully offline — it never
+contacts AWS.
+
+Reliability behaviour has its own one-command demonstration:
+
+```bash
+npm run demo:reliability
+```
+
+It runs four controlled scenarios — duplicate event, stale telemetry, retry after
+worker failure, and DLQ redrive with a healthy message proven untouched — and
+prints a PASS/FAIL summary.
 
 ---
 
@@ -293,9 +313,30 @@ evidence set with `npm run evidence -- --promote latest`.
 | Jobs lost / duplicated results / DLQ | 0 / 0 / 0 | 0 / 0 / 0 |
 
 Autoscaling raised sustainable throughput by ~69% on an identical workload with no
-job loss and no duplicate results. Both runs were still classed UNSTABLE at this
-arrival rate by the oldest-message-age criterion, which is the expected and useful
-outcome — it locates a breaking point rather than declaring success.
+job loss and no duplicate results.
+
+**Stage 2** (tram blockage, identical 750-job workload in both arms via
+`--incidents 3`) is the clearer result:
+
+| | Fixed 1 worker | Autoscaled 1→5 |
+|---|---|---|
+| Results produced | 474 of 750 | **750 of 750** |
+| Left queued at drain timeout | 280 | **0** |
+| Throughput | 2.93 jobs/s | **7.38 jobs/s** |
+| Peak oldest-message age | 145 s | **83 s** |
+| Tasks observed | 1 | 1 → 5 |
+| Jobs lost / duplicated / DLQ | 0 / 0 / 0 | 0 / 0 / 0 |
+
+The single worker never finished the workload at all, while the autoscaled service
+completed every job and drained the queue. Both stages are still classed UNSTABLE
+by the oldest-message-age criterion, which is the expected and useful outcome — it
+locates a breaking point rather than declaring success. The autoscaled stage 2 arm
+reached the cap of 5 tasks and was still behind, so the **local preliminary
+breaking point lies between stage 1 and stage 2** (local harness only, not a
+prediction of the AWS breaking point).
+
+Any fixed-vs-autoscale comparison must use `--incidents N` so both arms inject an
+identical workload; see `docs/SCALABILITY_TESTING.md` for why.
 
 Methodology, thresholds and the breaking-point definition:
 [docs/SCALABILITY_TESTING.md](docs/SCALABILITY_TESTING.md).

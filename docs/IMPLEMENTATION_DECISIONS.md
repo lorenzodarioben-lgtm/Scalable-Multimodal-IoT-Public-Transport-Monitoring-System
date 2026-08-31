@@ -228,3 +228,69 @@ system kept up *while load was arriving*.
 | Node-RED settings must be CommonJS | `settings.js` failed to load under `"type": "module"` | Renamed to `settings.cjs` |
 | Node-RED substitutes env vars as strings | `usetls: "${MQTT_USE_TLS}"` was truthy and forced `mqtts://` against the local broker | TLS is a literal boolean in the flow; switching to AWS IoT is a documented editor step |
 | Local file I/O saturates under 5 concurrent workers | Local runs cannot show positive throughput scaling with an I/O-heavy job mix | Measured and reported honestly; the A/B comparison was re-run with a CPU-bound service time, where task-level parallelism is the real constraint |
+
+---
+
+## 16. Experiment injection is bounded by incident count, not by time
+
+Injection was originally bounded by elapsed time: inject incidents for
+`warmup + duration` seconds. That is the natural way to express an arrival rate,
+and it is correct for a single soak run.
+
+It is **wrong for an A/B comparison**, and this was caught empirically. Stage 2
+run time-bounded produced **1500 jobs in the fixed arm but only 750 in the
+autoscaled arm**. Enqueuing an incident is itself work, and it slows down when
+five worker processes are competing for the same queue, so fewer injection cycles
+fit into the same wall-clock window. Comparing throughput between two runs that
+received different amounts of work is meaningless, and it would have flattered the
+fixed arm.
+
+The runner now accepts `--incidents N`, which bounds injection by count while
+still pacing at the configured interval. Both arms then receive an identical
+workload regardless of how contention affects timing.
+
+**Rule for every future comparison, local or on AWS: use `--incidents`.** The two
+discarded time-bounded stage 2 runs were deliberately not promoted into
+`evidence/`.
+
+This matters beyond this project: the same trap exists on AWS, where the injector
+competes with the workers for network and API throughput.
+
+## 17. `aedes` is a development dependency, not a runtime one
+
+The local MQTT broker is a development stand-in for AWS IoT Core. It was declared
+in the root `dependencies`, which meant `npm ci --omit=dev` inside the three
+service Dockerfiles installed it — and its transitive `hyperid` → `uuid`
+advisories — into images that never import it.
+
+It is now a `devDependency`. `npm audit --omit=dev`, which is the tree that
+actually ships in the ECS worker images, reports **0 vulnerabilities**.
+`node-red/Dockerfile.broker` installs dev dependencies deliberately, because that
+image *is* the broker and is never pushed to ECR.
+
+The remaining 10 moderate advisories in the full tree all belong to `aedes` and
+`node-red`. They are documented in `docs/SECURITY.md` rather than force-upgraded:
+`npm audit fix --force` would install `aedes@1.1.2`, a breaking major change to a
+local development convenience, for no benefit to the deployed system.
+
+## 18. One cfn-lint rule is suppressed, with the reasoning recorded
+
+`cfn-lint` reports no findings across all five stacks, with one deliberate
+suppression declared in `scaling.yaml`'s template `Metadata`.
+
+W1030 claims `ExistingLambdaRoleArn`'s default (`''`) is not a valid role ARN
+where it is used in `BacklogMetricFunction.Role`. That `Fn::If` branch is
+unreachable when the parameter is empty: `CreateLambdaRole` is true exactly when
+the parameter *is* empty, so the `!Ref` branch is only ever taken with a real ARN.
+The linter cannot see that.
+
+The real safeguard is the parameter's `AllowedPattern` — empty, or a valid IAM
+role ARN — which CloudFormation enforces at deploy time and which catches a
+mistyped AWS Academy LabRole ARN before a stack is attempted. The same pattern was
+added to the existing-role parameters in `ecs.yaml` and `iot-rule.yaml`.
+
+Static validation also caught two genuine defects that would have failed a live
+deployment: `scaling.yaml`'s `Description` was 1193 characters against
+CloudFormation's 1024-character limit, and the task role granted
+`sqs:SendMessageBatch` and `sqs:DeleteMessageBatch`, which are not real IAM
+actions — SQS authorises the batch APIs under the singular action names.
