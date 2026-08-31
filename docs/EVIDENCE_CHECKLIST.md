@@ -25,9 +25,9 @@ Stored evidence lives in `evidence/`. Raw experiment output lives in
 | E07 | Disruption fan-out into many analysis jobs | **yes** |
 | E08 | Route-impact worker on ECS Fargate | **no — BLOCKED** |
 | E09 | Application Auto Scaling min 1 / max 5 | **no — BLOCKED** (template written) |
-| E10 | Queue growth under load | **yes** (local metrics.csv) |
+| E10 | Queue growth under load | **yes** (local metrics.csv, stages 1 and 2) |
 | E11 | Task count increasing under backlog | **partial** — local autoscaler yes, ECS no |
-| E12 | Idempotency / retry / DLQ behaviour | **yes** |
+| E12 | Idempotency / retry / DLQ behaviour | **yes** — `npm run demo:reliability` |
 
 ---
 
@@ -274,39 +274,77 @@ concurrency, **not** ECS. The ECS capture is still required.
 **Proves:** at-least-once delivery is handled safely — retries do not duplicate
 results, and poison messages end up in the DLQ instead of being lost.
 
-**Idempotency, captured:** the autoscaled run recorded
-`duplicateJobsSkipped: 4` with `duplicateResults: 0` and `jobsLost: 0`. Redelivery
-during scaling activity was absorbed by the conditional write.
+**Single best command — no AWS needed, about 30 seconds:**
 
-**Duplicate events, command:**
+```bash
+npm run demo:reliability
+```
+
+This runs four controlled scenarios against the real processor, the real worker
+loop, the real queue and the real store, and prints a labelled block per scenario
+plus a PASS/FAIL summary. It works in its own scratch directory and removes it
+afterwards, so it cannot disturb pipeline state or committed evidence.
+
+**Must be visible:**
+
+```
+[INCIDENT_DETECTED] ... analysisJobs=50          (first delivery fans out)
+[DUPLICATE_SKIPPED] eventId=evt-demo-breakdown-0001
+RESULT  jobs after 1st delivery = 50
+RESULT  jobs after 2nd delivery = 50
+VERDICT PASS - duplicate suppressed by conditional write on eventId
+
+[STALE_STATE_SKIPPED] entity=BUS-007 eventTimestamp=... (newer state already stored)
+VERDICT PASS - stale write refused by conditional timestamp check
+
+[PROCESSING-FAILED] messageId=... attempt=1/5 error=simulated downstream failure
+VERDICT PASS - message retained on failure, redelivered, then completed
+
+[PROCESSING-FAILED] ... attempt=2/2 error=permanent processing failure
+RESULT  in DLQ: jobId=job-demo-poison-0001 redrivenFrom=dlq-work receiveCount=2
+VERDICT PASS - poison dead-lettered, valid workload untouched
+```
+
+and the closing summary:
+
+```
+Duplicate suppressed: PASS
+Stale write refused:  PASS
+Retry after failure:  PASS
+DLQ redrive:          PASS
+Valid work safe:      PASS
+Failure injection:    OFF by default
+```
+
+**Captured: yes.** All four scenarios pass. This single capture covers duplicate
+suppression, out-of-order protection, retry-after-failure, and DLQ redrive with a
+healthy message proven untouched alongside the poison one.
+
+**Supporting evidence already recorded:** the stage 1 and stage 2 autoscaled runs
+each recorded `duplicateJobsSkipped: 4` with `duplicateResults: 0`, `jobsLost: 0`
+and `dlqDepth: 0` — redelivery during real scaling activity, absorbed by the
+conditional write rather than producing duplicate work.
+
+**Alternative live variants** (useful for a second screenshot, both local):
 ```bash
 npm run simulate -- --duplicate-rate 0.1 --target mqtt --duration-seconds 30
-```
-Must show `[DUPLICATE_SKIPPED] eventId=...` from the processor, with no extra
-analysis jobs created.
-
-**DLQ, command:** enable failure injection explicitly (it is off by default):
-```bash
 FAILURE_INJECTION_ENABLED=true FAILURE_RATE=1 npm run route-worker
-```
-Let the message exceed the max receive count, then:
-```bash
 npm run queue:stats
 ```
-
-**Must be visible:** receive count incrementing, then the message appearing in
-`sit314-transport-analysis-dlq`, and the DLQ at 0 during a normal run.
-
-**Captured:** yes for idempotency and for DLQ-at-zero under normal load; the
-deliberate poison-message DLQ demonstration is covered by automated tests and
-should still be captured as a terminal screenshot.
 
 ---
 
 ## Still to capture, in priority order
 
-1. **E12 terminal capture** of a deliberate DLQ redrive (no AWS needed).
-2. **E04 side-by-side** accepted vs rejected in the Node-RED debug pane.
-3. **E01 two-configuration comparison** showing Volume and Velocity changing.
-4. E02, E05, E06 (AWS halves) — after credentials are available.
-5. E08, E09, E11 (ECS and autoscaling) — after images are pushed and stacks deploy.
+Everything capturable without AWS now has a single command behind it.
+
+1. **E04 side-by-side** accepted vs rejected in the Node-RED debug pane —
+   `npm run simulate -- --invalid-rate 0.2 --target mqtt --duration-seconds 30`
+   with the debug pane open.
+2. **E01 two-configuration comparison** showing Volume and Velocity changing
+   without a source edit (10/5/2 at 5000 ms beside 100/25/15 at 1000 ms).
+3. **E03** the Node-RED flow canvas showing the four per-mode branches.
+4. E02, E05, E06 (the AWS halves) — after credentials are available.
+5. E08, E09, E11 (ECS and autoscaling) — after images are pushed and the stacks
+   deploy. Step 13 of the runbook in `docs/AWS_DEPLOYMENT.md` produces E09
+   directly.

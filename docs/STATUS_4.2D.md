@@ -15,6 +15,9 @@ Status labels used throughout:
 
 Last updated: 2026-09-04. Commit: see `git log -1`.
 
+Still **no AWS resource has been created**. Everything below labelled VERIFIED was
+executed locally on the development machine.
+
 ---
 
 ## 1. Current architecture
@@ -75,6 +78,9 @@ available on this machine — see section 11.
 | Local backlog-per-task autoscaler | **VERIFIED** |
 | Experiment runner + 4 incident stages + 8 telemetry-growth stages | **VERIFIED** |
 | Evidence tooling (`npm run evidence`) | **VERIFIED** |
+| Reliability demonstration (`npm run demo:reliability`) | **VERIFIED** |
+| Local pipeline prerequisite check (`demo:local --check`) | **VERIFIED** |
+| Static CloudFormation validation (`npm run lint:infra`) | **VERIFIED** |
 | Dashboard / API | **NOT STARTED** — explicitly deprioritised for this checkpoint |
 
 ---
@@ -95,12 +101,21 @@ simulator -> MQTT broker -> Node-RED (validate + normalise) -> bridge
 Observed result of the most recent run:
 
 ```
-Events processed (ProcessedEvents): 309
+Events processed (ProcessedEvents): 311
 Entities tracked (CurrentState):    27
-Route impact results:               412
-Simulated notifications:            1604
+Route impact results:               362
+Simulated notifications:            1404
 Telemetry DLQ / Analysis DLQ / Notifications DLQ: 0 / 0 / 0
 ```
+
+(Re-run on 2026-09-04; an earlier run gave 309 / 27 / 412 / 1604. The totals vary
+slightly between runs because the number of breakdown ticks that fit in the fixed
+24-second window depends on wall-clock timing. The DLQ counts are always zero.)
+
+**VERIFIED** — reliability behaviour, via `npm run demo:reliability`: duplicate
+event suppressed, stale write refused, failed message retained and retried,
+poison message dead-lettered while a healthy message alongside it completed. All
+four scenarios PASS.
 
 Zero messages reached any dead-letter queue, which is the expected behaviour under
 normal load.
@@ -230,6 +245,38 @@ Both runs were classed **UNSTABLE** at this arrival rate by the
 oldest-message-age criterion. That is the intended, useful outcome: it locates a
 breaking point rather than declaring success.
 
+**Measured stage 2 A/B — VERIFIED** (local backends, seed 3142026, identical
+750-job workload via `--incidents 3`):
+
+| Metric | A: fixed 1 task | B: autoscaled 1→5 |
+|---|---|---|
+| Jobs injected | 750 | 750 |
+| Results produced | 474 | **750** |
+| Left unprocessed at drain timeout | 280 | **0** |
+| Throughput | 2.93 jobs/s | **7.38 jobs/s** |
+| Elapsed | 161.8 s | **101.6 s** |
+| p95 processing | 1040 ms | **874 ms** |
+| Peak queue depth | 710 | 610 |
+| Peak oldest-message age | 145 s | **83 s** |
+| Ending queue depth | 270 | **0** |
+| Tasks observed | 1 | 1 → 5 |
+| Scale-out / scale-in events | 0 / 0 | 2 / 1 |
+| Jobs lost / duplicate results / DLQ | 0 / 0 / 0 | 0 / 0 / 0 |
+| Verdict | UNSTABLE | UNSTABLE |
+
+Stage 2 is the clearer of the two results: the single worker **did not finish the
+workload at all**, while the autoscaled service completed every job and drained
+the queue at **2.5× the throughput**. The autoscaled arm reached the maximum of 5
+tasks and was still classed UNSTABLE, which is criterion 3 of the breaking-point
+definition. **The local preliminary breaking point therefore lies between stage 1
+and stage 2** — LOCAL ONLY, and not a prediction of the AWS breaking point.
+
+A methodology defect was found and fixed while running this: injection had been
+bounded by elapsed time, which gave the two arms *different* workloads (1500 jobs
+fixed versus 750 autoscaled) because enqueuing slows under worker contention.
+Those runs were discarded. The runner now takes `--incidents N` to bound
+injection by count, and every fixed-vs-autoscale comparison must use it.
+
 ---
 
 ## 8. Reliability / security progress
@@ -262,7 +309,15 @@ would dominate the cost of a student project. Recorded in
 
 ## 9. Tests completed
 
-**VERIFIED — 150 tests, 0 failures**, via `npm test`.
+**VERIFIED — 159 tests, 0 failures**, via `npm test`.
+
+The suite was previously intermittently red (about one run in three) because three
+tests were wall-clock or contention dependent: the simulator determinism test
+bounded its runs by duration, the processing-cost test compared a delayed run
+against an un-delayed baseline on the clock, and the concurrent-consumer queue
+test treated a single empty short poll as proof the queue was drained. All three
+are fixed. Static template validation is a separate gate: `npm run lint:infra`
+(cfn-lint) reports no findings across all five stacks.
 
 Coverage by area:
 - RNG determinism and stream independence
@@ -304,10 +359,21 @@ Coverage by area:
    plus fixed CPU work per job is applied so queue build-up is observable at
    affordable workload sizes. This is a documented test parameter, applied
    identically to both A and B runs, not a manipulation of the comparison.
-6. **Only stage 1 has been run**, and at a shortened duration (45 s injection, not
-   the full 10 minutes), once per arm rather than the planned three repeats.
+6. **Only stages 1 and 2 have been run**, and at shortened workloads (stage 1: 45 s
+   injection; stage 2: 3 incidents) rather than the full 10-minute stages, once per
+   arm rather than the planned three repeats. Stages 3 and 4 are configured and
+   runnable but have not been executed.
 7. **Docker images have never been built**, so the Dockerfiles are unproven.
 8. **No dashboard or API exists.** Deliberately deprioritised.
+9. **Telemetry-growth results measure generation only.** Stages 4, 6 and 8 were
+   measured in dry-run mode (23.96/24, 144.4/145 and 1088.8/1100 events per second,
+   no failures), which proves the simulator can produce the required Volume and
+   Velocity. It says nothing about ingestion through MQTT, Node-RED or SQS.
+10. **A rare unattributed test flake remains.** After fixing three timing-dependent
+    tests the suite ran green 21 times out of 22 full runs; one failure was observed
+    and could not be attributed before it stopped reproducing. Most likely one of
+    the concurrency-sensitive local-queue tests under parallel load. Worth watching
+    rather than treating the suite as perfectly deterministic.
 
 ---
 
