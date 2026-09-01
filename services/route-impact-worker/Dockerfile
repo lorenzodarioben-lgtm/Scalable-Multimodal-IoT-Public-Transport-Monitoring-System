@@ -25,6 +25,13 @@ WORKDIR /app
 # Run as a non-root user.
 RUN addgroup -S app && adduser -S -G app app
 
+# The local file-backed queue/store/metrics adapters need somewhere writable.
+# /app is owned by root and the service runs unprivileged, so give it a data
+# directory of its own and point both writable paths at it. In AWS mode
+# (QUEUE_BACKEND/STORE_BACKEND/METRICS_BACKEND=aws) nothing is written here.
+RUN mkdir -p /data/artifacts && chown -R app:app /data
+ENV LOCAL_DATA_DIR=/data ARTIFACTS_DIR=/data/artifacts
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY schemas ./schemas

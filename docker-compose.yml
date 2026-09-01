@@ -47,11 +47,43 @@ services:
       MQTT_PORT: "1883"
       MQTT_CLIENT_ID: sit314-node-red
       FLOWS: flows.json
+    # Only the flow is mounted, read-only, so what is committed is what runs.
+    # There is deliberately NO named volume on /data/lib: the official image runs
+    # as uid 1000, a fresh named volume is created root-owned, and Node-RED then
+    # fails to start with "EACCES: permission denied, mkdir '/data/lib/flows'".
+    # Nothing here needs to persist - the authoritative flow is in the repository
+    # and the runtime config is disposable.
     volumes:
       - ./node-red/flows.json:/data/flows.json:ro
-      - node-red-data:/data/lib
 
   # ---- application services (opt in with: --profile workers) --------------
+
+  # Local stand-in for the AWS IoT rule. Node-RED republishes validated,
+  # normalised events to transport/normalized/+; on AWS an IoT rule forwards
+  # that topic to the telemetry queue, and locally this bridge does the same.
+  # Without it the pipeline stops dead at Node-RED and the queue stays empty.
+  # It reuses the broker image, which already carries scripts/ and mqtt.
+  bridge:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: node-red/Dockerfile.broker
+    image: sit314-transport-broker
+    container_name: sit314-bridge
+    command: ["node", "scripts/normalized-bridge.js"]
+    depends_on:
+      broker:
+        condition: service_healthy
+    environment:
+      MQTT_LOCAL_HOST: broker
+      MQTT_LOCAL_PORT: "1883"
+      QUEUE_BACKEND: ${QUEUE_BACKEND:-local}
+      LOCAL_DATA_DIR: /data
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      BRIDGE_VERBOSE: ${BRIDGE_VERBOSE:-false}
+    volumes:
+      - local-data:/data
+    restart: unless-stopped
 
   telemetry-processor:
     profiles: ["workers"]
@@ -108,5 +140,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  node-red-data:
+  # Shared by the three workers so they see the same local queue and store,
+  # which is what makes `--scale route-impact-worker=N` a real concurrency test.
   local-data:

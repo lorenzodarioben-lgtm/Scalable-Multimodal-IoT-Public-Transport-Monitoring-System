@@ -8,13 +8,37 @@ COPY simulator/package.json ./simulator/
 COPY services/telemetry-processor/package.json ./services/telemetry-processor/
 COPY services/route-impact-worker/package.json ./services/route-impact-worker/
 COPY services/notification-worker/package.json ./services/notification-worker/
-# Dev dependencies ARE installed here, unlike the service images. The broker is
-# aedes, which is a development-only stand-in for AWS IoT Core and therefore
-# lives in devDependencies so it never enters a deployed worker image.
+# Dev dependencies ARE installed here, unlike the service images. aedes is the
+# broker itself and lives in devDependencies so it never enters a deployed
+# worker image, so this image has to install them.
+#
+# The cost is size: this pulls in the node-red package too (~185 MB) which this
+# image never runs - Compose uses the official nodered/node-red image instead.
+# Installing production deps and then aedes alone was tried and does not work:
+# `npm install <pkg>` reconciles the whole workspace and pulls every
+# devDependency back in, and adding --omit=dev to that command drops the
+# explicitly requested aedes as well. Trimming it properly would mean giving the
+# broker its own manifest, which is not worth it for an image that is only ever
+# built locally and is never pushed to ECR.
 RUN npm ci --ignore-scripts
 COPY schemas ./schemas
 COPY shared ./shared
+# The simulator source is needed because scripts/ (the broker, the bridge and
+# the MQTT tap) import its MQTT client. The workspace symlink
+# node_modules/@sit314/simulator points here, so without it the bridge fails
+# with ERR_MODULE_NOT_FOUND at startup.
+COPY simulator ./simulator
 COPY scripts ./scripts
+
+# Same unprivileged user and data directory as the service images. This image
+# also runs the normalised->queue bridge in Compose, and if it ran as root it
+# would create the shared /data volume root-owned, after which the services -
+# which run unprivileged - could no longer write to it.
+RUN addgroup -S app && adduser -S -G app app \
+    && mkdir -p /data/artifacts && chown -R app:app /data
+ENV LOCAL_DATA_DIR=/data ARTIFACTS_DIR=/data/artifacts
+USER app
+
 EXPOSE 1883
 STOPSIGNAL SIGTERM
 CMD ["node", "scripts/local-broker.js"]
