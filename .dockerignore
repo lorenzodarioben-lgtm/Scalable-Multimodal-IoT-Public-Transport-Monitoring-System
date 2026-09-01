@@ -20,3 +20,13 @@ docs/
 *.log
 .vscode/
 .idea/
+
+# Development-only files. The services COPY whole directories (shared/,
+# services/<name>/), so without these the test suites and the Dockerfiles
+# themselves ended up inside the production images. The Dockerfile is read via
+# `docker build -f` from the host, not from the build context, so excluding it
+# here does not affect the build.
+**/test/
+**/*.test.js
+**/Dockerfile
+**/Dockerfile.*
