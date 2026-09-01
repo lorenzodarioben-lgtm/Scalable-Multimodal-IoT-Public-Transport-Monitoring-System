@@ -45,8 +45,17 @@ runner, all five CloudFormation stacks, and the deployment scripts.
 npm test
 ```
 
-Expect **150 tests, 150 pass, 0 fail**. If anything fails, fix it before starting
+Expect **159 tests, 159 pass, 0 fail**. If anything fails, fix it before starting
 new work.
+
+Also confirm the two other gates:
+
+```bash
+npm run lint:infra        # cfn-lint, offline; expect "no findings"
+npm run demo:reliability  # expect five PASS lines
+```
+
+`lint:infra` needs cfn-lint (`pip install --user cfn-lint`). It never calls AWS.
 
 Optionally re-verify the full local pipeline (two terminals):
 
@@ -128,8 +137,8 @@ backlog-per-task.
 what must be visible, and what has already been captured. Highest-value items still
 outstanding:
 
-- E12 — deliberate DLQ redrive (no AWS needed)
-- E04 — accepted vs rejected in the Node-RED debug pane
+- E04 — accepted vs rejected in the Node-RED debug pane (no AWS needed)
+- E01 — two simulator configurations side by side (no AWS needed)
 - E02, E05, E06 — IoT MQTT test client, SQS console, DynamoDB console
 - E08, E09, E11 — ECS task running, autoscaling min 1 / max 5, task count rising
 
@@ -151,9 +160,23 @@ Already complete and verified — leave alone unless a real defect is found:
 - Services: telemetry processor, route-impact worker, notification worker, all with
   idempotency, graceful shutdown, Dockerfiles and tests
 - Experiments: runner, four incident stages, eight telemetry-growth stages, local
-  backlog-per-task autoscaler
+  backlog-per-task autoscaler, plus measured stage 1 and stage 2 A/B evidence
+- Reliability evidence: `npm run demo:reliability` covers duplicate, stale,
+  retry and DLQ redrive in one command
 - Infrastructure: all five CloudFormation stacks and the deployment scripts
 - Documentation: README and all `docs/` files
+
+## 9a. Two rules that are easy to get wrong
+
+**Use `--incidents N` for every fixed-vs-autoscale comparison.** Bounding
+injection by elapsed time gives the two arms *different* workloads, because
+enqueuing slows under worker contention. This was measured locally (1500 jobs
+fixed versus 750 autoscaled) and the same trap exists on AWS. See
+`docs/IMPLEMENTATION_DECISIONS.md` section 16.
+
+**Never describe queue-depth scaling as backlog-per-task.** If the custom metric
+Lambda is denied, `ScalingMode=QueueDepth` is the documented fallback and the
+report must say which one was actually used.
 
 ## 10. Constraints
 

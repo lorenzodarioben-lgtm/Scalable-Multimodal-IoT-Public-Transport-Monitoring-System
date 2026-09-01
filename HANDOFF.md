@@ -415,9 +415,16 @@ verified green five consecutive times.
 Static infrastructure validation is a separate gate:
 
 ```
-Command: cfn-lint infrastructure/cloudformation/*.yaml     (npm run lint:infra)
-Result:  no findings across all five templates
+Command: npm run lint:infra
+Result:  cfn-lint: no findings across all templates.
 ```
+
+cfn-lint is a Python tool (`pip install --user cfn-lint`) and is entirely
+offline — it never calls AWS, unlike `aws cloudformation validate-template`.
+`scripts/lint-infra.js` falls back to invoking it through Python when the
+console script is not on PATH, which is the normal situation on Windows after a
+`--user` install. It exits 0 on the current templates and non-zero on a broken
+one, so it is usable as a gate.
 
 Areas covered: RNG determinism and stream independence; all four generators against
 their schemas; CLI/config resolution and rejection of bad configuration; corruption
@@ -704,19 +711,26 @@ and idempotent conditional writes make redelivery during scaling safe.
 ```
 Branch:  main
 Remote:  none configured — nothing has been or should be pushed
-Status:  clean at the end of the documentation session
+Status:  clean at the end of the 2026-09-04 hardening session
 ```
 
 Confirm the current commit with `git rev-parse HEAD`. Commit history, newest
-first — the documentation commit is the tip:
+first:
 
 ```
-docs:  add README, project status, evidence checklist and handoff
-a45d466  infra: add CloudFormation stacks, ECS/autoscaling config and deployment scripts
-d856d04  feat: add telemetry processor, route impact worker and notification worker with idempotent processing
-6d9b827  feat: add MQTT transport, local broker and Node-RED validation/normalisation flow
-2d9ae25  feat: add configurable multimodal simulator with seeded generation and validation
-49fb53b  feat: add project skeleton, event schemas and shared queue/store/metrics adapters
+818dcc3 fix: make the infrastructure lint script work when cfn-lint is not on PATH
+f60923c docs: record stage 2 results, reliability evidence and the new engineering decisions
+651d54a feat: add a non-destructive --check mode to the local pipeline demo
+afdbb60 test: make the concurrent-consumer queue test terminate on the workload, not on empty polls
+c0678ad fix: make the simulator --out flag actually write events, and record telemetry-growth results
+a85c8ca chore: move aedes to devDependencies and record the dependency audit
+c8f1e69 feat: bound experiment injection by incident count, and add stage 2 A/B evidence
+c54b234 docs: add a sixteen-step PowerShell runbook for the live AWS session
+4c707c3 infra: fix deploy-blocking template defects found by static validation
+e7dd8f9 feat: add reliability demonstration for duplicate, stale, retry and DLQ evidence
+f7f9fbe test: cover the shared worker loop's delete, retry and DLQ redrive guarantees
+dbf4d83 test: remove wall-clock flakiness from simulator and worker tests
+6dba859 docs: add README, project status, evidence checklist and handoff
 ```
 
 Git identity is already configured on this machine, so commits are possible. **Do
@@ -728,7 +742,28 @@ No secret, key, certificate or account ID is in the repository.
 
 ---
 
-## 22. Working practice for the next session
+## 22. What changed in the 2026-09-04 hardening session
+
+No AWS was contacted. Summary of substantive changes:
+
+- Fixed three timing-dependent tests that made the suite intermittently red
+  (about one run in three). Suite is now 159 tests, green.
+- Added integration tests for the shared worker loop, covering the delete /
+  retain / redrive guarantees that were previously only tested at each end.
+- Added `npm run demo:reliability`, a one-command E12 evidence producer.
+- Static CloudFormation validation found and fixed two genuine deploy blockers:
+  `scaling.yaml`'s Description exceeded CloudFormation's 1024-character limit,
+  and the task role granted non-existent `sqs:*Batch` IAM actions.
+- Constrained the optional existing-role parameters to "empty or a valid role
+  ARN", and updated the metric Lambda off the deprecated nodejs20.x runtime.
+- Found and fixed a methodology defect: time-bounded injection gave the two A/B
+  arms different workloads. Added `--incidents N`.
+- Ran the stage 2 A/B and promoted it to evidence.
+- Moved `aedes` to devDependencies; `npm audit --omit=dev` is now clean.
+- Fixed the simulator's `--out` flag, which parsed but never wrote a file.
+- Added a sixteen-step PowerShell runbook for the live AWS session.
+
+## 23. Working practice for the next session
 
 - The repository on disk is the source of truth. Inspect before changing.
 - Do not rebuild components that already work — check first.
