@@ -182,6 +182,41 @@ Uncontrolled spend is a real risk on a student account:
   stacks it will delete, and requires the operator to type `DELETE`. It deletes
   only stacks named `<prefix>-*` and never enumerates account resources by type.
 
+## Container image verification (VERIFIED)
+
+The images were built and inspected on 2026-09-04. Every claim below was checked
+by running the image, not by reading the Dockerfile.
+
+```bash
+docker run --rm --entrypoint sh <image> -c 'id -un; find /app -not -path "*/node_modules/*"   \( -name ".env*" -o -name "*.pem" -o -name "*.key" -o -name "*.crt" -o -name "credentials*" \)'
+```
+
+| Check | Result |
+|---|---|
+| Runs as a non-root user | `app` in all four images |
+| `.env` / `.env.*` present | none |
+| Certificates, keys, credentials | none |
+| Test files or Dockerfiles present | none |
+| Dev dependencies in service images | none — `aedes`, `node-red`, `yaml`, `hyperid` all absent |
+| Production dependencies present | `ajv`, `ajv-formats`, the four AWS SDK v3 clients |
+
+Two build-context defects were found and fixed in the process:
+
+- **Test suites and Dockerfiles were being copied into the production images.**
+  The services `COPY` whole directories (`shared/`, `services/<name>/`), so
+  `shared/test/`, `services/<name>/test/` and the service's own `Dockerfile`
+  ended up inside the image. `.dockerignore` now excludes `**/test/`,
+  `**/*.test.js` and `**/Dockerfile*`.
+- **The broker image ran as root.** In Compose it also runs the normalised-to-queue
+  bridge and shares the `/data` volume with the services, so as root it would
+  create that volume root-owned and lock the unprivileged services out of it. It
+  now runs as the same `app` user.
+
+No credential is ever baked into an image. At runtime, AWS credentials come from
+the ECS task role and certificate *paths* come from environment variables, with
+the certificates themselves mounted from `./certs`, which is gitignored and
+excluded from every build context.
+
 ## Dependency audit
 
 Run against the tree that actually ships in the ECS worker images:

@@ -203,8 +203,19 @@ route-impact worker showing job id, mode, location, impact, ETA and `processingM
 **Must be visible:** at least one RUNNING task, and log lines showing `[ANALYSIS]`
 jobs being consumed from the analysis queue.
 
-**Captured:** **no — BLOCKED.** No AWS account, and the Docker daemon is not
-running so no image has been built or pushed.
+**Captured:** **no — BLOCKED on AWS only.** The image now builds and runs
+locally, and the same worker has been verified in a container consuming jobs from
+the analysis queue and shutting down cleanly on SIGTERM. What is missing is the
+AWS half: no ECR repository, no push, and no Fargate task.
+
+**Local equivalent already captured** (useful as a supporting figure):
+
+```bash
+docker compose --profile workers up -d
+docker compose logs route-impact-worker
+```
+
+shows `[ANALYSIS] job=... impact=... eta=... processingMs=...` from a container.
 
 ---
 

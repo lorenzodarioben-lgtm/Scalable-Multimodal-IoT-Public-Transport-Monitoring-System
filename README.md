@@ -80,7 +80,7 @@ evidence/           Curated measurements cited by the report
 |---|---|---|
 | Node.js 20+ | Yes | Developed on v22.19.0 |
 | npm | Yes | Workspaces are used |
-| Docker | For containers only | Daemon currently not running on this machine |
+| Docker | For containers only | Verified with Docker Desktop 4.47.0 |
 | AWS CLI + credentials | For AWS deployment only | Not installed on this machine |
 
 Everything except container builds and AWS deployment runs with Node.js alone.
@@ -257,16 +257,39 @@ prints a PASS/FAIL summary.
 
 ## Docker
 
+Ingestion only (broker + Node-RED):
+
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
-Dockerfiles exist for all three services; the route-impact worker is the one that
-matters for ECS. `.dockerignore` excludes `.env`, `certs/` and `local-data/` so no
-secret can enter an image.
+The whole pipeline, six containers:
 
-**Current blocker:** the Docker daemon is not running on this machine, so no image
-has been built or pushed yet. See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+```bash
+docker compose --profile workers up -d
+docker compose ps
+```
+
+That brings up the broker, Node-RED, the normalised-to-queue bridge (the local
+stand-in for the AWS IoT rule) and the three services, all sharing one volume.
+Drive it from the host:
+
+```bash
+npm run simulate -- --scenario bus-breakdown --disrupt-vehicle BUS-007 --target mqtt --duration-seconds 20
+docker compose logs telemetry-processor route-impact-worker
+```
+
+**Verified**, not just written: all four images build, run as a non-root `app`
+user, contain no secrets and no dev dependencies, process real work, and exit 0
+on `docker stop` after finishing in-flight jobs. A run of the full stack
+processed 270 events into 356 route-impact results and 1372 simulated
+notifications with nothing dead-lettered.
+
+Note that the Compose `node-red` service publishes host port 1880, so stop a host
+`npm run node-red` first.
+
+**Not yet done:** no image has been pushed to ECR and nothing has run on ECS
+Fargate — that is AWS deployment, which remains outstanding.
 
 ---
 

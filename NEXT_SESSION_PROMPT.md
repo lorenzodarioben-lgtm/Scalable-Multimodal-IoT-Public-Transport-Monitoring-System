@@ -163,6 +163,9 @@ Already complete and verified — leave alone unless a real defect is found:
   backlog-per-task autoscaler, plus measured stage 1 and stage 2 A/B evidence
 - Reliability evidence: `npm run demo:reliability` covers duplicate, stale,
   retry and DLQ redrive in one command
+- Containers: all four images build, run and shut down cleanly, and the
+  six-container Compose stack runs the full pipeline. Do not redesign them —
+  only ECR push and ECS Fargate remain
 - Infrastructure: all five CloudFormation stacks and the deployment scripts
 - Documentation: README and all `docs/` files
 
