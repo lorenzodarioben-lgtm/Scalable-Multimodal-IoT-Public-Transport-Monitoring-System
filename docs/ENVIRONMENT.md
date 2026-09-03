@@ -31,6 +31,12 @@ npm run verify-env
 
 ## Blockers
 
+**Docker is no longer blocked.** Docker Desktop 4.47.0 (engine 28.4.0, Linux
+engine) was started on 2026-09-04 and every image now builds and runs; the
+six-container Compose stack runs the full pipeline. The only remaining blocker is
+AWS access.
+
+
 ### 1. AWS CLI not installed, no credentials configured
 
 ```
@@ -60,37 +66,31 @@ aws configure sso        # or paste AWS Academy lab credentials
 aws sts get-caller-identity
 ```
 
-### 2. Docker daemon not running
+### 2. Docker — RESOLVED 2026-09-04
 
-```
-$ docker info
-error during connect: ... open //./pipe/dockerDesktopLinuxEngine:
-The system cannot find the file specified.
+Previously the daemon would not start: `docker info` failed with
+`open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file
+specified`, `com.docker.service` was `Stopped`, and starting it needed
+administrator elevation this session did not have.
 
-PS> Get-Service com.docker.service
-Status: Stopped
-
-PS> Start-Service com.docker.service
-Cannot open com.docker.service service on computer '.'
-```
-
-Starting the service requires administrator elevation, which this session does
-not have. Launching `Docker Desktop.exe` did not bring the engine up either -
-it likely needs an interactive sign-in or first-run acceptance.
-
-**Effect.** Container images cannot be built or pushed, and `docker compose`
-cannot run. The Dockerfiles and `docker-compose.yml` are written but
-**unverified**.
-
-**To unblock:** start Docker Desktop from the Start menu, wait for the whale
-icon to stop animating, then:
+The user started Docker Desktop 4.47.0 interactively and the Linux engine
+(28.4.0) came up. Verified since:
 
 ```bash
-docker info
+docker version                       # Client and Server both 28.4.0
 docker build -f services/route-impact-worker/Dockerfile -t sit314-transport-route-impact-worker .
+docker compose --profile workers up -d
+docker compose ps
 ```
 
-## What runs without either blocker
+All four images build, run as a non-root user, process real work, and exit 0 on
+`docker stop`. The six-container Compose stack runs the full pipeline. Only the
+AWS half remains: no ECR push, no ECS Fargate run.
+
+**One gotcha:** the Compose `node-red` service publishes host port 1880, which
+collides with a host `npm run node-red`. Stop the host process first.
+
+## What runs without AWS
 
 Everything except AWS deployment and container builds:
 

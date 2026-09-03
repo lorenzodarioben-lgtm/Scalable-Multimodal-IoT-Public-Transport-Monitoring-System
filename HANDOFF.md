@@ -92,6 +92,8 @@ Executed on this machine, output observed.
   suppressed, stale write refused, failed message retained and retried, poison
   message dead-lettered while a healthy message alongside it completed.
 - **Stage 2 incident A/B** on an identical 750-job workload (see section 8).
+- **All four container images build, run real work, and shut down cleanly**, and
+  the six-container Compose stack runs the full pipeline (section 7).
 - **Telemetry-growth generation capacity**: the simulator sustains stage 8
   (1000 vehicles every 1 s) at 1088.8 of 1100 events/s with no failures, and the
   mode mix holds at exactly 60% bus / 25% tram / 15% train.
@@ -137,7 +139,7 @@ Written and unit-tested, never executed against the real service.
   failure message when TLS configuration is absent.
 - All five CloudFormation stacks (see section 11).
 - PowerShell and bash deployment/describe/cleanup scripts.
-- Dockerfiles for all three services, `.dockerignore`, `docker-compose.yml`.
+
 - ECS task definitions at 0.25 vCPU / 0.5 GB.
 - Application Auto Scaling configuration, min 1 / max 5, backlog-per-task target
   tracking, with a documented queue-depth fallback.
@@ -154,7 +156,7 @@ Priority order:
    simulator publishes over TLS using the IoT MQTT test client.
 4. Deploy the `iot-rule` stack; verify a normalised message reaches the telemetry
    queue.
-5. Start Docker Desktop; build and push three images to ECR.
+5. Build and push the three images to ECR (they already build and run locally).
 6. Deploy the `ecs` stack; confirm the route-impact service consumes analysis jobs.
 7. Deploy the `scaling` stack; confirm min 1 / max 5 and the scaling policy.
 8. Re-run stage 1 A/B against AWS; then stages 2–3 if budget allows.
@@ -196,40 +198,60 @@ fully verified.
 
 ---
 
-## 7. BLOCKER — Docker daemon not running
+## 7. Docker — VERIFIED (no longer a blocker)
 
-The Docker CLI is installed (28.4.0) but the daemon is not reachable:
+Docker Desktop 4.47.0 (engine 28.4.0, Linux engine) was started by the user on
+2026-09-04. Everything container-related has now been built and run.
+
+**Images built** (`docker images`):
+
+| Image | Size | Notes |
+|---|---|---|
+| `sit314-transport-route-impact-worker` | 285 MB | primary autoscaling target |
+| `sit314-transport-telemetry-processor` | 285 MB | |
+| `sit314-transport-notification-worker` | 285 MB | |
+| `sit314-transport-broker` | 484 MB | local dev only, never pushed to ECR |
+
+All four run as the unprivileged `app` user, contain no `.env`, certificate, key
+or credential file, and no test files or Dockerfiles. The service images contain
+no dev dependencies: `aedes`, `node-red`, `yaml` and `hyperid` are all absent.
+
+**Containers verified functionally**, not merely started:
+
+- telemetry processor consumed a normalised breakdown event, stored state, and
+  fanned out `analysisJobs=50`
+- route-impact worker processed 12 seeded jobs (received=12 processed=12
+  failed=0) and wrote 12 results plus 48 alerts
+- notification worker consumed those alerts and wrote 48 delivery records
+
+**Compose stack**: `docker compose --profile workers up -d` brings up six
+containers (broker, node-red, bridge, telemetry-processor, route-impact-worker,
+notification-worker). Driven by the host simulator publishing 270 events to the
+containerised broker, the full pipeline ran end to end: processor 270/270, 8
+incidents including the BUS-007 breakdown at 50 jobs, 356 analysis results, 1372
+simulated notifications, and **no DLQ was ever created**.
+
+**Graceful shutdown verified via `docker stop`.** With 40 jobs queued, a 1 s
+per-job cost and concurrency 4:
 
 ```
-error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/info":
-open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+[SHUTDOWN] SIGTERM received - no new messages will be claimed (inFlight=2)
+   ... the 2 in-flight jobs then completed ...
+[ROUTE-IMPACT-WORKER-FINAL] received=20 processed=20 failed=0 inFlight=0
+docker stop returned in 1s, exit code 0
+queue afterwards: pending=20 inflight=0, results=20, DLQ=0
 ```
 
-Docker Desktop requires a manual start by the user. Consequences: no image has been
-built, no image has been pushed to ECR, and `docker compose up` has never run. The
-Dockerfiles are therefore unproven.
+20 processed + 20 still queued = the 40 seeded, so nothing was lost, nothing was
+left claimed, and nothing was dead-lettered. That is the ECS scale-in safety
+property. All three services exit 0 within the grace period; `docker compose
+stop` stops the whole stack in 3 s with every container at exit code 0.
 
-Launching `Docker Desktop.exe` programmatically was attempted once and did not
-bring the daemon up: several minutes later there were no `docker*` processes at
-all and `com.docker.service` was still `Stopped`. That pattern normally means
-Docker Desktop needs an interactive first-run step (consent, WSL2 update, or
-elevation) that cannot be completed from a non-interactive session. **The user
-must start Docker Desktop from the Start Menu and wait for the whale icon to
-settle before any image work.** Do not spend session time troubleshooting it.
+**Still blocked (AWS only):** no ECR repository exists, no image has been pushed,
+and nothing has run on ECS Fargate. The images are proven locally, not deployed.
 
-The Dockerfiles were reviewed statically instead, and are sound: multi-stage
-build, `npm ci --omit=dev --ignore-scripts`, a non-root `app` user,
-`STOPSIGNAL SIGTERM` with exec-form `CMD` so the signal reaches node directly,
-and no secret ever copied in (`.dockerignore` excludes `.env`, `certs/`,
-`*.pem`, `*.key`, `*.crt`, `credentials*`, `local-data/` and `artifacts/`).
-
-This blocks steps 5–7 of section 5. It does **not** block anything else — all
-services run directly under Node.js.
-
-Do not spend session time troubleshooting Docker Desktop. Record the blocker and
-continue with work that does not need it.
-
----
+**One environment note:** the Compose `node-red` service publishes host port
+1880, which collides with a host `npm run node-red`. Stop the host one first.
 
 ## 8. Preliminary A/B scalability experiments (LOCAL PRELIMINARY)
 

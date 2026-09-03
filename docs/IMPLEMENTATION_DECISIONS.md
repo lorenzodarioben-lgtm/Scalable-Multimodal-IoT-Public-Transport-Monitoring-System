@@ -224,7 +224,7 @@ system kept up *while load was arriving*.
 | Blocker | Effect | Response |
 |---|---|---|
 | AWS CLI not installed, no credentials | No AWS resource can be created or verified | Everything built and tested locally; complete IaC written and structurally tested; exact deployment commands documented |
-| Docker daemon not running (`com.docker.service` is stopped and starting it needs elevation) | Images cannot be built; `docker compose` cannot run | Dockerfiles and compose file written but **unverified**; recorded as a blocker with the exact command to fix |
+| Docker daemon not running (`com.docker.service` stopped, starting it needed elevation) | Images could not be built; `docker compose` could not run | **Resolved 2026-09-04** once the user started Docker Desktop. Building and running then exposed four real defects, all fixed - see section 19 |
 | Node-RED settings must be CommonJS | `settings.js` failed to load under `"type": "module"` | Renamed to `settings.cjs` |
 | Node-RED substitutes env vars as strings | `usetls: "${MQTT_USE_TLS}"` was truthy and forced `mqtts://` against the local broker | TLS is a literal boolean in the flow; switching to AWS IoT is a documented editor step |
 | Local file I/O saturates under 5 concurrent workers | Local runs cannot show positive throughput scaling with an I/O-heavy job mix | Measured and reported honestly; the A/B comparison was re-run with a CPU-bound service time, where task-level parallelism is the real constraint |
@@ -294,3 +294,49 @@ deployment: `scaling.yaml`'s `Description` was 1193 characters against
 CloudFormation's 1024-character limit, and the task role granted
 `sqs:SendMessageBatch` and `sqs:DeleteMessageBatch`, which are not real IAM
 actions — SQS authorises the batch APIs under the singular action names.
+
+
+---
+
+## 19. What building the containers actually exposed
+
+The Dockerfiles and `docker-compose.yml` had been written and reviewed but never
+executed, because the Docker daemon was down. Running them for the first time
+found four genuine defects that no amount of reading would have caught:
+
+1. **No writable directory.** `/app` is root-owned and the services run as the
+   unprivileged `app` user, so the local queue/store/metrics adapters died at
+   startup with `EACCES: permission denied, mkdir '/app/local-data/...'`. Each
+   service image now creates `/data` owned by `app` and points `LOCAL_DATA_DIR`
+   and `ARTIFACTS_DIR` there. In AWS mode nothing is written locally, so this
+   only ever affected local and Compose runs — which is exactly the mode used for
+   every local experiment.
+
+2. **Development files in the production images.** The services `COPY` whole
+   directories, so `shared/test/`, `services/<name>/test/` and the service's own
+   `Dockerfile` were shipped. `.dockerignore` now excludes `**/test/`,
+   `**/*.test.js` and `**/Dockerfile*`.
+
+3. **Node-RED could not start under Compose.** A named volume on `/data/lib` is
+   created root-owned, and the official image runs as uid 1000, so Node-RED
+   exited with `EACCES: permission denied, mkdir '/data/lib/flows'`. The volume
+   was removed: the authoritative flow is mounted read-only from the repository
+   and nothing in the Node-RED library needs to persist.
+
+4. **Compose could not demonstrate the pipeline at all.** There was no service
+   for the normalised-to-queue bridge — the local stand-in for the AWS IoT rule —
+   so validated events reached `transport/normalized/+` and stopped there, and
+   the telemetry queue stayed empty. A `bridge` service was added, reusing the
+   broker image, which in turn needed the simulator source it imports.
+
+A fifth issue was found and deliberately left: the broker image is 484 MB because
+it installs all dev dependencies to get `aedes`, which drags in the unused
+`node-red` package. Installing production dependencies and then `aedes` alone was
+tried and does not work — `npm install <pkg>` reconciles the whole workspace and
+restores every devDependency, and adding `--omit=dev` drops the requested package
+too. Trimming it properly needs a separate manifest for the broker, which is not
+worth it for an image that is only built locally and never pushed to ECR.
+
+The general lesson for the report: a Dockerfile that has never been built is not
+evidence of anything. Three of these four defects would have surfaced as a
+crash-looping ECS task with an opaque `EACCES`, during a paid AWS session.

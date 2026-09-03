@@ -70,9 +70,9 @@ available on this machine — see section 11.
 | Telemetry processor (idempotency, state, crowding, delay, fan-out) | **VERIFIED** |
 | Route-impact / ETA worker | **VERIFIED** |
 | Notification worker (simulated delivery) | **VERIFIED** |
-| Graceful SIGTERM shutdown in all three services | **VERIFIED** |
-| Dockerfiles for all three services + `.dockerignore` | **IMPLEMENTED, NOT YET DEPLOYED** — daemon down |
-| `docker-compose.yml` | **IMPLEMENTED, NOT YET DEPLOYED** — daemon down |
+| Graceful SIGTERM shutdown in all three services | **VERIFIED** — in-process and via `docker stop` |
+| Dockerfiles for all three services + `.dockerignore` | **VERIFIED** — built and run locally |
+| `docker-compose.yml` | **VERIFIED** — six-container stack runs the full pipeline |
 | CloudFormation: queues, dynamodb, iot-rule, ecs, scaling | **IMPLEMENTED, NOT YET DEPLOYED** |
 | Deployment scripts (PowerShell + bash) | **IMPLEMENTED, NOT YET DEPLOYED** |
 | Local backlog-per-task autoscaler | **VERIFIED** |
@@ -120,8 +120,25 @@ four scenarios PASS.
 Zero messages reached any dead-letter queue, which is the expected behaviour under
 normal load.
 
+**VERIFIED** — the same pipeline running entirely in containers via
+`docker compose --profile workers up -d`, six containers, driven by the host
+simulator publishing to the containerised broker:
+
+```
+270 events published   -> broker (container) -> Node-RED (container)
+   -> bridge (container) -> telemetry queue
+   -> telemetry processor: received=270 processed=270 failed=0
+   -> BUS-007 breakdown detected -> analysisJobs=50  (8 incidents total)
+   -> route-impact worker: 356 [ANALYSIS] results
+   -> notification worker: 1372 simulated notifications
+
+stored: 270 processed events, 27 entities, 356 analysis results,
+        1372 notifications, 0 messages in any DLQ (no DLQ was ever created)
+```
+
 **BLOCKED** — the AWS path (IoT Core → IoT Rule → SQS → DynamoDB → ECS) has never
-been executed, because no AWS credentials exist on this machine.
+been executed, because no AWS credentials exist on this machine. The container
+images are proven locally but have never been pushed to ECR or run on Fargate.
 
 ---
 
@@ -363,7 +380,9 @@ Coverage by area:
    injection; stage 2: 3 incidents) rather than the full 10-minute stages, once per
    arm rather than the planned three repeats. Stages 3 and 4 are configured and
    runnable but have not been executed.
-7. **Docker images have never been built**, so the Dockerfiles are unproven.
+7. **Images are built and run locally, but never pushed.** No ECR repository
+   exists and no image has run on ECS Fargate, so container *deployment* remains
+   unverified even though the containers themselves are proven.
 8. **No dashboard or API exists.** Deliberately deprioritised.
 9. **Telemetry-growth results measure generation only.** Stages 4, 6 and 8 were
    measured in dry-run mode (23.96/24, 144.4/145 and 1088.8/1100 events per second,
@@ -386,7 +405,6 @@ Evidence from `npm run verify-env` on this machine:
 ```
 [WARN] AWS CLI              not found - AWS deployment is blocked
 [WARN] AWS credentials      no usable credentials - the project still runs fully in local mode
-[WARN] Docker daemon        not reachable - image builds and docker compose are blocked
 ```
 
 - `aws` is not on PATH in either PowerShell or bash.
@@ -394,14 +412,16 @@ Evidence from `npm run verify-env` on this machine:
 - Therefore `aws sts get-caller-identity` cannot be run, the account and region are
   unknown, and no CloudFormation stack has been created.
 
-**Secondary blocker — Docker daemon not running.** The Docker CLI (28.4.0) is
-installed but `docker info` fails with
-`open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`.
-Docker Desktop requires manual start by the user. No image build or `docker compose`
-run has been attempted beyond confirming this.
+**Docker is no longer a blocker.** Docker Desktop 4.47.0 (engine 28.4.0, Linux)
+was started by the user on 2026-09-04. All four images now build, run, process
+real work and shut down cleanly, and the six-container Compose stack runs the
+full pipeline. See section 3.
 
-Neither blocker was worked around by weakening security, and no credentials were
-fabricated.
+What remains blocked is only the AWS half of the container story: no ECR
+repository exists, no image has been pushed, and nothing has run on ECS Fargate.
+
+The AWS blocker was not worked around by weakening security, and no credentials
+were fabricated.
 
 ---
 
