@@ -67,8 +67,9 @@ npm run simulate -- --target mqtt --mqtt-mode aws --duration-seconds 60
 **Must be visible:** the subscribed topic filter, and arriving messages on
 `transport/raw/bus/...`, `.../tram/...`, `.../train/...` and `.../demand/...`.
 
-**Captured:** **no — BLOCKED.** The AWS CLI is not installed and no credentials
-exist on this machine, so no IoT endpoint, thing or certificate has been created.
+**Captured:** **no — BLOCKED on credentials.** The AWS CLI is installed and
+locally verified (`aws-cli/2.36.39`), but no credentials are configured, so no IoT
+endpoint, thing or certificate has been created.
 
 ---
 

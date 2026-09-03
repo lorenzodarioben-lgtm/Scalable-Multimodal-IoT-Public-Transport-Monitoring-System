@@ -1,30 +1,27 @@
 # AWS deployment
 
-> **Status: NOT DEPLOYED.** No AWS resource has been created. The AWS CLI is not
-> installed on the development machine and no credentials are configured, so
-> nothing in this document has been executed. Everything below is written to be
-> run as-is once access exists. See `docs/STATUS_4.2D.md` for the blocker.
+> **Status: NOT DEPLOYED.** No AWS resource has been created. The AWS CLI is
+> installed and locally verified (`aws-cli/2.36.39`), but no credentials are
+> configured and no authenticated call has been made, so nothing in this document
+> has been executed. Everything below is written to be run as-is once access
+> exists. See `docs/STATUS_4.2D.md` for the blocker.
 
 ## Prerequisites
 
 ```bash
 node --version    # >= 20
-aws --version     # not currently installed - see below
+aws --version     # aws-cli/2.36.39 - installed and verified
 docker --version  # daemon must be running for image builds
 npm run verify-env
 ```
 
-**Install the AWS CLI (Windows):**
+The CLI is a per-user install under `%LOCALAPPDATA%\Programs\Amazon\AWSCLIV2\`.
+If `aws --version` reports "command not found", the shell was opened before the
+install — open a new terminal.
 
-```bash
-winget install --id Amazon.AWSCLI -e
-```
-
-or download the MSI from
-<https://awscli.amazonaws.com/AWSCLIV2.msi>. Reopen the terminal afterwards.
-
-**Configure credentials.** Do not create an IAM user for this. Use an SSO
-profile, or the temporary credentials issued by an AWS Academy lab:
+**Configure credentials.** This is the outstanding step. Do not create an IAM user
+for this. Use an SSO profile, or the temporary credentials issued by an AWS
+Academy lab:
 
 ```bash
 aws configure sso           # preferred
