@@ -150,7 +150,8 @@ Written and unit-tested, never executed against the real service.
 
 Priority order:
 
-1. Install and configure the AWS CLI; `aws sts get-caller-identity`.
+1. Configure AWS credentials (the CLI is already installed); then confirm access
+   with `aws sts get-caller-identity`.
 2. Deploy `queues` and `tables` stacks; verify with `describe.sh`.
 3. Create the AWS IoT thing, certificate and policy; populate `.env`; verify the
    simulator publishes over TLS using the IoT MQTT test client.
@@ -168,30 +169,38 @@ Priority order:
 
 ---
 
-## 6. BLOCKER — AWS CLI and credentials unavailable
+## 6. BLOCKER — AWS credentials not configured
 
 **No AWS resource has been created. Nothing about AWS has been verified.**
 
-Observed on this machine:
+Current state on this machine:
 
-- `aws` is not on PATH in PowerShell or bash — `aws --version` fails with
-  "command not found".
-- `~/.aws` does not exist.
-- No `AWS_*` environment variables are set.
-- Therefore `aws sts get-caller-identity` cannot be run; the account ID and region
-  are unknown.
+| Item | Status |
+|---|---|
+| AWS CLI | **installed and locally verified** — `aws-cli/2.36.39` |
+| AWS credentials | **not configured** |
+| AWS deployment | **not started** |
+
+The CLI is a per-user install under
+`%LOCALAPPDATA%\Programs\Amazon\AWSCLIV2\`, which is on the user PATH. A shell
+started *before* the install will not see it — open a new terminal if
+`aws --version` reports "command not found".
+
+Only `aws --version` has been run. **No authenticated call has ever been made:**
+`aws sts get-caller-identity` has not been executed, `~/.aws` does not exist, and
+no `AWS_*` environment variables are set, so the account id and region remain
+unknown.
 
 `npm run verify-env` reports:
 
 ```
-[WARN] AWS CLI          not found - AWS deployment is blocked
+[OK  ] AWS CLI          aws-cli/2.36.39 Python/3.14.6 Windows/11 script-exe/AMD64
 [WARN] AWS credentials  no usable credentials - the project still runs fully in local mode
 ```
 
-**Do not install the AWS CLI without the user asking.** The previous session was
-explicitly instructed not to. When the user is ready, they should install it and
-supply AWS Academy lab credentials themselves; credentials must never be committed,
-printed, or written into tracked files.
+**Do not configure credentials without the user asking.** When they are ready they
+will supply the AWS Academy lab credentials themselves; credentials must never be
+committed, printed, or written into tracked files.
 
 Everything else in the project runs without AWS, which is why the local pipeline is
 fully verified.

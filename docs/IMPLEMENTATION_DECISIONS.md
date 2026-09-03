@@ -223,7 +223,7 @@ system kept up *while load was arriving*.
 
 | Blocker | Effect | Response |
 |---|---|---|
-| AWS CLI not installed, no credentials | No AWS resource can be created or verified | Everything built and tested locally; complete IaC written and structurally tested; exact deployment commands documented |
+| No AWS credentials configured (the CLI itself is installed and verified, `aws-cli/2.36.39`) | No AWS resource can be created or verified | Everything built and tested locally; complete IaC written and structurally tested; exact deployment commands documented |
 | Docker daemon not running (`com.docker.service` stopped, starting it needed elevation) | Images could not be built; `docker compose` could not run | **Resolved 2026-09-04** once the user started Docker Desktop. Building and running then exposed four real defects, all fixed - see section 19 |
 | Node-RED settings must be CommonJS | `settings.js` failed to load under `"type": "module"` | Renamed to `settings.cjs` |
 | Node-RED substitutes env vars as strings | `usetls: "${MQTT_USE_TLS}"` was truthy and forced `mqtts://` against the local broker | TLS is a literal boolean in the flow; switching to AWS IoT is a documented editor step |

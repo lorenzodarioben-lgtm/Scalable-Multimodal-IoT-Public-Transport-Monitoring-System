@@ -66,11 +66,12 @@ npm run demo:local   # terminal 2
 
 ## 4. AWS CLI — only when the user says so
 
-The AWS CLI is **not installed** and **no credentials exist** on this machine. This
-is the main blocker.
+The AWS CLI is **installed and locally verified** (`aws-cli/2.36.39`), but **no
+credentials are configured** and no authenticated call has ever been made. That is
+the main blocker.
 
-**Do not install or configure the AWS CLI on your own initiative.** Wait until the
-user explicitly asks. When they do, they supply the AWS Academy lab credentials
+**Do not configure credentials on your own initiative.** Wait until the user
+explicitly asks. When they do, they supply the AWS Academy lab credentials
 themselves. Never print, log or commit credentials, account IDs, keys or
 certificates.
 

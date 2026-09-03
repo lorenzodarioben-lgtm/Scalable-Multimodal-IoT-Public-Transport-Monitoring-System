@@ -398,19 +398,27 @@ Coverage by area:
 
 ## 11. AWS blockers
 
-**BLOCKED — AWS CLI is not installed and no credentials are present.**
+**BLOCKED — no AWS credentials are configured.** The AWS CLI itself is installed
+and locally verified (`aws-cli/2.36.39`); what is missing is authentication.
+
+| Item | Status |
+|---|---|
+| AWS CLI | **installed and locally verified** — `aws-cli/2.36.39` |
+| AWS credentials | **not configured** |
+| AWS deployment | **not started** |
 
 Evidence from `npm run verify-env` on this machine:
 
 ```
-[WARN] AWS CLI              not found - AWS deployment is blocked
+[OK  ] AWS CLI              aws-cli/2.36.39 Python/3.14.6 Windows/11 script-exe/AMD64
 [WARN] AWS credentials      no usable credentials - the project still runs fully in local mode
 ```
 
-- `aws` is not on PATH in either PowerShell or bash.
+- Only `aws --version` has been run. **No authenticated call has been made** —
+  `aws sts get-caller-identity` has never been executed.
 - `~/.aws` does not exist; no `AWS_*` environment variables are set.
-- Therefore `aws sts get-caller-identity` cannot be run, the account and region are
-  unknown, and no CloudFormation stack has been created.
+- The account and region therefore remain unknown, and no CloudFormation stack
+  has been created.
 
 **Docker is no longer a blocker.** Docker Desktop 4.47.0 (engine 28.4.0, Linux)
 was started by the user on 2026-09-04. All four images now build, run, process
@@ -429,8 +437,8 @@ were fabricated.
 
 In priority order:
 
-1. Install and configure the AWS CLI; confirm identity and region with
-   `aws sts get-caller-identity`.
+1. Configure AWS credentials (the CLI is already installed); confirm identity and
+   region with `aws sts get-caller-identity`.
 2. Deploy `queues` and `tables` stacks; verify with `describe.sh`.
 3. Create the AWS IoT thing, certificate and policy; populate `.env`; verify the
    simulator publishes over TLS with the MQTT test client.

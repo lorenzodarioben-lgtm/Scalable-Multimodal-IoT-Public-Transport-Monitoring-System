@@ -37,17 +37,24 @@ six-container Compose stack runs the full pipeline. The only remaining blocker i
 AWS access.
 
 
-### 1. AWS CLI not installed, no credentials configured
+### 1. AWS credentials not configured
+
+The AWS CLI itself is **installed and locally verified**:
 
 ```
 $ aws --version
-aws: command not found
+aws-cli/2.36.39 Python/3.14.6 Windows/11 script-exe/AMD64
 
 $ ls ~/.aws
 No such file or directory
 ```
 
-No `AWS_*` environment variables are set either.
+It is a per-user install under `%LOCALAPPDATA%\Programs\Amazon\AWSCLIV2\`, which
+is on the user PATH. A shell opened *before* the install will still report
+"command not found" — open a new terminal.
+
+No `AWS_*` environment variables are set either, and **no authenticated call has
+been made**: `aws sts get-caller-identity` has never been run.
 
 **Effect.** No AWS resource can be created, configured or verified. AWS IoT
 Core, SQS, DynamoDB, ECS, CloudWatch and Application Auto Scaling are all

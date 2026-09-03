@@ -81,7 +81,8 @@ evidence/           Curated measurements cited by the report
 | Node.js 20+ | Yes | Developed on v22.19.0 |
 | npm | Yes | Workspaces are used |
 | Docker | For containers only | Verified with Docker Desktop 4.47.0 |
-| AWS CLI + credentials | For AWS deployment only | Not installed on this machine |
+| AWS CLI | For AWS deployment only | Installed and verified, `aws-cli/2.36.39` |
+| AWS credentials | For AWS deployment only | Not configured on this machine |
 
 Everything except container builds and AWS deployment runs with Node.js alone.
 
@@ -401,10 +402,11 @@ The complete pipeline is **verified working locally**, end to end, including
 Node-RED, MQTT, queueing, idempotent processing, disruption fan-out, the ETA
 worker, simulated notifications, and a measured autoscaling comparison.
 
-**Not yet deployed to AWS.** The AWS CLI is not installed and no credentials are
-available on this machine, so no AWS resource has been created. The CloudFormation
-templates, deployment scripts and AWS SDK adapters are written and tested but
-remain unverified against a real account.
+**Not yet deployed to AWS.** The AWS CLI is installed and locally verified
+(`aws-cli/2.36.39`), but no credentials are configured and no authenticated call
+has been made, so no AWS resource has been created. The CloudFormation templates,
+deployment scripts and AWS SDK adapters are written and tested but remain
+unverified against a real account.
 
 Precise, per-component status with VERIFIED / IMPLEMENTED-NOT-DEPLOYED / PARTIAL /
 BLOCKED labels: [docs/STATUS_4.2D.md](docs/STATUS_4.2D.md).
