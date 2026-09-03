@@ -41,6 +41,7 @@ param(
     [string]$RouteImpactImage = '',
     [string]$TelemetryProcessorImage = '',
     [string]$NotificationWorkerImage = '',
+    [int]$WorkerProcessingDelayMs = 0,
     [string]$VpcId = '',
     [string[]]$SubnetIds = @(),
 
@@ -157,6 +158,7 @@ foreach ($stack in $Stacks) {
                 "VpcId=$VpcId",
                 ("SubnetIds=" + ($SubnetIds -join '\,')),
                 "RouteImpactImage=$RouteImpactImage"
+                "WorkerProcessingDelayMs=$WorkerProcessingDelayMs"
             )
             if ($TelemetryProcessorImage) { $p += "TelemetryProcessorImage=$TelemetryProcessorImage" }
             if ($NotificationWorkerImage) { $p += "NotificationWorkerImage=$NotificationWorkerImage" }

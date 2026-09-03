@@ -94,6 +94,9 @@ test('dynamodb: on-demand billing, single keys, and the documented partition key
   }
   // The idempotency ledger should expire its own records.
   assert.equal(doc.Resources.ProcessedEventsTable.Properties.TimeToLiveSpecification.Enabled, true);
+  const resultIndex = doc.Resources.AnalysisResultsTable.Properties.GlobalSecondaryIndexes?.[0];
+  assert.equal(resultIndex?.IndexName, 'SourceEventIdIndex');
+  assert.equal(resultIndex?.KeySchema?.[0]?.AttributeName, 'sourceEventId');
 });
 
 test('ecs: smallest Fargate size, no load balancer, no NAT-dependent design', () => {
@@ -171,6 +174,12 @@ test('iot rule: forwards the normalised topic to the telemetry queue', () => {
   assert.ok(payload.Actions[0].Sqs, 'the rule action must deliver to SQS');
   assert.ok(payload.ErrorAction, 'rule failures must be recorded, not dropped');
   assert.ok(doc.Parameters.ExistingIotRuleRoleArn, 'must accept an existing role');
+  const policies = doc.Resources.IotRuleRole.Properties.Policies;
+  const errorPolicy = policies.find((policy) => policy.PolicyName === 'WriteRuleErrors');
+  assert.ok(errorPolicy, 'generated role must permit its CloudWatch Logs ErrorAction');
+  const actions = errorPolicy.PolicyDocument.Statement.flatMap((statement) => statement.Action);
+  assert.ok(actions.includes('logs:CreateLogStream'));
+  assert.ok(actions.includes('logs:PutLogEvents'));
 });
 
 test('every template tags its resources for the project', () => {

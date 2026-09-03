@@ -20,6 +20,7 @@ SCALING_MODE="${SCALING_MODE:-BacklogPerTask}"
 MIN_TASKS="${MIN_TASKS:-1}"
 MAX_TASKS="${MAX_TASKS:-5}"
 TARGET_BACKLOG="${TARGET_BACKLOG_PER_TASK:-75}"
+WORKER_PROCESSING_DELAY_MS="${WORKER_PROCESSING_DELAY_MS:-0}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CFN_DIR="$REPO_ROOT/infrastructure/cloudformation"
@@ -92,7 +93,8 @@ for stack in "$@"; do
               "TablesStackName=$PREFIX-tables"
               "VpcId=$VPC_ID"
               "SubnetIds=${SUBNET_IDS//,/\\,}"
-              "RouteImpactImage=$ROUTE_IMPACT_IMAGE")
+              "RouteImpactImage=$ROUTE_IMPACT_IMAGE"
+              "WorkerProcessingDelayMs=$WORKER_PROCESSING_DELAY_MS")
       if [ -n "${TELEMETRY_PROCESSOR_IMAGE:-}" ]; then
         params+=("TelemetryProcessorImage=$TELEMETRY_PROCESSOR_IMAGE")
       fi

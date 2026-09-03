@@ -25,6 +25,7 @@
     "notification-worker": "node services/notification-worker/src/index.js",
     "autoscaler": "node scripts/local-autoscaler.js",
     "experiment": "node experiments/runner/run-experiment.js",
+    "experiment:aws": "node experiments/aws/run-aws-experiment.js",
     "queue:stats": "node scripts/queue-stats.js",
     "state:dump": "node scripts/state-dump.js",
     "verify-env": "node scripts/verify-env.js",

@@ -16,7 +16,9 @@
     "./worker": "./worker/index.js"
   },
   "dependencies": {
+    "@aws-sdk/client-application-auto-scaling": "^3.1136.0",
     "@aws-sdk/client-cloudwatch": "^3.1125.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1136.0",
     "@aws-sdk/client-dynamodb": "^3.1125.0",
     "@aws-sdk/client-ecs": "^3.1125.0",
     "@aws-sdk/client-sqs": "^3.1125.0",

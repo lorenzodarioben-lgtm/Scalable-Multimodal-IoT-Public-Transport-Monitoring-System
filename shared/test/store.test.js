@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getStore, keyNameFor } from '../aws/store.js';
+import { DynamoStore, getStore, keyNameFor } from '../aws/store.js';
 import { TABLES } from '../config/index.js';
 
 function store() {
@@ -98,4 +98,33 @@ test('ids containing path separators cannot escape the table directory', async (
     path.resolve(dir, TABLES.analysisResults),
   );
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('DynamoDB count follows every Scan page', async () => {
+  const pages = [
+    { Count: 100, LastEvaluatedKey: { jobId: 'page-1' } },
+    { Count: 37 },
+  ];
+  const commands = [];
+  const db = new DynamoStore('test', {
+    documentClient: { send: async (command) => { commands.push(command); return pages.shift(); } },
+    sdk: { ScanCommand: class { constructor(input) { this.input = input; } } },
+  });
+  assert.equal(await db.count(TABLES.analysisResults), 137);
+  assert.equal(commands.length, 2);
+  assert.deepEqual(commands[1].input.ExclusiveStartKey, { jobId: 'page-1' });
+});
+
+test('DynamoDB index count follows every Query page for run-scoped accounting', async () => {
+  const pages = [
+    { Count: 10, LastEvaluatedKey: { jobId: 'page-1' } },
+    { Count: 4 },
+  ];
+  const db = new DynamoStore('test', {
+    documentClient: { send: async () => pages.shift() },
+    sdk: { QueryCommand: class { constructor(input) { this.input = input; } } },
+  });
+  assert.equal(await db.countByIndex(TABLES.analysisResults, {
+    indexName: 'SourceEventIdIndex', keyName: 'sourceEventId', keyValue: 'evt-run-1',
+  }), 14);
 });

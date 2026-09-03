@@ -80,8 +80,16 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - { AttributeName: jobId, AttributeType: S }
+        - { AttributeName: sourceEventId, AttributeType: S }
       KeySchema:
         - { AttributeName: jobId, KeyType: HASH }
+      # Formal AWS runs query their own source-event ids. This avoids a
+      # table-wide Scan and keeps accounting correct beyond one DynamoDB page.
+      GlobalSecondaryIndexes:
+        - IndexName: SourceEventIdIndex
+          KeySchema:
+            - { AttributeName: sourceEventId, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
       SSESpecification:
         SSEEnabled: true
       Tags:

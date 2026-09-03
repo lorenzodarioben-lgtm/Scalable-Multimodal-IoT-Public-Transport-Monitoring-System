@@ -32,6 +32,8 @@ import { createMetrics } from '../aws/metrics.js';
 import { createLogger } from '../logging/index.js';
 import { percentile, mean, round } from '../util/index.js';
 
+export { resolveWorkerIdentity } from './identity.js';
+
 /**
  * @param {object} options
  * @param {string} options.name service name (used for logs and metrics)

@@ -48,8 +48,8 @@ Conditions:
   CreateRole: !Equals [!Ref ExistingIotRuleRoleArn, '']
 
 Resources:
-  # Least-privilege role: it can send messages to exactly one queue and do
-  # nothing else. Created only when the account permits role creation.
+  # Least-privilege role: it can send messages to exactly one queue and write
+  # only this rule's ErrorAction log stream. Created only when permitted.
   IotRuleRole:
     Type: AWS::IAM::Role
     Condition: CreateRole
@@ -70,6 +70,15 @@ Resources:
                 Action: sqs:SendMessage
                 Resource:
                   Fn::ImportValue: !Sub '${QueuesStackName}-TelemetryQueueArn'
+        - PolicyName: WriteRuleErrors
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub '${RuleErrorLogGroup.Arn}:*'
       Tags:
         - { Key: Project, Value: SIT314-Transport-IoT }
         - { Key: Owner, Value: !Ref Owner }
