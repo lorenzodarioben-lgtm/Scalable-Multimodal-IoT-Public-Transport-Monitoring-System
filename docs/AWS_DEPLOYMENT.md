@@ -188,7 +188,7 @@ $Image   = "<accountid>.dkr.ecr.$env:AWS_REGION.amazonaws.com/$Prefix-route-impa
 $Vpc     = aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text
 $Subnets = (aws ec2 describe-subnets --filters "Name=vpc-id,Values=$Vpc" --query "Subnets[].SubnetId" --output text) -split "\s+"
 
-./infrastructure/scripts/deploy.ps1 -Stacks ecs -Prefix $Prefix -RouteImpactImage $Image -VpcId $Vpc -SubnetIds $Subnets -ExistingExecutionRoleArn $LabRole -ExistingTaskRoleArn $LabRole
+./infrastructure/scripts/deploy.ps1 -Stacks ecs -Prefix $Prefix -RouteImpactImage $Image -VpcId $Vpc -SubnetIds $Subnets -WorkerProcessingDelayMs 50 -ExistingExecutionRoleArn $LabRole -ExistingTaskRoleArn $LabRole
 ```
 
 ### 11. Verify the route-impact service
@@ -198,7 +198,8 @@ aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-
 aws logs tail "/ecs/$Prefix-route-impact" --since 5m
 ```
 
-Expect `Running: 1`, `Status: ACTIVE`, and `[ANALYSIS]` lines once jobs exist. A
+Expect `Running: 1`, `Status: ACTIVE`, and a `[WORKER_READY]` line once queue
+access has been established. A
 task that starts then immediately stops is almost always a missing task-role
 permission — read the reason rather than guessing:
 
@@ -238,17 +239,23 @@ aws cloudwatch list-metrics --namespace SIT314/Transport --metric-name BacklogPe
 An empty result means the Lambda is not publishing and the policy has nothing to
 scale on.
 
-### 14. Controlled workload
+### 14. Formal controlled workload: fixed arm then autoscaled arm
 
 ```powershell
-$env:QUEUE_BACKEND = "aws"; $env:STORE_BACKEND = "aws"; $env:METRICS_BACKEND = "aws"
-npm run experiment -- --config experiments/incident/stage-1.json --worker-mode autoscale
+# Repeat 1 shown; run repeats 1, 2 and 3 for each arm.
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode autoscale --repeat 1
 ```
 
-Start with stage 1 only. Do not run stages 3 or 4 until stage 1 has completed
-cleanly against AWS.
+The formal runner is AWS-only: it configures min=max=1 for the fixed arm and
+min=1/max=5 for the autoscaled arm, waits for exactly one running ECS task, and
+refuses to inject into a non-empty analysis queue or DLQ. It uses the committed
+63-incident count-bounded schedule (30 s warm-up + 10-minute measurement), not
+the local runner. It does not purge queues automatically: inspect and resolve
+leftover work before retrying. Start with stage 1 only; do not run stages 3 or 4
+until stage 1 has completed cleanly against AWS.
 
-### 15. Evidence collection
+### 15. Evidence collection and drain
 
 ```powershell
 aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-impact" --query "services[0].{Running:runningCount,Desired:desiredCount}"
@@ -256,6 +263,11 @@ aws cloudwatch get-metric-statistics --namespace SIT314/Transport --metric-name 
 npm run evidence -- --promote latest
 ```
 
+The runner writes `manifest.json`, `samples.jsonl`, `scaling-activities.json`,
+`summary.json`, and raw CloudWatch log references/events in
+`artifacts/aws-runs/<run-id>/`; these are the source data. It waits for an empty
+visible and in-flight analysis queue, up to the committed 300 s drain deadline.
+Run the fixed and autoscaled arms for repeats 1, 2 and 3 before comparing them.
 Capture the SQS console graphs for `$Prefix-analysis`
 (`ApproximateNumberOfMessagesVisible` and `ApproximateAgeOfOldestMessage`) and the
 ECS task-count graph — evidence items E10 and E11.
@@ -434,13 +446,24 @@ aws logs tail /aws/lambda/sit314-transport-backlog-metric --follow
 ## Running an experiment against AWS
 
 ```bash
-export QUEUE_BACKEND=aws STORE_BACKEND=aws METRICS_BACKEND=aws AWS_REGION=<region>
-npm run experiment -- --config experiments/incident/stage-1.json
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode autoscale --repeat 1
 ```
 
-The runner injects jobs into the real analysis queue; the ECS service consumes
-them. Task counts come from `describe.sh` and CloudWatch rather than from the
-local autoscaler.
+The runner injects jobs into the real analysis queue; ECS is the only consumer.
+It stores the machine-readable evidence locally and uses the service, SQS,
+DynamoDB, Application Auto Scaling and CloudWatch Logs APIs only after the user
+has supplied temporary credentials. Do not use `npm run experiment` for a formal
+AWS comparison: that is the local harness and starts local workers.
+
+### AWS Academy LabRole preflight
+
+When supplying `ExistingIotRuleRoleArn`, confirm that the LabRole trust policy
+allows `iot.amazonaws.com` to assume it and that its permissions include
+`sqs:SendMessage` for the telemetry queue plus `logs:CreateLogStream` and
+`logs:PutLogEvents` for the rule-error log stream.
+The generated role has those least-privilege permissions; an externally supplied
+role is not changed by the template and must be checked in the live session.
 
 ## If a deployment is denied
 

@@ -61,6 +61,56 @@ with the cost on and off. Every run records the value used in `config.json`.
 Each stage is intended to run for 10 minutes after a short warm-up, repeated
 three times with the same seed.
 
+## Formal AWS protocol (preconfigured; not yet executed)
+
+The local runner remains useful for preliminary work. Formal cloud evidence uses
+the separate `npm run experiment:aws` path, which never starts `LocalAutoscaler`
+or a locally spawned route-impact worker. ECS is therefore the only consumer of
+the real analysis queue during a cloud run.
+
+Every incident stage now declares the full formal schedule: 30 s warm-up, 600 s
+measurement, one incident each 10 s, **exactly 63 incidents**, a 300 s drain
+deadline, and three repeats. The AWS runner rejects a stage whose count does not
+equal `ceil((warm-up + measurement)/interval)`; it cannot silently return to a
+time-bounded injector.
+
+Run each repeat in both arms after the live preflight in `docs/AWS_DEPLOYMENT.md`:
+
+```bash
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode autoscale --repeat 1
+```
+
+The fixed arm registers min=max=1 and desired=1, so Application Auto Scaling
+cannot change capacity. The autoscaled arm registers min=1, max=5 and desired=1,
+then requires a live scaling policy before injection. The runner verifies the
+clean analysis queue/DLQ, active ECS processing-cost setting, and one running ECS
+task before it sends a job.
+
+The canonical workload digest and business fields are equal for matching
+stage/seed/repeat pairs. Each arm receives a unique execution namespace, which
+changes the source event, incident and job idempotency identities; DynamoDB thus
+does real work for both arms without making the logical workload unequal.
+
+Each run writes `manifest.json`, `samples.jsonl`, `scaling-activities.json`,
+`summary.json`, and raw CloudWatch worker-log references/events under
+`artifacts/aws-runs/`. Queue arrivals are recoverable from the declared schedule
+and `jobsInjected`; completions, latency, errors and `WORKER_READY` timing are
+recoverable from the timestamped worker events. Results are accounted for via the
+`SourceEventIdIndex` on `analysis-results`, rather than an unbounded first-page
+Scan.
+
+### Formal cloud processing cost
+
+`WORKER_PROCESSING_CPU_ITERATIONS` was a local-harness calibration mechanism.
+The deployed ECS task definition does not set it, and the formal AWS stage makes
+that deliberate: **0 CPU iterations**. The formal cloud setting is a fixed
+`WORKER_PROCESSING_DELAY_MS=50`, passed through the ECS CloudFormation parameter,
+recorded in the manifest, and verified against the active task definition before
+injection. It is identical in the fixed and autoscaled arms. A future approved
+methodology change may choose a different explicit cost, but the runner rejects a
+non-zero CPU iteration count until ECS has a separately reviewed implementation.
+
 ## The four incident stages
 
 | Stage | Incident | Locations | Jobs/incident | Notifications/incident |
