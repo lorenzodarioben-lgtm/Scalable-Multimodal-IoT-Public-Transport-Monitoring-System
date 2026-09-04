@@ -154,12 +154,12 @@ async function acquireLock(lockPath, timeoutMs = 5000) {
 }
 
 class DynamoStore {
-  constructor(region) {
+  constructor(region, { documentClient = null, sdk = null } = {}) {
     this.region = region;
     this.writes = 0;
     this.conditionalFailures = 0;
-    this._doc = null;
-    this._sdk = null;
+    this._doc = documentClient;
+    this._sdk = sdk;
   }
 
   async #doc() {
@@ -242,8 +242,39 @@ class DynamoStore {
 
   async count(table) {
     const { doc, lib } = await this.#doc();
-    const out = await doc.send(new lib.ScanCommand({ TableName: table, Select: 'COUNT' }));
-    return out.Count ?? 0;
+    let count = 0;
+    let exclusiveStartKey;
+    do {
+      const out = await doc.send(new lib.ScanCommand({
+        TableName: table,
+        Select: 'COUNT',
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }));
+      count += out.Count ?? 0;
+      exclusiveStartKey = out.LastEvaluatedKey;
+    } while (exclusiveStartKey);
+    return count;
+  }
+
+  /** Counts a run's results through a GSI without a table-wide Scan. */
+  async countByIndex(table, { indexName, keyName, keyValue }) {
+    const { doc, lib } = await this.#doc();
+    let count = 0;
+    let exclusiveStartKey;
+    do {
+      const out = await doc.send(new lib.QueryCommand({
+        TableName: table,
+        IndexName: indexName,
+        Select: 'COUNT',
+        KeyConditionExpression: '#pk = :pk',
+        ExpressionAttributeNames: { '#pk': keyName },
+        ExpressionAttributeValues: { ':pk': keyValue },
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }));
+      count += out.Count ?? 0;
+      exclusiveStartKey = out.LastEvaluatedKey;
+    } while (exclusiveStartKey);
+    return count;
   }
 }
 

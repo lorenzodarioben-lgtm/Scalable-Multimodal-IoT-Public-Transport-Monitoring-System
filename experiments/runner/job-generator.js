@@ -27,8 +27,9 @@ import { buildAnalysisJobs } from '@sit314/telemetry-processor/disruption';
  * keeps the workload identical in size, shape and distribution while making it
  * genuinely new work each run.
  */
-export function syntheticIncidentEvent(incident, sequence, runId = 'adhoc') {
+export function syntheticIncidentEvent(incident, sequence, runId = 'adhoc', options = {}) {
   const mode = incident.transportMode === 'multimodal' ? 'train' : incident.transportMode;
+  const timestamp = options.createdAt || new Date().toISOString();
   return {
     schemaVersion: '1.0',
     eventId: `evt-exp-${runId}-${incident.scenario}-${String(sequence).padStart(6, '0')}`,
@@ -40,8 +41,8 @@ export function syntheticIncidentEvent(incident, sequence, runId = 'adhoc') {
     routeIds: [incident.routeId],
     locationId: incident.anchorLocationId || `${incident.routeId}-ORIGIN`,
     locationType: null,
-    timestamp: new Date().toISOString(),
-    receivedAt: new Date().toISOString(),
+    timestamp,
+    receivedAt: timestamp,
     position: { latitude: -37.818, longitude: 145.119 },
     metrics: {
       speedKph: 0,
@@ -63,8 +64,8 @@ export function syntheticIncidentEvent(incident, sequence, runId = 'adhoc') {
  * @param {number} sequence incident number within the run
  * @returns {object[]} analysis jobs
  */
-export function generateIncidentJobs(incident, sequence, runId = 'adhoc') {
-  const event = syntheticIncidentEvent(incident, sequence, runId);
+export function generateIncidentJobs(incident, sequence, runId = 'adhoc', options = {}) {
+  const event = syntheticIncidentEvent(incident, sequence, runId, options);
   const evaluation = {
     isIncident: true,
     reason: incident.reason,
@@ -81,7 +82,10 @@ export function generateIncidentJobs(incident, sequence, runId = 'adhoc') {
       targetNotifications: incident.notificationsPerIncident,
     },
   };
-  const { jobs } = buildAnalysisJobs(event, evaluation, { fanout });
+  const { jobs } = buildAnalysisJobs(event, evaluation, {
+    fanout,
+    createdAt: options.createdAt,
+  });
   return jobs;
 }
 

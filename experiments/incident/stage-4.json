@@ -15,11 +15,15 @@
     "notificationsPerIncident": 10000
   },
   "arrival": {
-    "mode": "sustained",
-    "incidentIntervalSeconds": 10
+    "mode": "count-bounded",
+    "incidentIntervalSeconds": 10,
+    "incidents": 63
   },
   "durationSeconds": 600,
   "warmupSeconds": 30,
+  "drainDeadlineSeconds": 300,
+  "repeatCount": 3,
+  "sampleIntervalSeconds": 10,
   "worker": {
     "mode": "fixed",
     "fixedTasks": 1,
@@ -27,6 +31,7 @@
     "maxTasks": 5,
     "concurrency": 4,
     "processingDelayMs": 50,
+    "processingCpuIterations": 0,
     "targetBacklogPerTask": 75,
     "evaluationIntervalMs": 10000,
     "scaleOutCooldownSeconds": 30,

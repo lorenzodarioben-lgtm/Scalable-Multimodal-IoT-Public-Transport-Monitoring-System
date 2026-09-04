@@ -21,6 +21,8 @@
  */
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const TEMPLATES = 'infrastructure/cloudformation';
 const args = process.argv.slice(2);
@@ -36,6 +38,29 @@ const targets = args.length ? args : [`${TEMPLATES}/queues.yaml`,
  */
 function viaPath() {
   return spawnSync('cfn-lint', targets, { stdio: 'inherit' });
+}
+
+/** Find Windows per-user console scripts without depending on one Python PATH. */
+function installedConsoleScripts() {
+  const roots = [
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'Python') : null,
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Python') : null,
+  ].filter(Boolean);
+  const names = process.platform === 'win32' ? ['cfn-lint.exe', 'cfn-lint'] : ['cfn-lint'];
+  return roots.flatMap((root) => {
+    try {
+      return fs.readdirSync(root, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .flatMap((entry) => names.map((name) => path.join(root, entry.name, 'Scripts', name)))
+        .filter((candidate) => fs.existsSync(candidate));
+    } catch {
+      return [];
+    }
+  });
+}
+
+function viaConsoleScript(executable) {
+  return spawnSync(executable, targets, { stdio: 'inherit' });
 }
 
 /** Invokes the installed library directly, bypassing PATH entirely. */
@@ -58,7 +83,20 @@ function notInstalled() {
 
 let result = viaPath();
 if (result.error || result.status === 127 || result.status === 9009) {
-  for (const python of ['python', 'python3', 'py']) {
+  for (const executable of installedConsoleScripts()) {
+    result = viaConsoleScript(executable);
+    if (!result.error && result.status !== 127 && result.status !== 9009) break;
+  }
+}
+if (result.error || result.status === 127 || result.status === 9009) {
+  const candidates = [
+    process.env.CFN_LINT_PYTHON,
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Python', 'Python311', 'python.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Python', 'Python312', 'python.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Python', 'Python313', 'python.exe'),
+    'python', 'python3', 'py',
+  ].filter(Boolean);
+  for (const python of candidates) {
     result = viaPython(python);
     if (!result.error && result.status !== 127 && result.status !== 9009) break;
   }
@@ -69,4 +107,6 @@ if (result.error || result.status === null) notInstalled();
 // cfn-lint exit codes: 0 clean, 2 errors, 4 warnings, 6 informational, and
 // combinations thereof. Anything non-zero is surfaced to the caller.
 if (result.status === 0) process.stdout.write('cfn-lint: no findings across all templates.\n');
-process.exit(result.status);
+// Let the success line flush on Windows rather than cutting it off with an
+// immediate process.exit().
+process.exitCode = result.status;

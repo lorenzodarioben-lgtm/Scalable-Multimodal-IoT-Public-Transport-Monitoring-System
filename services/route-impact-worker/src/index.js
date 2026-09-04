@@ -16,12 +16,11 @@ import { banner, createLogger } from '@sit314/shared/logging';
 import { getQueue } from '@sit314/shared/queues';
 import { getStore } from '@sit314/shared/store';
 import { createMetrics } from '@sit314/shared/metrics';
-import { createWorker } from '@sit314/shared/worker';
+import { createWorker, resolveWorkerIdentity } from '@sit314/shared/worker';
 import { RouteImpactWorker } from './worker.js';
 
-const taskId = process.env.WORKER_TASK_ID
-  || process.env.ECS_TASK_ID
-  || `local-${process.pid}`;
+const identity = await resolveWorkerIdentity();
+const taskId = identity.taskId;
 
 const logger = createLogger('route-impact-worker', {
   jsonFile: process.env.LOG_JSON_FILE || null,
@@ -68,7 +67,21 @@ const worker = createWorker({
   },
 });
 
-worker.start()
+async function main() {
+  // Queue access is the smallest useful readiness probe: it confirms the
+  // worker can contact its input dependency before it claims work. Store
+  // writes remain verified by the first normal job, preserving least privilege.
+  await analysisQueue.getAttributes();
+  logger.info('WORKER_READY', {
+    taskId,
+    containerId: identity.containerId,
+    identitySource: identity.source,
+    queue: analysisQueue.name,
+  }, `[WORKER_READY] taskId=${taskId} source=${identity.source}`);
+  return worker.start();
+}
+
+main()
   .then((final) => {
     process.stdout.write(`\n[ROUTE-WORKER-COMPLETE] ${JSON.stringify({
       taskId, ...final, ...impactWorker.counters,
