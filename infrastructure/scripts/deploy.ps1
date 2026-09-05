@@ -207,5 +207,5 @@ foreach ($stack in $Stacks) {
 }
 
 Write-Host "`nDone. Inspect what was created with:"
-Write-Host "  ./infrastructure/scripts/describe.ps1"
+Write-Host "  bash ./infrastructure/scripts/describe.sh"
 Write-Host "`nRemember: the route-impact service should sit at $MinTasks task(s) when idle."
