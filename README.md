@@ -227,7 +227,7 @@ Deployment sequence: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md).
 npm test
 ```
 
-159 tests currently pass, covering the RNG determinism, all four generators, CLI
+169 tests currently pass, covering the RNG determinism, all four generators, CLI
 and config resolution, corruption injection, schema validation, the real Node-RED
 function-node source, the local queue's visibility-timeout and DLQ redrive
 behaviour, conditional-write idempotency, the telemetry processor's disruption
@@ -359,8 +359,18 @@ reached the cap of 5 tasks and was still behind, so the **local preliminary
 breaking point lies between stage 1 and stage 2** (local harness only, not a
 prediction of the AWS breaking point).
 
-Any fixed-vs-autoscale comparison must use `--incidents N` so both arms inject an
-identical workload; see `docs/SCALABILITY_TESTING.md` for why.
+Formal AWS comparisons use the separate count-bounded runner, which never starts
+local consumers of SQS:
+
+```bash
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode autoscale --repeat 1
+```
+
+It requires temporary AWS credentials and creates raw evidence under
+`artifacts/aws-runs/`; see `docs/SCALABILITY_TESTING.md` and
+`docs/AWS_DEPLOYMENT.md`. The existing `npm run experiment` command remains the
+local preliminary harness.
 
 Methodology, thresholds and the breaking-point definition:
 [docs/SCALABILITY_TESTING.md](docs/SCALABILITY_TESTING.md).

@@ -20,7 +20,7 @@ sensitive values appear here.
 | git | 2.51.0.windows.1 | available, identity configured |
 | Docker CLI | 28.4.0 | installed |
 | Docker daemon | - | **NOT RUNNING** |
-| AWS CLI | - | **NOT INSTALLED** |
+| AWS CLI | 2.36.39 | installed; no credentials configured |
 | Node-RED | 5.0.6 | installed as a dev dependency, runs locally |
 
 Reproduce with:
@@ -31,10 +31,9 @@ npm run verify-env
 
 ## Blockers
 
-**Docker is no longer blocked.** Docker Desktop 4.47.0 (engine 28.4.0, Linux
-engine) was started on 2026-09-04 and every image now builds and runs; the
-six-container Compose stack runs the full pipeline. The only remaining blocker is
-AWS access.
+Docker Desktop is currently **not running**. Previous local image and Compose
+verification remains valid historical evidence, but Docker builds/runtime checks
+cannot be repeated until the daemon is started. AWS access is a separate blocker.
 
 
 ### 1. AWS credentials not configured
@@ -67,13 +66,11 @@ and the complete infrastructure-as-code was written and structurally tested.
 **To unblock:**
 
 ```bash
-winget install --id Amazon.AWSCLI -e
-# reopen the terminal, then:
 aws configure sso        # or paste AWS Academy lab credentials
 aws sts get-caller-identity
 ```
 
-### 2. Docker — RESOLVED 2026-09-04
+### 2. Docker — previously verified; currently unavailable
 
 Previously the daemon would not start: `docker info` failed with
 `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file
@@ -90,16 +87,17 @@ docker compose --profile workers up -d
 docker compose ps
 ```
 
-All four images build, run as a non-root user, process real work, and exit 0 on
-`docker stop`. The six-container Compose stack runs the full pipeline. Only the
-AWS half remains: no ECR push, no ECS Fargate run.
+All four images previously built, ran as a non-root user, processed real work,
+and exited 0 on `docker stop`; the six-container Compose stack was also verified.
+That runtime is not currently available because the daemon is stopped. No image
+has been pushed to ECR and nothing has run on ECS Fargate.
 
 **One gotcha:** the Compose `node-red` service publishes host port 1880, which
 collides with a host `npm run node-red`. Stop the host process first.
 
 ## What runs without AWS
 
-Everything except AWS deployment and container builds:
+Everything except AWS deployment and Docker runtime checks:
 
 | Capability | State |
 |---|---|
@@ -112,7 +110,7 @@ Everything except AWS deployment and container builds:
 | Notification worker, simulated delivery records | working |
 | Backlog-per-task autoscaling of worker processes | working |
 | Scalability experiments with recorded metrics | working |
-| Automated test suite | 150 tests passing |
+| Automated test suite | 169 tests passing |
 
 ## AWS region
 
