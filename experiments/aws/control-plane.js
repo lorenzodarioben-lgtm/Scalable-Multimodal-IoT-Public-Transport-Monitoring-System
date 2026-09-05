@@ -191,6 +191,59 @@ export class AwsControlPlane {
     throw new Error(`ECS did not reach ${mode} starting state: ${JSON.stringify(latest)}`);
   }
 
+  async #runningTaskIdentities() {
+    const listed = await this.ecs.send(new this.sdk.ecs.ListTasksCommand({
+      cluster: this.cluster,
+      serviceName: this.service,
+      desiredStatus: 'RUNNING',
+    }));
+    const taskArns = listed.taskArns || [];
+    if (taskArns.length !== 1) {
+      throw new Error(`expected exactly one running route-impact task before injection, found ${taskArns.length}`);
+    }
+    const described = await this.ecs.send(new this.sdk.ecs.DescribeTasksCommand({
+      cluster: this.cluster,
+      tasks: taskArns,
+    }));
+    const task = described.tasks?.[0];
+    const taskSuffix = task?.taskArn?.split('/').at(-1);
+    if (!taskSuffix) throw new Error('ECS did not return a task ARN for the running worker');
+    return [{
+      taskArn: task.taskArn,
+      taskId: `ecs-${taskSuffix}`,
+      // awslogs naming is deterministic: prefix/container/task-id. Never use
+      // LastEventTime to guess which worker stream belongs to this task.
+      logStreamName: `route-impact/route-impact-worker/${taskSuffix}`,
+    }];
+  }
+
+  async waitForWorkerReady({ timeoutSeconds = 180 } = {}) {
+    const deadline = Date.now() + timeoutSeconds * 1000;
+    let identities = [];
+    do {
+      identities = await this.#runningTaskIdentities();
+      const readyEvents = [];
+      for (const identity of identities) {
+        const out = await this.logs.send(new this.sdk.logs.GetLogEventsCommand({
+          logGroupName: this.logGroupName,
+          logStreamName: identity.logStreamName,
+          startFromHead: false,
+          limit: 100,
+        }));
+        const event = (out.events || []).find((item) => item.message?.includes('[WORKER_READY]')
+          && item.message.includes(`taskId=${identity.taskId}`));
+        if (event) readyEvents.push({
+          ...identity,
+          timestamp: new Date(event.timestamp).toISOString(),
+          message: event.message,
+        });
+      }
+      if (readyEvents.length === identities.length) return { workers: readyEvents };
+      await this.sleep(5000);
+    } while (Date.now() < deadline);
+    throw new Error(`route-impact worker did not emit WORKER_READY for ${JSON.stringify(identities)}`);
+  }
+
   async sample() {
     const [queue, service] = await Promise.all([
       this.#queueSnapshot(this.analysisQueueName),

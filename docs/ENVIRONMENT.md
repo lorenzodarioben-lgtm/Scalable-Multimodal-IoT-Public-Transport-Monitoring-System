@@ -50,7 +50,8 @@ No such file or directory
 
 It is a per-user install under `%LOCALAPPDATA%\Programs\Amazon\AWSCLIV2\`, which
 is on the user PATH. A shell opened *before* the install will still report
-"command not found" — open a new terminal.
+"command not found" — open a genuinely new terminal window, not a subprocess
+of the old shell. Until then, invoke the executable by full path if necessary.
 
 No `AWS_*` environment variables are set either, and **no authenticated call has
 been made**: `aws sts get-caller-identity` has never been run.

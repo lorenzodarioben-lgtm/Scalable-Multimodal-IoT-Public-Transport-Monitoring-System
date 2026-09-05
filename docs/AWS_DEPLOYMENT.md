@@ -17,7 +17,10 @@ npm run verify-env
 
 The CLI is a per-user install under `%LOCALAPPDATA%\Programs\Amazon\AWSCLIV2\`.
 If `aws --version` reports "command not found", the shell was opened before the
-install — open a new terminal.
+install — open a genuinely new terminal window, not a subprocess of the old
+shell. `winget` updates the PATH stored for future sessions but does not repair
+the environment inherited by an already-open terminal; use the full executable
+path temporarily if a new window still inherits the stale PATH.
 
 **Configure credentials.** This is the outstanding step. Do not create an IAM user
 for this. Use an SSO profile, or the temporary credentials issued by an AWS
@@ -69,7 +72,7 @@ Set these once at the start of the session:
 ```powershell
 $env:AWS_REGION = "us-east-1"          # or the region your lab provides
 $Prefix         = "sit314-transport"
-$LabRole        = ""                   # e.g. "arn:aws:iam::<account-id>:role/LabRole"
+$LabRole        = Read-Host 'Paste the LabRole ARN supplied by the lab; press Enter only if role creation is allowed'
 ```
 
 Leave `$LabRole` empty if the account allows role creation. In AWS Academy it
@@ -93,6 +96,33 @@ $env:AWS_REGION
 
 Both should agree. If `aws configure get region` is empty the CLI falls back to
 `$env:AWS_REGION`, so make sure that is set.
+
+### 2a. AWS Academy preflight (read-only)
+
+Run this before creating any project resource. It makes non-mutating identity,
+IAM/authorization-simulation and CloudWatch Logs inspection requests only; it
+never creates a role, service-linked role, repository, stack or log stream. A
+denied IAM read or simulation means *unknown*, not that the permission is absent
+or present.
+
+```powershell
+./infrastructure/scripts/aws-academy-preflight.ps1 -Prefix $Prefix -Region $env:AWS_REGION -LabRoleArn $LabRole
+```
+
+Read its LabRole trust result especially carefully. The role used by the
+project must be assumable by the relevant service (`ecs-tasks.amazonaws.com`,
+`iot.amazonaws.com`, or `lambda.amazonaws.com`); a single Academy LabRole may
+not be valid for all three uses. Also treat Application Auto Scaling's first
+registration as a separate live gate after ECS: the account may need the
+`AWSServiceRoleForApplicationAutoScaling_ECSService` service-linked role and
+Academy may deny its creation. Stop on that denial rather than attempting to
+work around it.
+
+Where Academy permits `iam:SimulatePrincipalPolicy`, the preflight also reports
+the LabRole's evaluated `sqs:SendMessage`, CloudWatch Logs writer and ECR pull
+permissions against this project's resolved ARNs. It is advisory: it cannot
+prove role trust, `iam:PassRole`, service-control policies or an actual service
+write, so retain the isolated live gates.
 
 ### 3. Deploy the queues
 
@@ -176,20 +206,27 @@ Expect `CLEAN`.
 
 ```powershell
 ./infrastructure/scripts/build-and-push.ps1 -Services route-impact-worker -Prefix $Prefix
-aws ecr describe-images --repository-name "$Prefix-route-impact-worker" --query "imageDetails[].imageTags"
+aws ecr describe-images --repository-name "$Prefix-route-impact-worker" --image-ids imageTag=latest --query "imageDetails[0].imageDigest"
 ```
 
-Expect the `latest` tag. Record the image URI for the next step.
+The script enforces this exact ordering: create or verify the repository,
+authenticate Docker, build, tag, push, then verify an ECR image digest. Expect
+a digest. It fails before ECS can be deployed with a nonexistent or empty image.
 
 ### 10. ECS deployment
 
 ```powershell
-$Image   = "<accountid>.dkr.ecr.$env:AWS_REGION.amazonaws.com/$Prefix-route-impact-worker:latest"
+$AccountId = aws sts get-caller-identity --query Account --output text
+$Image     = "$AccountId.dkr.ecr.$env:AWS_REGION.amazonaws.com/$Prefix-route-impact-worker:latest"
 $Vpc     = aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text
 $Subnets = (aws ec2 describe-subnets --filters "Name=vpc-id,Values=$Vpc" --query "Subnets[].SubnetId" --output text) -split "\s+"
 
 ./infrastructure/scripts/deploy.ps1 -Stacks ecs -Prefix $Prefix -RouteImpactImage $Image -VpcId $Vpc -SubnetIds $Subnets -WorkerProcessingDelayMs 50 -ExistingExecutionRoleArn $LabRole -ExistingTaskRoleArn $LabRole
 ```
+
+`deploy.ps1` independently verifies that this exact ECR image tag has a digest
+before it creates or updates the ECS service. Do not bypass that gate with a
+hand-written CloudFormation command.
 
 ### 11. Verify the route-impact service
 
@@ -207,11 +244,27 @@ permission — read the reason rather than guessing:
 aws ecs describe-tasks --cluster "$Prefix-cluster" --tasks (aws ecs list-tasks --cluster "$Prefix-cluster" --desired-status STOPPED --query "taskArns[0]" --output text) --query "tasks[0].stoppedReason"
 ```
 
+For startup-delay evidence, correlate to the known running task rather than
+asking CloudWatch Logs for the "latest" stream. `LastEventTime` is eventually
+consistent and can select the wrong worker:
+
+```powershell
+$TaskArn = aws ecs list-tasks --cluster "$Prefix-cluster" --service-name "$Prefix-route-impact" --desired-status RUNNING --query "taskArns[0]" --output text
+$TaskId = ($TaskArn -split '/')[-1]
+$LogStream = "route-impact/route-impact-worker/$TaskId"
+aws logs get-log-events --log-group-name "/ecs/$Prefix-route-impact" --log-stream-name $LogStream --start-from-head
+```
+
 ### 12. Autoscaling deployment
 
 ```powershell
 ./infrastructure/scripts/deploy.ps1 -Stacks scaling -Prefix $Prefix -ScalingMode BacklogPerTask -MinTasks 1 -MaxTasks 5 -TargetBacklogPerTask 75 -ExistingLambdaRoleArn $LabRole
 ```
+
+Keep this as its own step — do not combine it with the ECS deployment. It makes
+the Application Auto Scaling first-use/service-linked-role outcome observable
+and cheap to stop on. A successful stack does not prove scaling yet; wait for
+the metric and a workload-driven transition below.
 
 If Lambda or EventBridge creation is denied, redeploy with the documented fallback
 and record the deviation in `docs/IMPLEMENTATION_DECISIONS.md`:
@@ -237,7 +290,9 @@ aws cloudwatch list-metrics --namespace SIT314/Transport --metric-name BacklogPe
 ```
 
 An empty result means the Lambda is not publishing and the policy has nothing to
-scale on.
+scale on. The metric is published once per minute, so allow at least two to
+three complete periods before treating the policy as ready or starting the
+formal run.
 
 ### 14. Formal controlled workload: fixed arm then autoscaled arm
 
@@ -249,17 +304,28 @@ npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mo
 
 The formal runner is AWS-only: it configures min=max=1 for the fixed arm and
 min=1/max=5 for the autoscaled arm, waits for exactly one running ECS task, and
+waits for that task's exact `[WORKER_READY]` log event before injection. It
 refuses to inject into a non-empty analysis queue or DLQ. It uses the committed
 63-incident count-bounded schedule (30 s warm-up + 10-minute measurement), not
-the local runner. It does not purge queues automatically: inspect and resolve
-leftover work before retrying. Start with stage 1 only; do not run stages 3 or 4
-until stage 1 has completed cleanly against AWS.
+the local runner. Do not shorten a formal run for convenience: one-minute
+metric publication, CloudWatch evaluation, scale-out cooldown and Fargate task
+startup must all fit within the evidence window. It does not purge queues
+automatically: inspect and resolve leftover work before retrying. Start with
+stage 1 only; do not run stages 3 or 4 until stage 1 has completed cleanly
+against AWS.
+
+Never use `aws cloudwatch set-alarm-state`, temporary alarm thresholds, or any
+other forced state as autoscaling evidence. The formal evidence is valid only
+when the committed workload causes real metric transitions and the resulting
+Application Auto Scaling activities are recorded.
 
 ### 15. Evidence collection and drain
 
 ```powershell
 aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-impact" --query "services[0].{Running:runningCount,Desired:desiredCount}"
-aws cloudwatch get-metric-statistics --namespace SIT314/Transport --metric-name BacklogPerTask --start-time (Get-Date).AddMinutes(-30).ToString("s") --end-time (Get-Date).ToString("s") --period 60 --statistics Average
+$MetricEndUtc = [DateTime]::UtcNow
+$MetricStartUtc = $MetricEndUtc.AddMinutes(-30)
+aws cloudwatch get-metric-statistics --namespace SIT314/Transport --metric-name BacklogPerTask --start-time $MetricStartUtc.ToString('yyyy-MM-ddTHH:mm:ssZ') --end-time $MetricEndUtc.ToString('yyyy-MM-ddTHH:mm:ssZ') --period 60 --statistics Average
 npm run evidence -- --promote latest
 ```
 
@@ -325,7 +391,6 @@ Get the endpoint and put it in `.env`:
 
 ```bash
 aws iot describe-endpoint --endpoint-type iot:Data-ATS
-# -> AWS_IOT_ENDPOINT=xxxxxxxx-ats.iot.<region>.amazonaws.com
 ```
 
 Create a device certificate (see `certs/README.md`):
@@ -335,35 +400,31 @@ aws iot create-keys-and-certificate --set-as-active \
   --certificate-pem-outfile certs/device-certificate.pem.crt \
   --public-key-outfile certs/device-public.pem.key \
   --private-key-outfile certs/device-private.pem.key
-curl -o certs/AmazonRootCA1.pem https://www.amazontrust.com/repository/AmazonRootCA1.pem
+curl.exe -L -o certs/AmazonRootCA1.pem https://www.amazontrust.com/repository/AmazonRootCA1.pem
 ```
 
-Attach a **least-privilege** policy. Save as `iot-policy.json`, substituting your
-region and account:
+Attach a **least-privilege** policy. The command resolves the current account
+and configured region instead of requiring hand-edited policy placeholders:
 
-```json
+```bash
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+cat > iot-policy.json <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
-    { "Effect": "Allow", "Action": "iot:Connect",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:client/sit314-*" },
-    { "Effect": "Allow", "Action": "iot:Publish",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/transport/raw/*" },
-    { "Effect": "Allow", "Action": "iot:Publish",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/transport/normalized/*" },
-    { "Effect": "Allow", "Action": "iot:Subscribe",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topicfilter/transport/*" },
-    { "Effect": "Allow", "Action": "iot:Receive",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/transport/*" }
+    { "Effect": "Allow", "Action": "iot:Connect", "Resource": "arn:aws:iot:${AWS_REGION}:${ACCOUNT_ID}:client/sit314-*" },
+    { "Effect": "Allow", "Action": "iot:Publish", "Resource": "arn:aws:iot:${AWS_REGION}:${ACCOUNT_ID}:topic/transport/raw/*" },
+    { "Effect": "Allow", "Action": "iot:Publish", "Resource": "arn:aws:iot:${AWS_REGION}:${ACCOUNT_ID}:topic/transport/normalized/*" },
+    { "Effect": "Allow", "Action": "iot:Subscribe", "Resource": "arn:aws:iot:${AWS_REGION}:${ACCOUNT_ID}:topicfilter/transport/*" },
+    { "Effect": "Allow", "Action": "iot:Receive", "Resource": "arn:aws:iot:${AWS_REGION}:${ACCOUNT_ID}:topic/transport/*" }
   ]
 }
-```
-
-```bash
+EOF
 aws iot create-policy --policy-name sit314-transport-device \
   --policy-document file://iot-policy.json
+read -r -p 'Paste the certificate ARN returned by the create command: ' CERTIFICATE_ARN
 aws iot attach-policy --policy-name sit314-transport-device \
-  --target <certificateArn>
+  --target "$CERTIFICATE_ARN"
 ```
 
 Test publishing, then subscribe in the AWS IoT MQTT test client to
@@ -379,7 +440,9 @@ MQTT_MODE=aws npm run simulate -- --buses 3 --trams 2 --trains 1 --locations 2 \
 ```bash
 ./infrastructure/scripts/deploy.sh iot-rule
 # restricted account:
-EXISTING_IOT_RULE_ROLE_ARN=arn:aws:iam::...:role/LabRole ./infrastructure/scripts/deploy.sh iot-rule
+read -r -p 'Paste the Academy LabRole ARN: ' EXISTING_IOT_RULE_ROLE_ARN
+export EXISTING_IOT_RULE_ROLE_ARN
+./infrastructure/scripts/deploy.sh iot-rule
 ```
 
 Now anything Node-RED publishes to `transport/normalized/+` lands in the
@@ -406,15 +469,18 @@ Find a VPC and two subnets (the default VPC is fine):
 
 ```bash
 aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query "Vpcs[0].VpcId"
-aws ec2 describe-subnets --filters Name=vpc-id,Values=<vpc> --query "Subnets[].SubnetId"
+VPC_ID="$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)"
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query "Subnets[].SubnetId"
 ```
 
 ```bash
-ROUTE_IMPACT_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/sit314-transport-route-impact-worker:latest \
-VPC_ID=vpc-xxxx SUBNET_IDS=subnet-a,subnet-b \
-EXISTING_EXECUTION_ROLE_ARN=arn:aws:iam::...:role/LabRole \
-EXISTING_TASK_ROLE_ARN=arn:aws:iam::...:role/LabRole \
-./infrastructure/scripts/deploy.sh ecs
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+VPC_ID="$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)"
+SUBNET_IDS="$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query 'Subnets[].SubnetId' --output text | tr '\t' ',')"
+ROUTE_IMPACT_IMAGE="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/sit314-transport-route-impact-worker:latest"
+read -r -p 'Paste the Academy LabRole ARN: ' EXISTING_EXECUTION_ROLE_ARN
+export ROUTE_IMPACT_IMAGE VPC_ID SUBNET_IDS EXISTING_EXECUTION_ROLE_ARN
+EXISTING_TASK_ROLE_ARN="$EXISTING_EXECUTION_ROLE_ARN" ./infrastructure/scripts/deploy.sh ecs
 ```
 
 Confirm one task is running and consuming the analysis queue:
@@ -492,6 +558,8 @@ left alone - remove those manually if you want them gone:
 
 ```bash
 aws ecr delete-repository --repository-name sit314-transport-route-impact-worker --force
-aws iot update-certificate --certificate-id <id> --new-status INACTIVE
-aws iot delete-certificate --certificate-id <id>
+read -r -p 'Paste the device certificate ARN: ' CERTIFICATE_ARN
+CERTIFICATE_ID="${CERTIFICATE_ARN##*/}"
+aws iot update-certificate --certificate-id "$CERTIFICATE_ID" --new-status INACTIVE
+aws iot delete-certificate --certificate-id "$CERTIFICATE_ID"
 ```

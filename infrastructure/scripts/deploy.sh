@@ -88,6 +88,21 @@ for stack in "$@"; do
       : "${ROUTE_IMPACT_IMAGE:?ROUTE_IMPACT_IMAGE is required (run build-and-push.sh first)}"
       : "${VPC_ID:?VPC_ID is required}"
       : "${SUBNET_IDS:?SUBNET_IDS is required (comma separated)}"
+      expected_registry="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$REGION.amazonaws.com"
+      image_registry="${ROUTE_IMPACT_IMAGE%%/*}"
+      image_name_tag="${ROUTE_IMPACT_IMAGE#*/}"
+      image_repo="${image_name_tag%:*}"
+      image_tag="${image_name_tag##*:}"
+      if [ "$image_registry" != "$expected_registry" ] || [ "$image_repo" != "$PREFIX-route-impact-worker" ] || [ "$image_tag" = "$image_name_tag" ]; then
+        echo "ROUTE_IMPACT_IMAGE must reference $expected_registry/$PREFIX-route-impact-worker:<tag>." >&2
+        exit 2
+      fi
+      digest="$(aws ecr describe-images --repository-name "$image_repo" --region "$REGION" --image-ids "imageTag=$image_tag" --query 'imageDetails[0].imageDigest' --output text)" || {
+        echo "ECR image $ROUTE_IMPACT_IMAGE does not exist. Build and push it before deploying ECS." >&2
+        exit 1
+      }
+      [ -n "$digest" ] && [ "$digest" != "None" ] || { echo "ECR returned no digest for $ROUTE_IMPACT_IMAGE." >&2; exit 1; }
+      echo "Verified ECR image digest: $digest"
       params=("ResourcePrefix=$PREFIX"
               "QueuesStackName=$PREFIX-queues"
               "TablesStackName=$PREFIX-tables"
