@@ -110,6 +110,20 @@ In the Node-RED editor: **menu -> Import -> clipboard**, paste the contents of
 `flows.json`, then **Deploy**. Configure the MQTT broker node afterwards (see
 below).
 
+### Safe sequence after an external `flows.json` edit
+
+The editor keeps an in-memory flow. If `flows.json` is changed by a repository
+tool while an editor tab is still open, clicking **Deploy** from that stale tab
+can overwrite the repository change. Use this sequence every time a generated
+or externally edited flow is introduced:
+
+1. Stop Node-RED.
+2. Make or receive the `flows.json` change, then run `npm run flows:check`.
+3. Start Node-RED again.
+4. Hard-reload the browser editor (or open a new editor tab) and confirm the
+   changed flow is visible.
+5. Only then make editor changes and click **Deploy**.
+
 ## Pointing the flow at AWS IoT Core
 
 The broker host and port are supplied as environment variables, so the same flow
@@ -117,7 +131,7 @@ works locally and against AWS:
 
 | Variable | Local | AWS IoT Core |
 |---|---|---|
-| `MQTT_HOST` | `localhost` | your ATS endpoint, e.g. `xxxx-ats.iot.<region>.amazonaws.com` |
+| `MQTT_HOST` | `localhost` | the ATS endpoint returned by `aws iot describe-endpoint` |
 | `MQTT_PORT` | `1883` | `8883` |
 | `MQTT_CLIENT_ID` | `sit314-node-red` | any unique id allowed by the IoT policy |
 

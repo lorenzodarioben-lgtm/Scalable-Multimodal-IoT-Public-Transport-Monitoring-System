@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { capacityForMode } from '../aws/control-plane.js';
+import { AwsControlPlane, capacityForMode } from '../aws/control-plane.js';
 import { runAwsExperiment } from '../aws/runner.js';
 import { buildAwsSummary } from '../aws/summary.js';
 
@@ -31,6 +31,7 @@ function fakeController(clock, calls) {
     async verifyQueuesClean() { calls.push(['verifyQueuesClean']); },
     async verifyProcessingCost(cost) { calls.push(['verifyProcessingCost', cost]); return { ...cost, source: 'test' }; },
     async waitForStartingState(mode) { calls.push(['waitForStartingState', mode]); return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() { calls.push(['waitForWorkerReady']); return { workers: [{ taskId: 'ecs-unit' }] }; },
     async sample() {
       calls.push(['sample']);
       return {
@@ -64,19 +65,61 @@ test('capacity modes are exactly fixed one or autoscale one-to-five', () => {
   assert.deepEqual(capacityForMode('autoscale'), { minCapacity: 1, maxCapacity: 5, desiredCount: 1 });
 });
 
+test('AWS worker readiness uses the known ECS task stream, never log-stream recency', async () => {
+  const taskArn = 'arn:aws:ecs:us-east-1:123456789012:task/sit314-transport-cluster/task-abc';
+  const logRequests = [];
+  class ListTasksCommand { constructor(input) { this.input = input; } }
+  class DescribeTasksCommand { constructor(input) { this.input = input; } }
+  class GetLogEventsCommand { constructor(input) { this.input = input; } }
+  class EcsClient {
+    async send(command) {
+      if (command instanceof ListTasksCommand) return { taskArns: [taskArn] };
+      if (command instanceof DescribeTasksCommand) return { tasks: [{ taskArn }] };
+      throw new Error(`unexpected ECS command ${command.constructor.name}`);
+    }
+  }
+  class LogsClient {
+    async send(command) {
+      logRequests.push(command.input);
+      return { events: [{ timestamp: Date.UTC(2026, 0, 1), message: '[WORKER_READY] taskId=ecs-task-abc' }] };
+    }
+  }
+  class EmptyClient { async send() { throw new Error('unexpected AWS client call'); } }
+  const sdk = {
+    ecs: { ECSClient: EcsClient, ListTasksCommand, DescribeTasksCommand },
+    logs: { CloudWatchLogsClient: LogsClient, GetLogEventsCommand },
+    autoscaling: { ApplicationAutoScalingClient: EmptyClient },
+    sqs: { SQSClient: EmptyClient },
+    dynamodb: { DynamoDBClient: EmptyClient },
+    dynamodbDocument: { DynamoDBDocumentClient: { from: () => new EmptyClient() } },
+  };
+  const controller = new AwsControlPlane({ region: 'us-east-1', prefix: 'sit314-transport', sdk, sleep: async () => {} });
+
+  const ready = await controller.waitForWorkerReady({ timeoutSeconds: 1 });
+
+  assert.equal(ready.workers[0].taskId, 'ecs-task-abc');
+  assert.deepEqual(logRequests, [{
+    logGroupName: '/ecs/sit314-transport-route-impact',
+    logStreamName: 'route-impact/route-impact-worker/task-abc',
+    startFromHead: false,
+    limit: 100,
+  }]);
+});
+
 test('AWS runner records a complete count-bounded manifest without local workers', async () => {
   assert.doesNotMatch(runnerSource, /LocalAutoscaler|defaultSpawner|child_process|route-impact-worker\/src/);
   const { root, calls, result } = await run('fixed');
   try {
     assert.deepEqual(calls.filter(([name]) => name === 'injectJobs').map(([, count]) => count), [2, 2]);
-    assert.deepEqual(calls.slice(0, 4).map(([name, mode]) => [name, typeof mode === 'string' ? mode : null].filter(Boolean)), [
-      ['configureCapacity', 'fixed'], ['verifyQueuesClean'], ['verifyProcessingCost'], ['waitForStartingState', 'fixed'],
+    assert.deepEqual(calls.slice(0, 5).map(([name, mode]) => [name, typeof mode === 'string' ? mode : null].filter(Boolean)), [
+      ['configureCapacity', 'fixed'], ['verifyQueuesClean'], ['verifyProcessingCost'], ['waitForStartingState', 'fixed'], ['waitForWorkerReady'],
     ]);
     const manifest = JSON.parse(fs.readFileSync(path.join(result.runDir, 'manifest.json'), 'utf8'));
     assert.equal(manifest.workload.expectedAnalysisJobs, 4);
     assert.equal(manifest.workload.incidentCount, 2);
     assert.equal(manifest.workload.processingCost.processingCpuIterations, 0);
     assert.equal(manifest.methodology.noLocalConsumer, true);
+    assert.equal(manifest.workerStartup.workers[0].taskId, 'ecs-unit');
     assert.ok(fs.existsSync(path.join(result.runDir, 'samples.jsonl')));
     assert.ok(fs.existsSync(path.join(result.runDir, 'scaling-activities.json')));
     assert.ok(fs.existsSync(path.join(result.runDir, 'summary.json')));

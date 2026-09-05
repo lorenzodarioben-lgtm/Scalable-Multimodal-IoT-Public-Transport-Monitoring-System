@@ -300,13 +300,21 @@ Fargate — that is AWS deployment, which remains outstanding.
 ./infrastructure/scripts/deploy.ps1 -Stacks queues,tables
 ./infrastructure/scripts/deploy.ps1 -Stacks iot-rule
 ./infrastructure/scripts/build-and-push.ps1
-./infrastructure/scripts/deploy.ps1 -Stacks ecs,scaling -RouteImpactImage <ecr-uri> ...
+$AccountId = aws sts get-caller-identity --query Account --output text
+$Image = "$AccountId.dkr.ecr.$env:AWS_REGION.amazonaws.com/sit314-transport-route-impact-worker:latest"
+$Vpc = aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text
+$Subnets = (aws ec2 describe-subnets --filters "Name=vpc-id,Values=$Vpc" --query "Subnets[].SubnetId" --output text) -split "\s+"
+./infrastructure/scripts/deploy.ps1 -Stacks ecs -RouteImpactImage $Image -VpcId $Vpc -SubnetIds $Subnets
+./infrastructure/scripts/deploy.ps1 -Stacks scaling
 ```
 
 Stacks are `queues`, `tables`, `iot-rule`, `ecs`, `scaling`, deployed in that
 dependency order. Every stack is scoped by `-Prefix sit314-transport`. In a
 restricted account, pass the existing lab role ARNs (`-ExistingExecutionRoleArn`
-and friends) so the templates never attempt role creation.
+and friends) so the templates never attempt role creation. The image-push
+script creates or verifies ECR, logs Docker in, builds, tags, pushes and verifies
+the image digest before the ECS command is allowed to run. See the full
+read-only Academy preflight and live gates in `docs/AWS_DEPLOYMENT.md`.
 
 ---
 

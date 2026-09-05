@@ -132,6 +132,29 @@ function Invoke-Stack {
     Write-Host "$stackName OK"
 }
 
+function Assert-RouteImpactImageExists {
+    param([string]$ImageUri)
+
+    # CloudFormation otherwise accepts an ECS task definition that references
+    # an empty/nonexistent tag, and the failure only appears later as
+    # CannotPullContainerError. Restrict this deployment script to the image
+    # produced by this project in the authenticated account and region.
+    $match = [regex]::Match($ImageUri, '^(?<registry>[^/]+)/(?<repository>[^:]+):(?<tag>[^:]+)$')
+    if (-not $match.Success) { throw '-RouteImpactImage must be a fully-qualified ECR image URI with a tag.' }
+    $expectedRegistry = "$($identity.Account).dkr.ecr.$Region.amazonaws.com"
+    $expectedRepository = "$Prefix-route-impact-worker"
+    if ($match.Groups['registry'].Value -ne $expectedRegistry -or $match.Groups['repository'].Value -ne $expectedRepository) {
+        throw "-RouteImpactImage must reference $expectedRegistry/${expectedRepository}:<tag>."
+    }
+    $digest = aws ecr describe-images --repository-name $expectedRepository --region $Region `
+        --image-ids "imageTag=$($match.Groups['tag'].Value)" `
+        --query 'imageDetails[0].imageDigest' --output text
+    if ($LASTEXITCODE -ne 0 -or -not $digest -or $digest -eq 'None') {
+        throw "ECR image $ImageUri does not exist. Run build-and-push.ps1 and verify its digest before deploying ECS."
+    }
+    Write-Host "Verified ECR image digest: $digest"
+}
+
 foreach ($stack in $Stacks) {
     switch ($stack) {
         'queues' {
@@ -151,13 +174,14 @@ foreach ($stack in $Stacks) {
             if (-not $RouteImpactImage) { throw '-RouteImpactImage is required for the ecs stack. Run build-and-push.ps1 first.' }
             if (-not $VpcId) { throw '-VpcId is required for the ecs stack.' }
             if ($SubnetIds.Count -eq 0) { throw '-SubnetIds is required for the ecs stack.' }
+            Assert-RouteImpactImageExists -ImageUri $RouteImpactImage
             $p = @(
                 "ResourcePrefix=$Prefix",
                 "QueuesStackName=$Prefix-queues",
                 "TablesStackName=$Prefix-tables",
                 "VpcId=$VpcId",
                 ("SubnetIds=" + ($SubnetIds -join '\,')),
-                "RouteImpactImage=$RouteImpactImage"
+                "RouteImpactImage=$RouteImpactImage",
                 "WorkerProcessingDelayMs=$WorkerProcessingDelayMs"
             )
             if ($TelemetryProcessorImage) { $p += "TelemetryProcessorImage=$TelemetryProcessorImage" }

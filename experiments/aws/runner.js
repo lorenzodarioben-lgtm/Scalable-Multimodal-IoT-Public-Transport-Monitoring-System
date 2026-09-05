@@ -85,6 +85,7 @@ export async function runAwsExperiment({
   await controller.verifyQueuesClean();
   manifest.processingCostVerified = await controller.verifyProcessingCost(workload.processingCost);
   manifest.startingState = await controller.waitForStartingState(mode);
+  manifest.workerStartup = await controller.waitForWorkerReady();
   writer.writeJson('manifest.json', manifest);
 
   let jobsInjected = 0;

@@ -85,7 +85,24 @@ The fixed arm registers min=max=1 and desired=1, so Application Auto Scaling
 cannot change capacity. The autoscaled arm registers min=1, max=5 and desired=1,
 then requires a live scaling policy before injection. The runner verifies the
 clean analysis queue/DLQ, active ECS processing-cost setting, and one running ECS
-task before it sends a job.
+task before it sends a job. It then waits for the `WORKER_READY` event from that
+specific ECS task's known log stream; it never guesses the newest CloudWatch log
+stream from `LastEventTime`.
+
+### CloudWatch timing and valid scale evidence
+
+The backlog metric Lambda publishes once per minute. A real scale-out therefore
+needs a sustained workload long enough for metric publication, CloudWatch and
+Application Auto Scaling evaluation, the configured cooldown, and Fargate task
+startup. The 30-second warm-up plus **10-minute** measurement is deliberately
+not a convenience timer: do not shorten the formal run or claim a shortened
+run as autoscaling evidence. Allow two to three complete metric periods after
+deployment before starting the formal measurement.
+
+Never use `aws cloudwatch set-alarm-state`, manual desired-count changes, or a
+temporary threshold change to create a scale event. Evidence must show the
+committed workload causing the metric transition and the resulting real
+Application Auto Scaling activity.
 
 The canonical workload digest and business fields are equal for matching
 stage/seed/repeat pairs. Each arm receives a unique execution namespace, which

@@ -180,7 +180,8 @@ Uncontrolled spend is a real risk on a student account:
 - DynamoDB is on-demand; CloudWatch log retention is 7 days.
 - `cleanup.sh` refuses to run with a short or empty prefix, prints exactly which
   stacks it will delete, and requires the operator to type `DELETE`. It deletes
-  only stacks named `<prefix>-*` and never enumerates account resources by type.
+  only stacks named with the configured prefix followed by `-*` and never
+  enumerates account resources by type.
 
 ## Container image verification (VERIFIED)
 
@@ -188,7 +189,8 @@ The images were built and inspected on 2026-09-04. Every claim below was checked
 by running the image, not by reading the Dockerfile.
 
 ```bash
-docker run --rm --entrypoint sh <image> -c 'id -un; find /app -not -path "*/node_modules/*"   \( -name ".env*" -o -name "*.pem" -o -name "*.key" -o -name "*.crt" -o -name "credentials*" \)'
+read -r -p 'Paste the image URI to inspect: ' IMAGE_URI
+docker run --rm --entrypoint sh "$IMAGE_URI" -c 'id -un; find /app -not -path "*/node_modules/*"   \( -name ".env*" -o -name "*.pem" -o -name "*.key" -o -name "*.crt" -o -name "credentials*" \)'
 ```
 
 | Check | Result |
