@@ -118,6 +118,7 @@ test('AWS runner records a complete count-bounded manifest without local workers
     assert.equal(manifest.workload.expectedAnalysisJobs, 4);
     assert.equal(manifest.workload.incidentCount, 2);
     assert.equal(manifest.workload.processingCost.processingCpuIterations, 0);
+    assert.deepEqual(manifest.methodology.evidenceClassification, { status: 'FORMAL EVIDENCE' });
     assert.equal(manifest.methodology.noLocalConsumer, true);
     assert.equal(manifest.workerStartup.workers[0].taskId, 'ecs-unit');
     assert.ok(fs.existsSync(path.join(result.runDir, 'samples.jsonl')));
