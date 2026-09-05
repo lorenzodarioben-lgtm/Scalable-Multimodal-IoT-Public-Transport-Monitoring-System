@@ -23,7 +23,10 @@ services:
     image: sit314-transport-broker
     container_name: sit314-broker
     ports:
-      - "1883:1883"
+      # Keep 1883 as the default, but permit a host-side override when another
+      # local MQTT broker already owns loopback port 1883. The container and
+      # inter-service port remain 1883.
+      - "${MQTT_HOST_PORT:-1883}:1883"
     environment:
       MQTT_BIND_HOST: 0.0.0.0
     healthcheck:

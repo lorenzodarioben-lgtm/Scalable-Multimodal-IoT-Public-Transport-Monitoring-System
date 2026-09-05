@@ -273,11 +273,24 @@ docker compose ps
 
 That brings up the broker, Node-RED, the normalised-to-queue bridge (the local
 stand-in for the AWS IoT rule) and the three services, all sharing one volume.
-Drive it from the host:
+Before publishing, wait until the Node-RED logs say both `Started flows` and
+`Connected to broker`; `docker compose up -d` only confirms that the container
+started, not that the MQTT subscription is ready. Then drive it from the host:
 
 ```bash
+docker compose logs --tail 30 node-red
 npm run simulate -- --scenario bus-breakdown --disrupt-vehicle BUS-007 --target mqtt --duration-seconds 20
 docker compose logs telemetry-processor route-impact-worker
+```
+
+If another local MQTT broker already owns loopback port 1883, select a different
+**host** port while leaving the Compose services on their internal port 1883:
+
+```powershell
+$env:MQTT_HOST_PORT = '1884'
+docker compose --profile workers up -d
+$env:MQTT_LOCAL_PORT = '1884'
+npm run simulate -- --scenario bus-breakdown --disrupt-vehicle BUS-007 --target mqtt --duration-seconds 20
 ```
 
 **Verified**, not just written: all four images build, run as a non-root `app`
