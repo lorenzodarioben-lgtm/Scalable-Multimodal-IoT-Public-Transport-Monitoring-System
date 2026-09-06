@@ -180,7 +180,10 @@ foreach ($stack in $Stacks) {
                 "QueuesStackName=$Prefix-queues",
                 "TablesStackName=$Prefix-tables",
                 "VpcId=$VpcId",
-                ("SubnetIds=" + ($SubnetIds -join '\,')),
+                # CloudFormation List<AWS::EC2::Subnet::Id> parameters use
+                # ordinary commas. Escaping them inserts a literal backslash,
+                # which makes an otherwise valid subnet id fail validation.
+                ("SubnetIds=" + ($SubnetIds -join ',')),
                 "RouteImpactImage=$RouteImpactImage",
                 "WorkerProcessingDelayMs=$WorkerProcessingDelayMs"
             )
