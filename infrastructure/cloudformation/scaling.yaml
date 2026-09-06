@@ -244,10 +244,9 @@ Resources:
 
             const attrs = await sqs.send(new GetQueueAttributesCommand({
               QueueUrl: QUEUE_URL,
-              AttributeNames: ['ApproximateNumberOfMessages', 'ApproximateAgeOfOldestMessage'],
+              AttributeNames: ['ApproximateNumberOfMessages'],
             }));
             const visible = Number(attrs.Attributes?.ApproximateNumberOfMessages ?? 0);
-            const oldestAge = Number(attrs.Attributes?.ApproximateAgeOfOldestMessage ?? 0);
 
             const svc = await ecs.send(new DescribeServicesCommand({
               cluster: CLUSTER_NAME, services: [SERVICE_NAME],
@@ -264,13 +263,12 @@ Resources:
               MetricData: [
                 { MetricName: 'BacklogPerTask', Value: backlogPerTask, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
                 { MetricName: 'AnalysisQueueVisible', Value: visible, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
-                { MetricName: 'AnalysisQueueOldestAgeSeconds', Value: oldestAge, Unit: 'Seconds', Timestamp: timestamp, Dimensions: dims },
                 { MetricName: 'RunningTaskCount', Value: running, Unit: 'Count', Timestamp: timestamp, Dimensions: dims },
               ],
             }));
 
-            console.log(JSON.stringify({ visible, running, backlogPerTask, oldestAge }));
-            return { visible, running, backlogPerTask, oldestAge };
+            console.log(JSON.stringify({ visible, running, backlogPerTask }));
+            return { visible, running, backlogPerTask };
           };
       Tags:
         - { Key: Project, Value: SIT314-Transport-IoT }
