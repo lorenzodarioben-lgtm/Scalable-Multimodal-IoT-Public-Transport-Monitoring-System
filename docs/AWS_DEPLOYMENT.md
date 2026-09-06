@@ -58,7 +58,7 @@ aws ecs update-service --cluster sit314-transport-cluster \
 ## Live session runbook (PowerShell)
 
 The sections after this one explain each stack in detail. **This runbook is the
-short version**: sixteen numbered steps to execute in one deliberate AWS session,
+short version**: seventeen numbered steps to execute in one deliberate AWS session,
 each with the verification that must actually be read before moving on. AWS
 Academy credit is limited, so the goal is to spend as little live time as
 possible.
@@ -292,9 +292,57 @@ aws cloudwatch list-metrics --namespace SIT314/Transport --metric-name BacklogPe
 An empty result means the Lambda is not publishing and the policy has nothing to
 scale on. The metric is published once per minute, so allow at least two to
 three complete periods before treating the policy as ready or starting the
-formal run.
+calibration or formal run.
 
-### 14. Formal controlled workload: fixed arm then autoscaled arm
+### 14. AWS calibration: fixed arm then autoscaled arm
+
+**CALIBRATION ONLY — NOT FORMAL EVIDENCE.** Run this once in each arm before the
+formal study. It determines whether the real SQS, DynamoDB and Fargate path gives
+the candidate load enough sustained pressure to expose a genuine scaling curve.
+Do not promote these artifacts as the fixed-versus-autoscale result.
+
+```powershell
+npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode autoscale --repeat 1
+```
+
+This is one matched calibration pair: 30 s warm-up, 150 s measurement, 36
+incidents every 5 s, and 50 analysis jobs per incident (**1,800 jobs per arm**).
+The runner retains its normal count-bounded, clean-queue, ECS readiness and
+per-arm execution-namespace protections. It holds the worker cost at 50 ms delay
+and zero CPU-burn iterations. The fixed pass is min=max=1; the autoscaled pass is
+min=1/max=5 with `TargetBacklogPerTask=75`.
+
+Inspect the raw artifacts, CloudWatch `BacklogPerTask` periods, real Application
+Auto Scaling activities, and ECS desired/running task counts before proceeding:
+
+| Calibration result | Interpretation and next action |
+|---|---|
+| Too light | One fixed task keeps up, the queue repeatedly drains close to zero, `BacklogPerTask` does not stay above 75 for enough real metric periods, or no real scale-out occurs. Run one higher-intensity candidate. |
+| Useful | The fixed pass develops sustained backlog; the autoscaled pass rises above one task from real workload-driven metrics; backlog begins recovering as tasks arrive; it does not immediately remain pinned at five tasks. Freeze the formal intensity after recording this decision. |
+| Too heavy | The autoscaled pass immediately reaches five tasks and backlog continues growing rapidly there. Select a lower intensity; the run does not reveal a scaling curve. |
+
+Start at the committed 5-second cadence. If, and only if, it is too light, change
+only `arrival.incidentIntervalSeconds` and its matching count in this
+**calibration** file; the count is `ceil((30 + 150) / interval)` and the runner
+rejects a mismatch. Do not run all candidates automatically and do not lower the
+backlog target to manufacture a scale event.
+
+| Interval | Matching incidents | Jobs per calibration arm |
+|---:|---:|---:|
+| 10 s | 18 | 900 |
+| 5 s (start here) | 36 | 1,800 |
+| 3 s | 60 | 3,000 |
+| 2 s | 90 | 4,500 |
+
+The phase order is mandatory: **AWS calibration → inspect results → choose and
+freeze final formal intensity → formal experiment**. A later, separately reviewed
+formal-stage edit may change only the chosen cadence/count; it must preserve the
+30 s warm-up, 600 s measurement, 300 s drain deadline, three repeats, matched
+canonical work, 50 ms delay, zero CPU burn, fixed one-task arm and autoscale
+one-to-five arm.
+
+### 15. Formal controlled workload: fixed arm then autoscaled arm
 
 ```powershell
 # Repeat 1 shown; run repeats 1, 2 and 3 for each arm.
@@ -319,7 +367,7 @@ other forced state as autoscaling evidence. The formal evidence is valid only
 when the committed workload causes real metric transitions and the resulting
 Application Auto Scaling activities are recorded.
 
-### 15. Evidence collection and drain
+### 16. Evidence collection and drain
 
 ```powershell
 aws ecs describe-services --cluster "$Prefix-cluster" --services "$Prefix-route-impact" --query "services[0].{Running:runningCount,Desired:desiredCount}"
@@ -338,7 +386,7 @@ Capture the SQS console graphs for `$Prefix-analysis`
 (`ApproximateNumberOfMessagesVisible` and `ApproximateAgeOfOldestMessage`) and the
 ECS task-count graph — evidence items E10 and E11.
 
-### 16. Scale down and clean up
+### 17. Scale down and clean up
 
 **Do this before ending the session.** Leaving five tasks running burns credit.
 

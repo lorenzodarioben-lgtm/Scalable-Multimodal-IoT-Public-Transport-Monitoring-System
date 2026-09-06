@@ -72,6 +72,7 @@ export async function runAwsExperiment({
     startedAt: startedAt.toISOString(),
     mode,
     methodology: {
+      evidenceClassification: stage.evidenceClassification ?? { status: 'FORMAL EVIDENCE' },
       countBounded: true,
       fixedCapacity: mode === 'fixed' ? { min: 1, max: 1, desired: 1 } : null,
       autoscaleCapacity: mode === 'autoscale' ? { min: 1, max: 5, desired: 1 } : null,

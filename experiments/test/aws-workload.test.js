@@ -7,6 +7,9 @@ import { createFormalWorkload, expectedIncidentCount, validateFormalStage } from
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const stage = JSON.parse(fs.readFileSync(path.join(here, '..', 'incident', 'stage-1.json'), 'utf8'));
+const calibration = JSON.parse(fs.readFileSync(
+  path.join(here, '..', 'calibration', 'aws-stage-1-capacity.json'), 'utf8',
+));
 
 test('formal AWS workload is count-bounded and uses the declared seed', () => {
   assert.equal(expectedIncidentCount(stage), 63);
@@ -29,4 +32,27 @@ test('fixed and autoscaled arms share logical work but never reuse idempotency i
   assert.notEqual(fixed.incidents[0].jobs[0].sourceEventId, autoscale.incidents[0].jobs[0].sourceEventId);
   assert.equal(fixed.expectedAnalysisJobs, 3150);
   assert.equal(fixed.processingCost.processingCpuIterations, 0);
+});
+
+test('AWS capacity calibration is count-bounded and explicitly excluded from formal evidence', () => {
+  assert.doesNotThrow(() => validateFormalStage(calibration));
+  assert.deepEqual(calibration.evidenceClassification, {
+    status: 'CALIBRATION ONLY',
+    prohibition: 'NOT FORMAL EVIDENCE',
+  });
+  assert.equal(calibration.warmupSeconds, 30);
+  assert.equal(calibration.durationSeconds, 150);
+  assert.equal(calibration.arrival.incidentIntervalSeconds, 5);
+  assert.equal(calibration.arrival.incidents, 36);
+  assert.equal(expectedIncidentCount(calibration), 36);
+  assert.equal(calibration.incident.jobsPerIncident, 50);
+  assert.equal(calibration.arrival.incidents * calibration.incident.jobsPerIncident, 1800);
+  assert.equal(calibration.worker.processingDelayMs, 50);
+  assert.equal(calibration.worker.processingCpuIterations, 0);
+  assert.equal(calibration.worker.minTasks, 1);
+  assert.equal(calibration.worker.maxTasks, 5);
+  assert.equal(calibration.worker.targetBacklogPerTask, 75);
+  // This is an explicit guard against the calibration silently replacing stage 1.
+  assert.equal(stage.arrival.incidentIntervalSeconds, 10);
+  assert.equal(stage.arrival.incidents, 63);
 });

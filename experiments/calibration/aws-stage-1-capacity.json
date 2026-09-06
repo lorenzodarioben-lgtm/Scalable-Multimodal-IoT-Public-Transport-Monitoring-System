@@ -1,0 +1,49 @@
+{
+  "name": "aws-stage-1-capacity-calibration",
+  "description": "CALIBRATION ONLY. NOT FORMAL EVIDENCE. Establishes one-task Fargate capacity and whether the candidate load produces a real, useful scaling curve.",
+  "evidenceClassification": {
+    "status": "CALIBRATION ONLY",
+    "prohibition": "NOT FORMAL EVIDENCE"
+  },
+  "type": "incident",
+  "seed": 3142026,
+  "incident": {
+    "scenario": "bus-breakdown",
+    "transportMode": "bus",
+    "reason": "breakdown",
+    "severity": "high",
+    "vehicleId": "BUS-007",
+    "routeId": "703",
+    "affectedLocations": 5,
+    "jobsPerIncident": 50,
+    "notificationsPerIncident": 200
+  },
+  "arrival": {
+    "mode": "count-bounded",
+    "incidentIntervalSeconds": 5,
+    "incidents": 36
+  },
+  "durationSeconds": 150,
+  "warmupSeconds": 30,
+  "drainDeadlineSeconds": 300,
+  "repeatCount": 1,
+  "sampleIntervalSeconds": 10,
+  "worker": {
+    "mode": "fixed",
+    "fixedTasks": 1,
+    "minTasks": 1,
+    "maxTasks": 5,
+    "concurrency": 4,
+    "processingDelayMs": 50,
+    "processingCpuIterations": 0,
+    "targetBacklogPerTask": 75,
+    "evaluationIntervalMs": 10000,
+    "scaleOutCooldownSeconds": 30,
+    "scaleInCooldownSeconds": 60
+  },
+  "sla": {
+    "p95LatencyMs": 5000,
+    "oldestMessageAgeSeconds": 10,
+    "finalWindowSeconds": 300
+  }
+}

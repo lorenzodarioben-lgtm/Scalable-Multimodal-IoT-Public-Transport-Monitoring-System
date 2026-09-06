@@ -68,11 +68,48 @@ the separate `npm run experiment:aws` path, which never starts `LocalAutoscaler`
 or a locally spawned route-impact worker. ECS is therefore the only consumer of
 the real analysis queue during a cloud run.
 
+### Calibration gate before formal evidence
+
+Before the formal experiment, run the separate
+`experiments/calibration/aws-stage-1-capacity.json` profile once in the fixed arm
+and once in the autoscaled arm:
+
+```bash
+npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode fixed --repeat 1
+npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode autoscale --repeat 1
+```
+
+**CALIBRATION ONLY — NOT FORMAL EVIDENCE.** This 30 s warm-up plus 150 s
+measurement begins at 36 incidents every 5 s, or 1,800 analysis jobs per arm. It
+measures actual one-task Fargate capacity and whether queue pressure survives
+real metric periods long enough to drive real Application Auto Scaling. Its
+artifacts are diagnostic and must not be reported as the final A/B result.
+
+The live decision rule is deliberately simple:
+
+- **Too light:** one task keeps up, visible backlog repeatedly returns close to
+  zero, `BacklogPerTask` does not remain above 75 across real metric periods, or
+  the autoscaled arm never genuinely scales out.
+- **Useful:** the fixed arm sustains backlog, the autoscaled arm grows above one
+  task due to the workload, backlog begins recovering as tasks arrive, and the
+  service does not immediately remain pinned at five tasks.
+- **Too heavy:** the autoscaled arm immediately reaches five tasks and backlog
+  keeps growing rapidly even there.
+
+Start at 5 seconds. Only if it is too light, change the calibration profile's
+interval and matching count together: 10 s/18 incidents, 5 s/36, 3 s/60, or
+2 s/90. These counts preserve the same 30 s + 150 s arrival window, and the AWS
+runner rejects an inconsistent pair. Do not automatically run the whole ladder,
+and do not lower `TargetBacklogPerTask=75` to force a scale-out. After inspecting
+the calibration artifacts, choose and freeze the final formal cadence/count in a
+separate reviewed change before formal runs begin.
+
 Every incident stage now declares the full formal schedule: 30 s warm-up, 600 s
 measurement, one incident each 10 s, **exactly 63 incidents**, a 300 s drain
 deadline, and three repeats. The AWS runner rejects a stage whose count does not
 equal `ceil((warm-up + measurement)/interval)`; it cannot silently return to a
-time-bounded injector.
+time-bounded injector. That current formal configuration remains unchanged and
+provisional until the AWS calibration decision is recorded.
 
 Run each repeat in both arms after the live preflight in `docs/AWS_DEPLOYMENT.md`:
 
