@@ -10,6 +10,9 @@ import { buildAwsSummary } from '../aws/summary.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const runnerSource = fs.readFileSync(path.join(here, '..', 'aws', 'runner.js'), 'utf8');
+const controlPlaneSource = fs.readFileSync(path.join(here, '..', 'aws', 'control-plane.js'), 'utf8');
+const sqsQueueSource = fs.readFileSync(path.join(here, '..', '..', 'shared', 'aws', 'queues.js'), 'utf8');
+const scalingTemplate = fs.readFileSync(path.join(here, '..', '..', 'infrastructure', 'cloudformation', 'scaling.yaml'), 'utf8');
 
 function stage() {
   return {
@@ -63,6 +66,12 @@ async function run(mode) {
 test('capacity modes are exactly fixed one or autoscale one-to-five', () => {
   assert.deepEqual(capacityForMode('fixed'), { minCapacity: 1, maxCapacity: 1, desiredCount: 1 });
   assert.deepEqual(capacityForMode('autoscale'), { minCapacity: 1, maxCapacity: 5, desiredCount: 1 });
+});
+
+test('AWS SQS snapshots never request the CloudWatch-only oldest-age metric as an attribute', () => {
+  for (const source of [controlPlaneSource, sqsQueueSource, scalingTemplate]) {
+    assert.doesNotMatch(source, /AttributeNames\s*:\s*\[[^\]]*ApproximateAgeOfOldestMessage/s);
+  }
 });
 
 test('AWS worker readiness uses the known ECS task stream, never log-stream recency', async () => {

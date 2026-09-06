@@ -19,20 +19,19 @@ aws cloudformation describe-stacks --region "$REGION" \
 
 echo ""
 echo "--- SQS queues ---"
-printf "  %-44s %-10s %-10s %s\n" "QUEUE" "VISIBLE" "INFLIGHT" "OLDEST(s)"
+printf "  %-44s %-10s %s\n" "QUEUE" "VISIBLE" "INFLIGHT"
 for q in telemetry telemetry-dlq analysis analysis-dlq notifications notifications-dlq; do
   name="$PREFIX-$q"
   url=$(aws sqs get-queue-url --queue-name "$name" --region "$REGION" \
         --query QueueUrl --output text 2>/dev/null)
   if [ -n "$url" ] && [ "$url" != "None" ]; then
-    read -r visible inflight oldest <<<"$(aws sqs get-queue-attributes \
+    read -r visible inflight <<<"$(aws sqs get-queue-attributes \
       --queue-url "$url" --region "$REGION" \
       --attribute-names ApproximateNumberOfMessages \
                         ApproximateNumberOfMessagesNotVisible \
-                        ApproximateAgeOfOldestMessage \
-      --query "Attributes.[ApproximateNumberOfMessages,ApproximateNumberOfMessagesNotVisible,ApproximateAgeOfOldestMessage]" \
+      --query "Attributes.[ApproximateNumberOfMessages,ApproximateNumberOfMessagesNotVisible]" \
       --output text 2>/dev/null)"
-    printf "  %-44s %-10s %-10s %s\n" "$name" "${visible:-?}" "${inflight:-?}" "${oldest:-?}"
+    printf "  %-44s %-10s %s\n" "$name" "${visible:-?}" "${inflight:-?}"
   else
     printf "  %-44s %s\n" "$name" "(not deployed)"
   fi

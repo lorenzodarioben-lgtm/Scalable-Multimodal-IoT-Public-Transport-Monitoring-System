@@ -148,7 +148,6 @@ class SqsQueue {
       AttributeNames: [
         'ApproximateNumberOfMessages',
         'ApproximateNumberOfMessagesNotVisible',
-        'ApproximateAgeOfOldestMessage',
       ],
     }));
     const a = out.Attributes || {};
@@ -156,7 +155,9 @@ class SqsQueue {
       queueName: this.name,
       approximateNumberOfMessages: Number(a.ApproximateNumberOfMessages ?? 0),
       approximateNumberOfMessagesNotVisible: Number(a.ApproximateNumberOfMessagesNotVisible ?? 0),
-      approximateAgeOfOldestMessageSeconds: Number(a.ApproximateAgeOfOldestMessage ?? 0),
+      // ApproximateAgeOfOldestMessage is available from AWS/SQS CloudWatch,
+      // not the SQS GetQueueAttributes API used for queue depth snapshots.
+      approximateAgeOfOldestMessageSeconds: null,
     };
   }
 

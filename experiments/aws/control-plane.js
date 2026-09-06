@@ -18,7 +18,10 @@ function queueAttributes(out = {}) {
   return {
     visibleMessages: Number(attributes.ApproximateNumberOfMessages ?? 0),
     inFlightMessages: Number(attributes.ApproximateNumberOfMessagesNotVisible ?? 0),
-    oldestMessageAgeSeconds: Number(attributes.ApproximateAgeOfOldestMessage ?? 0),
+    // ApproximateAgeOfOldestMessage is an AWS/SQS CloudWatch metric, not an
+    // SQS GetQueueAttributes attribute. Preserve an honest unknown value here
+    // rather than making the control plane's queue snapshot API call fail.
+    oldestMessageAgeSeconds: null,
   };
 }
 
@@ -80,7 +83,6 @@ export class AwsControlPlane {
       AttributeNames: [
         'ApproximateNumberOfMessages',
         'ApproximateNumberOfMessagesNotVisible',
-        'ApproximateAgeOfOldestMessage',
       ],
     }));
     return queueAttributes(out);
