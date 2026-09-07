@@ -110,9 +110,45 @@ test('AWS worker readiness uses the known ECS task stream, never log-stream rece
   assert.deepEqual(logRequests, [{
     logGroupName: '/ecs/sit314-transport-route-impact',
     logStreamName: 'route-impact/route-impact-worker/task-abc',
-    startFromHead: false,
+    startFromHead: true,
     limit: 100,
   }]);
+});
+
+test('AWS worker readiness rejects an old event for a different ECS task ID', async () => {
+  const taskArn = 'arn:aws:ecs:us-east-1:123456789012:task/sit314-transport-cluster/task-current';
+  class ListTasksCommand { constructor(input) { this.input = input; } }
+  class DescribeTasksCommand { constructor(input) { this.input = input; } }
+  class GetLogEventsCommand { constructor(input) { this.input = input; } }
+  class EcsClient {
+    async send(command) {
+      if (command instanceof ListTasksCommand) return { taskArns: [taskArn] };
+      if (command instanceof DescribeTasksCommand) return { tasks: [{ taskArn }] };
+      throw new Error(`unexpected ECS command ${command.constructor.name}`);
+    }
+  }
+  class LogsClient {
+    async send() {
+      return { events: [{ timestamp: Date.UTC(2026, 0, 1), message: '[WORKER_READY] taskId=ecs-task-old' }] };
+    }
+  }
+  class EmptyClient { async send() { throw new Error('unexpected AWS client call'); } }
+  const sdk = {
+    ecs: { ECSClient: EcsClient, ListTasksCommand, DescribeTasksCommand },
+    logs: { CloudWatchLogsClient: LogsClient, GetLogEventsCommand },
+    autoscaling: { ApplicationAutoScalingClient: EmptyClient },
+    sqs: { SQSClient: EmptyClient },
+    dynamodb: { DynamoDBClient: EmptyClient },
+    dynamodbDocument: { DynamoDBDocumentClient: { from: () => new EmptyClient() } },
+  };
+  const controller = new AwsControlPlane({
+    region: 'us-east-1', prefix: 'sit314-transport', sdk, sleep: async () => {},
+  });
+
+  await assert.rejects(
+    controller.waitForWorkerReady({ timeoutSeconds: 0 }),
+    /did not emit WORKER_READY/,
+  );
 });
 
 test('AWS runner records a complete count-bounded manifest without local workers', async () => {
@@ -134,6 +170,82 @@ test('AWS runner records a complete count-bounded manifest without local workers
     assert.ok(fs.existsSync(path.join(result.runDir, 'scaling-activities.json')));
     assert.ok(fs.existsSync(path.join(result.runDir, 'summary.json')));
     assert.ok(fs.existsSync(path.join(result.runDir, 'logs', 'references.json')));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AWS workload timing begins after preflight and preserves scheduled warm-up', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-aws-timing-'));
+  const clock = { value: Date.UTC(2026, 0, 1) };
+  const injectionTimes = [];
+  let readinessCompletedAt;
+  const timedStage = {
+    ...stage(),
+    warmupSeconds: 30,
+    durationSeconds: 30,
+    arrival: { mode: 'count-bounded', incidentIntervalSeconds: 10, incidents: 6 },
+  };
+  const advance = (milliseconds) => { clock.value += milliseconds; };
+  const controller = {
+    async configureCapacity() { advance(5000); },
+    async verifyQueuesClean() { advance(4000); },
+    async verifyProcessingCost(cost) { advance(3000); return { ...cost, source: 'test' }; },
+    async waitForStartingState() { advance(8000); return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() {
+      advance(10_000);
+      readinessCompletedAt = new Date(clock.value).toISOString();
+      return { workers: [{ taskId: 'ecs-unit' }] };
+    },
+    async sample() {
+      return {
+        timestamp: new Date(clock.value).toISOString(),
+        queue: { visibleMessages: 0, inFlightMessages: 0, oldestMessageAgeSeconds: 0 },
+        service: { desiredCount: 1, runningCount: 1 },
+      };
+    },
+    async injectJobs(jobs) {
+      injectionTimes.push(new Date(clock.value).toISOString());
+      return jobs.length;
+    },
+    async scalingActivities() { return []; },
+    async resultsForSources(ids, expectedJobs) {
+      return { resultsProduced: expectedJobs, duplicateResults: 0, queueRemaining: 0, dlqDepth: 0, ids };
+    },
+    async workerLogs() { return []; },
+    logReferences() { return { logGroupName: '/unit', query: 'unit test' }; },
+  };
+
+  try {
+    const result = await runAwsExperiment({
+      stage: timedStage,
+      mode: 'fixed',
+      repeatNumber: 1,
+      outputDir: root,
+      executionNamespace: 'timing-unit',
+      controller,
+      now: () => new Date(clock.value),
+      sleep: async (milliseconds) => { advance(milliseconds); },
+    });
+    const { manifest, summary } = result;
+    assert.equal(manifest.orchestrationStartedAt, '2026-01-01T00:00:00.000Z');
+    assert.equal(manifest.preflightCompletedAt, '2026-01-01T00:00:30.000Z');
+    assert.equal(manifest.workloadStartedAt, '2026-01-01T00:00:30.000Z');
+    assert.equal(manifest.startedAt, manifest.workloadStartedAt);
+    assert.equal(manifest.measurementStartedAt, '2026-01-01T00:01:00.000Z');
+    assert.equal(manifest.workloadCompletedAt, '2026-01-01T00:01:30.000Z');
+    assert.ok(Date.parse(injectionTimes[0]) >= Date.parse(readinessCompletedAt));
+    assert.equal(injectionTimes[0], manifest.workloadStartedAt);
+    assert.equal(injectionTimes[3], manifest.measurementStartedAt);
+    assert.deepEqual(injectionTimes.map((time) => Date.parse(time) - Date.parse(manifest.workloadStartedAt)), [
+      0, 10_000, 20_000, 30_000, 40_000, 50_000,
+    ]);
+    assert.equal(
+      Date.parse(manifest.measurementStartedAt) - Date.parse(manifest.workloadStartedAt),
+      30_000,
+    );
+    assert.equal(summary.startedAt, manifest.workloadStartedAt);
+    assert.equal(summary.measurementStartedAt, manifest.measurementStartedAt);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

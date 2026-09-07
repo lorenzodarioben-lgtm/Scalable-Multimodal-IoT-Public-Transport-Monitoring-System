@@ -41,8 +41,9 @@ export function buildAwsSummary({ manifest, samples, scalingActivities, accounti
   const logSummary = summariseWorkerLogs(workerLogs);
   const first = samples[0];
   const last = samples.at(-1);
-  const elapsedSeconds = first && last
-    ? round((Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 1000)
+  const workloadStartedAt = manifest.workloadStartedAt ?? manifest.startedAt;
+  const elapsedSeconds = workloadStartedAt && last
+    ? round((Date.parse(last.timestamp) - Date.parse(workloadStartedAt)) / 1000)
     : 0;
   const resultsProduced = accounting.resultsProduced ?? 0;
   const expected = manifest.workload.expectedAnalysisJobs;
@@ -56,7 +57,10 @@ export function buildAwsSummary({ manifest, samples, scalingActivities, accounti
     runId: manifest.runId,
     stage: manifest.workload.stage,
     mode: manifest.mode,
-    startedAt: manifest.startedAt,
+    startedAt: workloadStartedAt,
+    orchestrationStartedAt: manifest.orchestrationStartedAt ?? null,
+    workloadStartedAt,
+    measurementStartedAt: manifest.measurementStartedAt ?? null,
     finishedAt,
     results: {
       expectedJobs: expected,

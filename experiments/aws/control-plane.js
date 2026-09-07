@@ -229,7 +229,12 @@ export class AwsControlPlane {
         const out = await this.logs.send(new this.sdk.logs.GetLogEventsCommand({
           logGroupName: this.logGroupName,
           logStreamName: identity.logStreamName,
-          startFromHead: false,
+          // WORKER_READY is a startup event. This worker emits summaries for
+          // its whole lifetime, so reading the stream tail can omit readiness
+          // after the task has been healthy for a while. The stream is already
+          // deterministically derived from the current ECS task ID; read its
+          // head and retain the exact task-ID match instead.
+          startFromHead: true,
           limit: 100,
         }));
         const event = (out.events || []).find((item) => item.message?.includes('[WORKER_READY]')
