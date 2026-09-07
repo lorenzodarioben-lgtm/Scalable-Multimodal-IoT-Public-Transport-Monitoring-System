@@ -18,6 +18,12 @@ test('ECR push workflow verifies repositories and image digests before ECS deplo
   assert.match(deploy, /Assert-RouteImpactImageExists -ImageUri \$RouteImpactImage/);
 });
 
+test('ECS deployment sends CloudFormation a comma-separated subnet list without escape characters', () => {
+  const deploy = read('infrastructure/scripts/deploy.ps1');
+  assert.match(deploy, /\$SubnetIds -join ','/);
+  assert.doesNotMatch(deploy, /\$SubnetIds -join '\\,/);
+});
+
 test('AWS guidance uses genuine UTC and rejects alarm-state simulation as evidence', () => {
   const runbook = read('docs/AWS_DEPLOYMENT.md');
   const scripts = [
