@@ -42,11 +42,11 @@ test('AWS capacity calibration is count-bounded and explicitly excluded from for
   });
   assert.equal(calibration.warmupSeconds, 30);
   assert.equal(calibration.durationSeconds, 150);
-  assert.equal(calibration.arrival.incidentIntervalSeconds, 5);
-  assert.equal(calibration.arrival.incidents, 36);
-  assert.equal(expectedIncidentCount(calibration), 36);
+  assert.equal(calibration.arrival.incidentIntervalSeconds, 3);
+  assert.equal(calibration.arrival.incidents, 60);
+  assert.equal(expectedIncidentCount(calibration), 60);
   assert.equal(calibration.incident.jobsPerIncident, 50);
-  assert.equal(calibration.arrival.incidents * calibration.incident.jobsPerIncident, 1800);
+  assert.equal(calibration.arrival.incidents * calibration.incident.jobsPerIncident, 3000);
   assert.equal(calibration.worker.processingDelayMs, 50);
   assert.equal(calibration.worker.processingCpuIterations, 0);
   assert.equal(calibration.worker.minTasks, 1);
