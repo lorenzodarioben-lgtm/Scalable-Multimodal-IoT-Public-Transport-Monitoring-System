@@ -1,0 +1,43 @@
+{
+  "name": "aws-injector-timing-sanity",
+  "description": "INJECTOR TIMING SANITY CHECK ONLY. NOT CALIBRATION EVIDENCE. NOT FORMAL EVIDENCE. Verifies that the AWS SQS injector sustains fifty jobs per second without sampling-induced schedule drift before the full capacity calibration.",
+  "evidenceClassification": {
+    "status": "INJECTOR TIMING SANITY CHECK ONLY",
+    "prohibition": "NOT CALIBRATION EVIDENCE. NOT FORMAL EVIDENCE"
+  },
+  "type": "incident",
+  "seed": 3142026,
+  "repeatCount": 1,
+  "arrival": {
+    "mode": "count-bounded",
+    "incidentIntervalSeconds": 1,
+    "incidents": 30
+  },
+  "timingGuard": {
+    "maxDispatchStartLagIntervals": 1,
+    "sustainedStartLagIntervals": 0.5,
+    "sustainedStartLagIncidents": 3
+  },
+  "durationSeconds": 30,
+  "warmupSeconds": 0,
+  "drainDeadlineSeconds": 300,
+  "sampleIntervalSeconds": 10,
+  "worker": {
+    "processingDelayMs": 50,
+    "processingCpuIterations": 0,
+    "minTasks": 1,
+    "maxTasks": 5,
+    "targetBacklogPerTask": 75
+  },
+  "incident": {
+    "scenario": "bus-breakdown",
+    "transportMode": "bus",
+    "reason": "breakdown",
+    "severity": "high",
+    "vehicleId": "BUS-CAL-001",
+    "routeId": "703",
+    "affectedLocations": 25,
+    "jobsPerIncident": 50,
+    "notificationsPerIncident": 4
+  }
+}

@@ -10,6 +10,9 @@ const stage = JSON.parse(fs.readFileSync(path.join(here, '..', 'incident', 'stag
 const calibration = JSON.parse(fs.readFileSync(
   path.join(here, '..', 'calibration', 'aws-stage-1-capacity.json'), 'utf8',
 ));
+const timingSanity = JSON.parse(fs.readFileSync(
+  path.join(here, '..', 'calibration', 'aws-injector-timing-sanity.json'), 'utf8',
+));
 
 test('formal AWS workload is count-bounded and uses the declared seed', () => {
   assert.equal(expectedIncidentCount(stage), 63);
@@ -42,11 +45,16 @@ test('AWS capacity calibration is count-bounded and explicitly excluded from for
   });
   assert.equal(calibration.warmupSeconds, 30);
   assert.equal(calibration.durationSeconds, 150);
-  assert.equal(calibration.arrival.incidentIntervalSeconds, 3);
-  assert.equal(calibration.arrival.incidents, 60);
-  assert.equal(expectedIncidentCount(calibration), 60);
+  assert.equal(calibration.arrival.incidentIntervalSeconds, 1);
+  assert.equal(calibration.arrival.incidents, 180);
+  assert.equal(expectedIncidentCount(calibration), 180);
   assert.equal(calibration.incident.jobsPerIncident, 50);
-  assert.equal(calibration.arrival.incidents * calibration.incident.jobsPerIncident, 3000);
+  assert.equal(calibration.arrival.incidents * calibration.incident.jobsPerIncident, 9000);
+  assert.deepEqual(calibration.timingGuard, {
+    maxDispatchStartLagIntervals: 1,
+    sustainedStartLagIntervals: 0.5,
+    sustainedStartLagIncidents: 3,
+  });
   assert.equal(calibration.worker.processingDelayMs, 50);
   assert.equal(calibration.worker.processingCpuIterations, 0);
   assert.equal(calibration.worker.minTasks, 1);
@@ -55,4 +63,22 @@ test('AWS capacity calibration is count-bounded and explicitly excluded from for
   // This is an explicit guard against the calibration silently replacing stage 1.
   assert.equal(stage.arrival.incidentIntervalSeconds, 10);
   assert.equal(stage.arrival.incidents, 63);
+});
+
+test('AWS injector timing sanity check is isolated and retains fifty unique jobs per incident', () => {
+  assert.doesNotThrow(() => validateFormalStage(timingSanity));
+  assert.deepEqual(timingSanity.evidenceClassification, {
+    status: 'INJECTOR TIMING SANITY CHECK ONLY',
+    prohibition: 'NOT CALIBRATION EVIDENCE. NOT FORMAL EVIDENCE',
+  });
+  assert.equal(timingSanity.arrival.incidentIntervalSeconds, 1);
+  assert.equal(timingSanity.arrival.incidents, 30);
+  assert.equal(timingSanity.incident.jobsPerIncident, 50);
+  const workload = createFormalWorkload(timingSanity, {
+    repeatNumber: 1,
+    executionNamespace: 'timing-sanity-unit',
+  });
+  assert.equal(workload.expectedAnalysisJobs, 1500);
+  assert.equal(workload.incidents[0].jobs.length, 50);
+  assert.equal(new Set(workload.incidents[0].jobs.map((job) => job.jobId)).size, 50);
 });

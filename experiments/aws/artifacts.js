@@ -6,16 +6,21 @@ export function createAwsArtifactWriter(runDir) {
   const logsDir = path.join(runDir, 'logs');
   fs.mkdirSync(logsDir, { recursive: true });
   const samplesPath = path.join(runDir, 'samples.jsonl');
+  const dispatchesPath = path.join(runDir, 'dispatches.jsonl');
 
   return {
     runDir,
     logsDir,
     samplesPath,
+    dispatchesPath,
     writeJson(name, value) {
       fs.writeFileSync(path.join(runDir, name), `${JSON.stringify(value, null, 2)}\n`);
     },
     appendSample(sample) {
       fs.appendFileSync(samplesPath, `${JSON.stringify(sample)}\n`);
+    },
+    appendDispatch(dispatch) {
+      fs.appendFileSync(dispatchesPath, `${JSON.stringify(dispatch)}\n`);
     },
     writeLogReference(value) {
       fs.writeFileSync(path.join(logsDir, 'references.json'), `${JSON.stringify(value, null, 2)}\n`);

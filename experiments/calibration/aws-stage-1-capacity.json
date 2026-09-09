@@ -1,6 +1,6 @@
 {
   "name": "aws-stage-1-capacity-calibration",
-  "description": "CALIBRATION ONLY. NOT FORMAL EVIDENCE. Three-second candidate after the diagnostic five-second run proved too light; establishes one-task Fargate capacity and whether the candidate load produces a real, useful scaling curve.",
+  "description": "CALIBRATION ONLY. NOT FORMAL EVIDENCE. One-second fixed-only capacity candidate after the diagnostic five-second and clean three-second runs proved too light; establishes whether a 50-jobs-per-second arrival rate creates real pressure.",
   "evidenceClassification": {
     "status": "CALIBRATION ONLY",
     "prohibition": "NOT FORMAL EVIDENCE"
@@ -20,8 +20,13 @@
   },
   "arrival": {
     "mode": "count-bounded",
-    "incidentIntervalSeconds": 3,
-    "incidents": 60
+    "incidentIntervalSeconds": 1,
+    "incidents": 180
+  },
+  "timingGuard": {
+    "maxDispatchStartLagIntervals": 1,
+    "sustainedStartLagIntervals": 0.5,
+    "sustainedStartLagIncidents": 3
   },
   "durationSeconds": 150,
   "warmupSeconds": 30,
