@@ -158,6 +158,57 @@ test('scaling: min 1, max 5, on the route-impact service', () => {
   );
 });
 
+test('scaling: fast BacklogPerTask step-out accelerates scale-out only', () => {
+  const doc = templates['scaling.yaml'];
+  const targetTracking = doc.Resources.BacklogPerTaskPolicy;
+  const trackingSpec = targetTracking.Properties.TargetTrackingScalingPolicyConfiguration;
+  assert.equal(targetTracking.Properties.PolicyType, 'TargetTrackingScaling');
+  assert.equal(trackingSpec.TargetValue, 'TargetBacklogPerTask',
+    'the original target-tracking target must remain unchanged');
+  assert.equal(trackingSpec.DisableScaleIn, false,
+    'target tracking must retain responsibility for scale-in');
+
+  const alarm = doc.Resources.FastBacklogScaleOutAlarm;
+  assert.equal(alarm.Type, 'AWS::CloudWatch::Alarm');
+  assert.equal(alarm.Condition, 'UseBacklogPerTask');
+  assert.equal(alarm.Properties.Namespace, 'MetricNamespace');
+  assert.equal(alarm.Properties.MetricName, 'BacklogPerTask');
+  assert.deepEqual(alarm.Properties.Dimensions, [{
+    Name: 'ServiceName',
+    Value: { 'Fn::ImportValue': '${EcsStackName}-RouteImpactServiceName' },
+  }]);
+  assert.equal(alarm.Properties.Statistic, 'Average');
+  assert.equal(alarm.Properties.Period, 60);
+  assert.equal(alarm.Properties.EvaluationPeriods, 1);
+  assert.equal(alarm.Properties.DatapointsToAlarm, 1);
+  assert.equal(alarm.Properties.Threshold, 'TargetBacklogPerTask');
+  assert.equal(alarm.Properties.ComparisonOperator, 'GreaterThanThreshold');
+  assert.equal(alarm.Properties.TreatMissingData, 'notBreaching');
+  assert.deepEqual(alarm.Properties.AlarmActions, ['FastBacklogScaleOutPolicy']);
+
+  const policy = doc.Resources.FastBacklogScaleOutPolicy;
+  assert.equal(policy.Type, 'AWS::ApplicationAutoScaling::ScalingPolicy');
+  assert.equal(policy.Condition, 'UseBacklogPerTask');
+  assert.equal(policy.Properties.PolicyType, 'StepScaling');
+  assert.equal(policy.Properties.ScalingTargetId, 'RouteImpactScalableTarget');
+  const step = policy.Properties.StepScalingPolicyConfiguration;
+  assert.equal(step.AdjustmentType, 'ChangeInCapacity');
+  assert.equal(step.MetricAggregationType, 'Average');
+  assert.equal(step.Cooldown, 60);
+  assert.deepEqual(step.StepAdjustments, [{
+    MetricIntervalLowerBound: 0,
+    ScalingAdjustment: 4,
+  }]);
+
+  const stepPolicies = Object.entries(doc.Resources)
+    .filter(([, resource]) => resource.Type === 'AWS::ApplicationAutoScaling::ScalingPolicy'
+      && resource.Properties.PolicyType === 'StepScaling');
+  assert.deepEqual(stepPolicies.map(([name]) => name), ['FastBacklogScaleOutPolicy']);
+  assert.ok(stepPolicies[0][1].Properties.StepScalingPolicyConfiguration.StepAdjustments
+    .every((adjustment) => adjustment.ScalingAdjustment > 0),
+  'no step-scaling scale-in policy or negative adjustment may be added');
+});
+
 test('scaling: the backlog metric is computed as visible messages per running task', () => {
   const text = fs.readFileSync(path.join(CFN_DIR, 'scaling.yaml'), 'utf8');
   assert.match(text, /visible \/ running/, 'the backlog formula must be visible in the Lambda');
