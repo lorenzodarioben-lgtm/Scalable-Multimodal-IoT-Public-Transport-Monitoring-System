@@ -15,10 +15,10 @@ const timingSanity = JSON.parse(fs.readFileSync(
 ));
 
 test('formal AWS workload is count-bounded and uses the declared seed', () => {
-  assert.equal(expectedIncidentCount(stage), 63);
+  assert.equal(expectedIncidentCount(stage), 630);
   assert.doesNotThrow(() => validateFormalStage(stage));
-  assert.throws(() => validateFormalStage({ ...stage, arrival: { ...stage.arrival, incidents: 62 } }),
-    /arrival\.incidents must be 63/);
+  assert.throws(() => validateFormalStage({ ...stage, arrival: { ...stage.arrival, incidents: 629 } }),
+    /arrival\.incidents must be 630/);
   assert.throws(() => validateFormalStage({ ...stage, arrival: { ...stage.arrival, mode: 'sustained' } }),
     /count-bounded/);
   assert.throws(() => validateFormalStage({
@@ -33,7 +33,8 @@ test('fixed and autoscaled arms share logical work but never reuse idempotency i
   assert.equal(fixed.logicalDigest, autoscale.logicalDigest);
   assert.notEqual(fixed.incidents[0].jobs[0].jobId, autoscale.incidents[0].jobs[0].jobId);
   assert.notEqual(fixed.incidents[0].jobs[0].sourceEventId, autoscale.incidents[0].jobs[0].sourceEventId);
-  assert.equal(fixed.expectedAnalysisJobs, 3150);
+  assert.equal(fixed.expectedAnalysisJobs, 31500);
+  assert.equal(new Set(fixed.incidents.flatMap((incident) => incident.jobs.map((job) => job.jobId))).size, 31500);
   assert.equal(fixed.processingCost.processingCpuIterations, 0);
 });
 
@@ -60,9 +61,19 @@ test('AWS capacity calibration is count-bounded and explicitly excluded from for
   assert.equal(calibration.worker.minTasks, 1);
   assert.equal(calibration.worker.maxTasks, 5);
   assert.equal(calibration.worker.targetBacklogPerTask, 75);
-  // This is an explicit guard against the calibration silently replacing stage 1.
-  assert.equal(stage.arrival.incidentIntervalSeconds, 10);
-  assert.equal(stage.arrival.incidents, 63);
+  // Formal stage 1 is separately frozen from calibration profiles by explicit
+  // AWS-derived evidence metadata and the approved 630-second arrival plan.
+  assert.deepEqual(stage.evidenceClassification, {
+    status: 'FORMAL EVIDENCE',
+    selectionBasis: 'AWS calibration established that 50 jobs/s creates genuine pressure and that 630 scheduled seconds gives target tracking time to become operational before arrivals finish.',
+  });
+  assert.match(stage.description, /selected from completed AWS fixed and extended-autoscale calibration evidence/);
+  assert.equal(stage.warmupSeconds, 30);
+  assert.equal(stage.durationSeconds, 600);
+  assert.equal(stage.arrival.incidentIntervalSeconds, 1);
+  assert.equal(stage.arrival.incidents, 630);
+  assert.equal(stage.arrival.incidents * stage.incident.jobsPerIncident, 31500);
+  assert.equal(stage.repeatCount, 3);
 });
 
 test('AWS injector timing sanity check is isolated and retains fifty unique jobs per incident', () => {

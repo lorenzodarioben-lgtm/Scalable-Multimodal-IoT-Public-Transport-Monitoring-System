@@ -1,6 +1,10 @@
 {
   "name": "incident-stage-1",
-  "description": "Stage 1 - bus breakdown affecting 5 bus stops. 50 analysis jobs and 200 notifications per incident.",
+  "description": "FORMAL EVIDENCE. Stage 1 - bus breakdown affecting 5 bus stops. The one-second, 50-analysis-jobs-per-incident intensity was selected from completed AWS fixed and extended-autoscale calibration evidence, not guessed from local throughput.",
+  "evidenceClassification": {
+    "status": "FORMAL EVIDENCE",
+    "selectionBasis": "AWS calibration established that 50 jobs/s creates genuine pressure and that 630 scheduled seconds gives target tracking time to become operational before arrivals finish."
+  },
   "type": "incident",
   "seed": 3142026,
   "incident": {
@@ -16,8 +20,8 @@
   },
   "arrival": {
     "mode": "count-bounded",
-    "incidentIntervalSeconds": 10,
-    "incidents": 63
+    "incidentIntervalSeconds": 1,
+    "incidents": 630
   },
   "durationSeconds": 600,
   "warmupSeconds": 30,
