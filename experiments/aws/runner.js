@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { ARTIFACTS_DIR } from '@sit314/shared/config';
-import { sleep as defaultSleep } from '@sit314/shared/util';
+import { mean, percentile, round, sleep as defaultSleep } from '@sit314/shared/util';
 import { createAwsArtifactWriter } from './artifacts.js';
 import { buildAwsSummary } from './summary.js';
 import { createFormalWorkload, validateFormalStage } from './workload.js';
@@ -41,6 +41,62 @@ function publicWorkload(workload) {
   };
 }
 
+function injectionTimingGuard(stage) {
+  const intervalMs = Number(stage.arrival.incidentIntervalSeconds) * 1000;
+  const configured = stage.timingGuard ?? {};
+  const maxDispatchStartLagIntervals = Number(configured.maxDispatchStartLagIntervals ?? 1);
+  const sustainedStartLagIntervals = Number(configured.sustainedStartLagIntervals ?? 0.5);
+  const sustainedStartLagIncidents = Number(configured.sustainedStartLagIncidents ?? 3);
+  if (!Number.isFinite(maxDispatchStartLagIntervals) || maxDispatchStartLagIntervals <= 0
+    || !Number.isFinite(sustainedStartLagIntervals) || sustainedStartLagIntervals <= 0
+    || !Number.isInteger(sustainedStartLagIncidents) || sustainedStartLagIncidents < 1) {
+    throw new Error('timingGuard values must be positive');
+  }
+  return {
+    intervalMs,
+    maxDispatchStartLagMs: intervalMs * maxDispatchStartLagIntervals,
+    sustainedStartLagMs: intervalMs * sustainedStartLagIntervals,
+    sustainedStartLagIncidents,
+    maxDispatchStartLagIntervals,
+    sustainedStartLagIntervals,
+  };
+}
+
+function injectionTimingSummary({ workloadStartedAt, workload, guard, dispatches, status, invalidReason = null }) {
+  const startMs = Date.parse(workloadStartedAt);
+  const completedAt = dispatches.reduce((latest, dispatch) => (
+    !dispatch.actualDispatchCompletedAt || (latest
+      && Date.parse(latest) >= Date.parse(dispatch.actualDispatchCompletedAt))
+      ? latest : dispatch.actualDispatchCompletedAt
+  ), null);
+  const actualDurationMs = completedAt ? Math.max(0, Date.parse(completedAt) - startMs) : null;
+  const scheduleLags = dispatches
+    .map((dispatch) => dispatch.scheduleLagMs)
+    .filter((lag) => Number.isFinite(lag));
+  const submittedJobs = dispatches.reduce((total, dispatch) => total + (dispatch.submittedJobs ?? 0), 0);
+  return {
+    status,
+    invalidReason,
+    workloadStartedAt,
+    plannedInjectionDurationSeconds: workload.incidentCount * guard.intervalMs / 1000,
+    actualInjectionDurationSeconds: actualDurationMs === null ? null : round(actualDurationMs / 1000, 3),
+    expectedIncidents: workload.incidentCount,
+    dispatchedIncidents: dispatches.filter((dispatch) => dispatch.actualDispatchCompletedAt).length,
+    expectedJobs: workload.expectedAnalysisJobs,
+    submittedJobs,
+    effectiveSubmissionJobsPerSecond: actualDurationMs && actualDurationMs > 0
+      ? round(submittedJobs / (actualDurationMs / 1000), 3) : null,
+    meanScheduleLagMs: round(mean(scheduleLags), 3),
+    p95ScheduleLagMs: round(percentile(scheduleLags, 95), 3),
+    maxScheduleLagMs: round(scheduleLags.length ? Math.max(...scheduleLags) : null, 3),
+    guard: {
+      maxDispatchStartLagMs: guard.maxDispatchStartLagMs,
+      sustainedStartLagMs: guard.sustainedStartLagMs,
+      sustainedStartLagIncidents: guard.sustainedStartLagIncidents,
+    },
+  };
+}
+
 /**
  * `controller` is the only side-effect boundary. The real AWS control plane is
  * passed by the CLI; unit tests use a deterministic in-memory fake. No local
@@ -55,6 +111,8 @@ export async function runAwsExperiment({
   executionNamespace = `${mode}-${randomUUID()}`,
   now = () => new Date(),
   sleep = defaultSleep,
+  setIntervalFn = globalThis.setInterval,
+  clearIntervalFn = globalThis.clearInterval,
 } = {}) {
   validateFormalStage(stage);
   if (!controller) throw new Error('AWS experiment requires a control-plane controller');
@@ -101,13 +159,14 @@ export async function runAwsExperiment({
 
   let jobsInjected = 0;
   const samples = [];
-  const takeSample = async (phase) => {
+  const takeSample = async (phase, { shouldRecord = () => true } = {}) => {
     const sample = {
       ...(await controller.sample()),
       phase,
       jobsInjected,
       expectedJobs: workload.expectedAnalysisJobs,
     };
+    if (!shouldRecord()) return null;
     samples.push(sample);
     writer.appendSample(sample);
     return sample;
@@ -133,21 +192,158 @@ export async function runAwsExperiment({
     const remaining = startMilliseconds + seconds * 1000 - asDate(now()).getTime();
     if (remaining > 0) await sleep(remaining);
   };
-  for (const incident of workload.incidents) {
-    await waitUntilOffset(incident.scheduledOffsetSeconds);
-    const sent = await controller.injectJobs(incident.jobs);
-    if (sent !== incident.jobs.length) {
-      throw new Error(`incident ${incident.sequence}: sent ${sent}/${incident.jobs.length} jobs`);
-    }
-    if (incident.sequence === 1) manifest.firstWorkloadArrivalAt = asDate(now()).toISOString();
-    jobsInjected += sent;
-    await takeSample(incident.scheduledOffsetSeconds < stage.warmupSeconds ? 'warmup' : 'measurement');
-  }
+  const timingGuard = injectionTimingGuard(stage);
+  const dispatches = [];
+  let consecutiveSustainedLaggedDispatches = 0;
+  let timingInvalidReason = null;
+  let dispatchFailure = null;
+  const inFlightDispatches = [];
+  const persistInjectionTiming = (status, invalidReason = null) => {
+    const timing = injectionTimingSummary({
+      workloadStartedAt: manifest.workloadStartedAt,
+      workload,
+      guard: timingGuard,
+      dispatches,
+      status,
+      invalidReason,
+    });
+    manifest.injectionTiming = timing;
+    writer.writeJson('injection-timing.json', timing);
+    writer.writeJson('manifest.json', manifest);
+    return timing;
+  };
 
-  // The last scheduled arrival occurs one interval before the measurement
-  // window closes; preserve that final interval instead of ending early.
-  await waitUntilOffset(stage.warmupSeconds + stage.durationSeconds);
-  await takeSample('measurement-complete');
+  // Sampling runs independently. A slow SQS/ECS observation cannot delay a
+  // scheduled SQS arrival; stale in-flight samples are simply not recorded
+  // after the timer stops at the measurement boundary.
+  let samplerActive = false;
+  let samplerInFlight = false;
+  let samplerFailure = null;
+  let samplerTimer = null;
+  const phaseAt = () => (asDate(now()).getTime() < measurementStartedAt.getTime() ? 'warmup' : 'measurement');
+  const sampleIndependently = () => {
+    if (!samplerActive || samplerInFlight) return;
+    samplerInFlight = true;
+    void (async () => {
+      try {
+        await takeSample(phaseAt(), { shouldRecord: () => samplerActive });
+      } catch (error) {
+        samplerFailure = error;
+      } finally {
+        samplerInFlight = false;
+      }
+    })();
+  };
+  const startIndependentSampling = () => {
+    samplerActive = true;
+    samplerTimer = setIntervalFn(sampleIndependently, stage.sampleIntervalSeconds * 1000);
+  };
+  const stopIndependentSampling = () => {
+    samplerActive = false;
+    if (samplerTimer !== null) clearIntervalFn(samplerTimer);
+    samplerTimer = null;
+  };
+  const throwIfSamplerFailed = () => {
+    if (samplerFailure) throw new Error(`independent telemetry sampling failed: ${samplerFailure.message}`);
+  };
+  const markTimingInvalid = (reason) => {
+    timingInvalidReason = reason;
+    persistInjectionTiming('TIMING-INVALID', reason);
+  };
+
+  persistInjectionTiming('RUNNING');
+  startIndependentSampling();
+  try {
+    for (const incident of workload.incidents) {
+      await waitUntilOffset(incident.scheduledOffsetSeconds);
+      throwIfSamplerFailed();
+      if (dispatchFailure) throw dispatchFailure;
+      const scheduledDispatchMs = startMilliseconds + incident.scheduledOffsetSeconds * 1000;
+      const actualDispatchStartedAt = asDate(now());
+      const scheduleLagMs = Math.max(0, actualDispatchStartedAt.getTime() - scheduledDispatchMs);
+      const dispatch = {
+        sequence: incident.sequence,
+        expectedJobs: incident.jobs.length,
+        scheduledDispatchAt: new Date(scheduledDispatchMs).toISOString(),
+        actualDispatchStartedAt: actualDispatchStartedAt.toISOString(),
+        actualDispatchCompletedAt: null,
+        scheduleLagMs,
+        completionScheduleLagMs: null,
+        dispatchDurationMs: null,
+        submittedJobs: 0,
+      };
+
+      if (scheduleLagMs >= timingGuard.maxDispatchStartLagMs) {
+        dispatch.status = 'not-submitted-schedule-lag';
+        dispatches.push(dispatch);
+        writer.appendDispatch(dispatch);
+        markTimingInvalid(
+          `incident ${incident.sequence} dispatch started ${scheduleLagMs}ms late; maximum is ${timingGuard.maxDispatchStartLagMs}ms`,
+        );
+        break;
+      }
+
+      consecutiveSustainedLaggedDispatches = scheduleLagMs >= timingGuard.sustainedStartLagMs
+        ? consecutiveSustainedLaggedDispatches + 1 : 0;
+      if (consecutiveSustainedLaggedDispatches >= timingGuard.sustainedStartLagIncidents) {
+        dispatch.status = 'not-submitted-sustained-schedule-lag';
+        dispatches.push(dispatch);
+        writer.appendDispatch(dispatch);
+        markTimingInvalid(
+          `${consecutiveSustainedLaggedDispatches} consecutive dispatches started at least ${timingGuard.sustainedStartLagMs}ms late`,
+        );
+        break;
+      }
+
+      // Do not await this dispatch in the scheduler. Its five SQS batches may
+      // take longer than an interval during connection setup, but later
+      // incidents must still begin at their own epoch-derived offsets.
+      dispatch.status = 'dispatching';
+      dispatches.push(dispatch);
+      writer.appendDispatch(dispatch);
+      const inFlight = (async () => {
+        try {
+          const sent = await controller.injectJobs(incident.jobs);
+          const actualDispatchCompletedAt = asDate(now());
+          dispatch.actualDispatchCompletedAt = actualDispatchCompletedAt.toISOString();
+          dispatch.dispatchDurationMs = actualDispatchCompletedAt.getTime() - actualDispatchStartedAt.getTime();
+          dispatch.completionScheduleLagMs = Math.max(0, actualDispatchCompletedAt.getTime() - scheduledDispatchMs);
+          dispatch.submittedJobs = sent;
+          dispatch.status = sent === incident.jobs.length ? 'submitted' : 'incomplete';
+          writer.appendDispatch(dispatch);
+          if (sent !== incident.jobs.length) {
+            throw new Error(`incident ${incident.sequence}: sent ${sent}/${incident.jobs.length} jobs`);
+          }
+          if (incident.sequence === 1) manifest.firstWorkloadArrivalAt = actualDispatchCompletedAt.toISOString();
+          jobsInjected += sent;
+        } catch (error) {
+          dispatch.status = 'failed';
+          dispatch.failure = error.message;
+          writer.appendDispatch(dispatch);
+          dispatchFailure = error;
+        }
+      })();
+      inFlightDispatches.push(inFlight);
+    }
+
+    throwIfSamplerFailed();
+    await Promise.all(inFlightDispatches);
+    throwIfSamplerFailed();
+    if (dispatchFailure) throw dispatchFailure;
+    if (!timingInvalidReason) {
+      // The last scheduled arrival occurs one interval before the measurement
+      // window closes; preserve that final interval instead of ending early.
+      await waitUntilOffset(stage.warmupSeconds + stage.durationSeconds);
+      throwIfSamplerFailed();
+      await takeSample('measurement-complete');
+      persistInjectionTiming('VALID');
+    } else {
+      persistInjectionTiming('TIMING-INVALID', timingInvalidReason);
+      await takeSample('timing-invalid');
+    }
+  } finally {
+    stopIndependentSampling();
+  }
 
   const drainStarted = asDate(now());
   manifest.workloadCompletedAt = drainStarted.toISOString();

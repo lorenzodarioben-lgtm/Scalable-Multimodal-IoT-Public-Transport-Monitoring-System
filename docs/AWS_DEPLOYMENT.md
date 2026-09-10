@@ -294,49 +294,57 @@ scale on. The metric is published once per minute, so allow at least two to
 three complete periods before treating the policy as ready or starting the
 calibration or formal run.
 
-### 14. AWS calibration: fixed arm then autoscaled arm
+### 14. AWS injector timing sanity check, then calibration gate
 
-**CALIBRATION ONLY — NOT FORMAL EVIDENCE.** Run this once in each arm before the
-formal study. It determines whether the real SQS, DynamoDB and Fargate path gives
-the candidate load enough sustained pressure to expose a genuine scaling curve.
-Do not promote these artifacts as the fixed-versus-autoscale result.
+Run the short injector check first. It is **NOT CALIBRATION EVIDENCE** and **NOT
+FORMAL EVIDENCE**: it proves only that the external SQS injector can sustain the
+configured arrivals without metric collection slowing it down.
+
+```powershell
+npm run experiment:aws -- --config experiments/calibration/aws-injector-timing-sanity.json --worker-mode fixed --repeat 1
+```
+
+The sanity configuration sends 30 incidents at one-second cadence, with 50 jobs
+per incident (1,500 jobs). The runner records each planned/actual dispatch,
+schedule lag, actual duration and effective jobs/s in `dispatches.jsonl` and
+`injection-timing.json`. It marks the run `TIMING-INVALID` and stops injecting if
+a dispatch starts a whole interval behind schedule, or if three consecutive
+dispatches start at least half an interval late. Completion lag is retained as
+evidence but does not reject a cold first request that can recover on schedule.
+Do not start the full calibration
+unless this artifact is `VALID`, has no guard event, and is approximately 50 jobs/s.
+
+**CALIBRATION ONLY — NOT FORMAL EVIDENCE.** After a passing injector check, run
+the fixed arm of the full 1-second candidate:
 
 ```powershell
 npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode fixed --repeat 1
+```
+
+This is a 30 s warm-up plus 150 s measurement: 180 incidents every second and
+50 analysis jobs per incident (**9,000 jobs**). The fixed pass is exactly one
+task; it keeps the worker at 50 ms delay and zero CPU-burn iterations. It must
+both be `VALID` and actually deliver approximately 50 jobs/s before its queue
+metrics can be interpreted as capacity evidence.
+
+Inspect the raw artifacts, CloudWatch `BacklogPerTask` periods, real Application
+Auto Scaling activities, and ECS desired/running task counts before proceeding.
+Run the matched autoscaled arm only when the valid fixed arm has sustained pressure
+and `BacklogPerTask` genuinely exceeds 75:
+
+```powershell
 npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.json --worker-mode autoscale --repeat 1
 ```
 
-This is one matched calibration pair: 30 s warm-up, 150 s measurement, 36
-incidents every 5 s, and 50 analysis jobs per incident (**1,800 jobs per arm**).
-The runner retains its normal count-bounded, clean-queue, ECS readiness and
-per-arm execution-namespace protections. It holds the worker cost at 50 ms delay
-and zero CPU-burn iterations. The fixed pass is min=max=1; the autoscaled pass is
-min=1/max=5 with `TargetBacklogPerTask=75`.
-
-Inspect the raw artifacts, CloudWatch `BacklogPerTask` periods, real Application
-Auto Scaling activities, and ECS desired/running task counts before proceeding:
-
 | Calibration result | Interpretation and next action |
 |---|---|
-| Too light | One fixed task keeps up, the queue repeatedly drains close to zero, `BacklogPerTask` does not stay above 75 for enough real metric periods, or no real scale-out occurs. Run one higher-intensity candidate. |
+| Too light | One fixed task keeps up, the queue repeatedly drains close to zero, or `BacklogPerTask` does not stay above 75 for enough real metric periods. Stop for review; do not automatically run autoscale or another cadence. |
 | Useful | The fixed pass develops sustained backlog; the autoscaled pass rises above one task from real workload-driven metrics; backlog begins recovering as tasks arrive; it does not immediately remain pinned at five tasks. Freeze the formal intensity after recording this decision. |
 | Too heavy | The autoscaled pass immediately reaches five tasks and backlog continues growing rapidly there. Select a lower intensity; the run does not reveal a scaling curve. |
 
-Start at the committed 5-second cadence. If, and only if, it is too light, change
-only `arrival.incidentIntervalSeconds` and its matching count in this
-**calibration** file; the count is `ceil((30 + 150) / interval)` and the runner
-rejects a mismatch. Do not run all candidates automatically and do not lower the
-backlog target to manufacture a scale event.
-
-| Interval | Matching incidents | Jobs per calibration arm |
-|---:|---:|---:|
-| 10 s | 18 | 900 |
-| 5 s (start here) | 36 | 1,800 |
-| 3 s | 60 | 3,000 |
-| 2 s | 90 | 4,500 |
-
-The phase order is mandatory: **AWS calibration → inspect results → choose and
-freeze final formal intensity → formal experiment**. A later, separately reviewed
+The phase order is mandatory: **injector timing sanity check → fixed calibration
+→ inspect results → choose and freeze final formal intensity → formal experiment**.
+A later, separately reviewed
 formal-stage edit may change only the chosen cadence/count; it must preserve the
 30 s warm-up, 600 s measurement, 300 s drain deadline, three repeats, matched
 canonical work, 50 ms delay, zero CPU burn, fixed one-task arm and autoscale

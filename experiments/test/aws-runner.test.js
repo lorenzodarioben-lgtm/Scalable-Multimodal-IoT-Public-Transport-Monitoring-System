@@ -74,6 +74,47 @@ test('AWS SQS snapshots never request the CloudWatch-only oldest-age metric as a
   }
 });
 
+test('AWS injector submits the five SQS batches for one fifty-job incident concurrently', async () => {
+  const pending = [];
+  let active = 0;
+  let peakActive = 0;
+  const requests = [];
+  class SendMessageBatchCommand { constructor(input) { this.input = input; } }
+  class SqsClient {
+    send(command) {
+      assert.ok(command instanceof SendMessageBatchCommand);
+      requests.push(command.input);
+      active += 1;
+      peakActive = Math.max(peakActive, active);
+      return new Promise((resolve) => pending.push(() => {
+        active -= 1;
+        resolve({ Successful: command.input.Entries.map(({ Id }) => ({ Id })) });
+      }));
+    }
+  }
+  class EmptyClient { async send() { throw new Error('unexpected AWS client call'); } }
+  const sdk = {
+    ecs: { ECSClient: EmptyClient },
+    autoscaling: { ApplicationAutoScalingClient: EmptyClient },
+    sqs: { SQSClient: SqsClient, SendMessageBatchCommand },
+    dynamodb: { DynamoDBClient: EmptyClient },
+    dynamodbDocument: { DynamoDBDocumentClient: { from: () => new EmptyClient() } },
+    logs: { CloudWatchLogsClient: EmptyClient },
+  };
+  const controller = new AwsControlPlane({ region: 'us-east-1', prefix: 'sit314-transport', sdk });
+  controller.queueUrls.set('sit314-transport-analysis', 'https://queue.example/analysis');
+  const jobs = Array.from({ length: 50 }, (_, index) => ({ jobId: `job-${index}` }));
+
+  const submitted = controller.injectJobs(jobs);
+  await Promise.resolve();
+  assert.equal(requests.length, 5);
+  assert.equal(peakActive, 5);
+  assert.deepEqual(requests.map((request) => request.Entries.length), [10, 10, 10, 10, 10]);
+  assert.equal(new Set(requests.flatMap((request) => request.Entries.map((entry) => entry.MessageBody))).size, 50);
+  pending.forEach((resolve) => resolve());
+  assert.equal(await submitted, 50);
+});
+
 test('AWS worker readiness uses the known ECS task stream, never log-stream recency', async () => {
   const taskArn = 'arn:aws:ecs:us-east-1:123456789012:task/sit314-transport-cluster/task-abc';
   const logRequests = [];
@@ -246,6 +287,198 @@ test('AWS workload timing begins after preflight and preserves scheduled warm-up
     );
     assert.equal(summary.startedAt, manifest.workloadStartedAt);
     assert.equal(summary.measurementStartedAt, manifest.measurementStartedAt);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AWS scheduler derives every incident time from the workload epoch', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-aws-epoch-'));
+  const clock = { value: Date.UTC(2026, 0, 1) };
+  const dispatchStarts = [];
+  const epochStage = {
+    ...stage(),
+    warmupSeconds: 0,
+    durationSeconds: 30,
+    arrival: { mode: 'count-bounded', incidentIntervalSeconds: 10, incidents: 3 },
+  };
+  const controller = {
+    async configureCapacity() {}, async verifyQueuesClean() {},
+    async verifyProcessingCost(cost) { return cost; },
+    async waitForStartingState() { return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() { return { workers: [{ taskId: 'ecs-unit' }] }; },
+    async sample() {
+      return {
+        timestamp: new Date(clock.value).toISOString(),
+        queue: { visibleMessages: 0, inFlightMessages: 0, oldestMessageAgeSeconds: 0 },
+        service: { desiredCount: 1, runningCount: 1 },
+      };
+    },
+    async injectJobs(jobs) {
+      dispatchStarts.push(clock.value);
+      clock.value += 2_000;
+      return jobs.length;
+    },
+    async scalingActivities() { return []; },
+    async resultsForSources(ids, expectedJobs) { return { resultsProduced: expectedJobs, duplicateResults: 0, queueRemaining: 0, dlqDepth: 0, ids }; },
+    async workerLogs() { return []; },
+    logReferences() { return {}; },
+  };
+  try {
+    const result = await runAwsExperiment({
+      stage: epochStage, mode: 'fixed', repeatNumber: 1, outputDir: root,
+      executionNamespace: 'epoch-unit', controller,
+      now: () => new Date(clock.value), sleep: async (milliseconds) => { clock.value += milliseconds; },
+    });
+    assert.deepEqual(dispatchStarts.map((time) => time - Date.UTC(2026, 0, 1)), [0, 10_000, 20_000]);
+    assert.equal(result.summary.injectionTiming.status, 'VALID');
+    assert.equal(result.summary.injectionTiming.maxScheduleLagMs, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AWS sampling cannot delay the next scheduled incident', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-aws-sampling-'));
+  const clock = { value: Date.UTC(2026, 0, 1) };
+  const dispatchStarts = [];
+  let intervalCallback;
+  let resolveSlowSample;
+  const slowSample = new Promise((resolve) => { resolveSlowSample = resolve; });
+  let sampleCalls = 0;
+  const samplingStage = {
+    ...stage(),
+    warmupSeconds: 0,
+    durationSeconds: 20,
+    arrival: { mode: 'count-bounded', incidentIntervalSeconds: 10, incidents: 2 },
+  };
+  const snapshot = () => ({
+    timestamp: new Date(clock.value).toISOString(),
+    queue: { visibleMessages: 0, inFlightMessages: 0, oldestMessageAgeSeconds: 0 },
+    service: { desiredCount: 1, runningCount: 1 },
+  });
+  const controller = {
+    async configureCapacity() {}, async verifyQueuesClean() {},
+    async verifyProcessingCost(cost) { return cost; },
+    async waitForStartingState() { return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() { return { workers: [{ taskId: 'ecs-unit' }] }; },
+    async sample() {
+      sampleCalls += 1;
+      return sampleCalls === 2 ? slowSample : snapshot();
+    },
+    async injectJobs(jobs) {
+      dispatchStarts.push(clock.value);
+      if (dispatchStarts.length === 1) {
+        intervalCallback();
+        await Promise.resolve();
+      } else {
+        resolveSlowSample(snapshot());
+      }
+      return jobs.length;
+    },
+    async scalingActivities() { return []; },
+    async resultsForSources(ids, expectedJobs) { return { resultsProduced: expectedJobs, duplicateResults: 0, queueRemaining: 0, dlqDepth: 0, ids }; },
+    async workerLogs() { return []; },
+    logReferences() { return {}; },
+  };
+  try {
+    await runAwsExperiment({
+      stage: samplingStage, mode: 'fixed', repeatNumber: 1, outputDir: root,
+      executionNamespace: 'sampling-unit', controller,
+      now: () => new Date(clock.value), sleep: async (milliseconds) => { clock.value += milliseconds; },
+      setIntervalFn: (callback) => { intervalCallback = callback; return 'sampler'; },
+      clearIntervalFn: () => {},
+    });
+    assert.deepEqual(dispatchStarts.map((time) => time - Date.UTC(2026, 0, 1)), [0, 10_000]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AWS scheduler launches the next epoch-derived incident without waiting for an earlier dispatch', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-aws-overlap-'));
+  const clock = { value: Date.UTC(2026, 0, 1) };
+  const dispatchStarts = [];
+  const pending = [];
+  const overlapStage = {
+    ...stage(),
+    warmupSeconds: 0,
+    durationSeconds: 20,
+    arrival: { mode: 'count-bounded', incidentIntervalSeconds: 10, incidents: 2 },
+  };
+  const snapshot = () => ({
+    timestamp: new Date(clock.value).toISOString(),
+    queue: { visibleMessages: 0, inFlightMessages: 0, oldestMessageAgeSeconds: 0 },
+    service: { desiredCount: 1, runningCount: 1 },
+  });
+  const controller = {
+    async configureCapacity() {}, async verifyQueuesClean() {},
+    async verifyProcessingCost(cost) { return cost; },
+    async waitForStartingState() { return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() { return { workers: [{ taskId: 'ecs-unit' }] }; },
+    async sample() { return snapshot(); },
+    injectJobs(jobs) {
+      dispatchStarts.push(clock.value);
+      const completion = new Promise((resolve) => pending.push(() => resolve(jobs.length)));
+      if (dispatchStarts.length === 2) pending.forEach((resolve) => resolve());
+      return completion;
+    },
+    async scalingActivities() { return []; },
+    async resultsForSources(ids, expectedJobs) { return { resultsProduced: expectedJobs, duplicateResults: 0, queueRemaining: 0, dlqDepth: 0, ids }; },
+    async workerLogs() { return []; },
+    logReferences() { return {}; },
+  };
+  try {
+    await runAwsExperiment({
+      stage: overlapStage, mode: 'fixed', repeatNumber: 1, outputDir: root,
+      executionNamespace: 'overlap-unit', controller,
+      now: () => new Date(clock.value), sleep: async (milliseconds) => { clock.value += milliseconds; },
+    });
+    assert.deepEqual(dispatchStarts.map((time) => time - Date.UTC(2026, 0, 1)), [0, 10_000]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AWS runner stops injection and marks a run timing-invalid after one interval of dispatch-start lag', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-aws-lag-'));
+  const clock = { value: Date.UTC(2026, 0, 1) };
+  let injectCalls = 0;
+  const guardStage = {
+    ...stage(),
+    warmupSeconds: 0,
+    durationSeconds: 20,
+    arrival: { mode: 'count-bounded', incidentIntervalSeconds: 10, incidents: 2 },
+  };
+  const controller = {
+    async configureCapacity() {}, async verifyQueuesClean() {},
+    async verifyProcessingCost(cost) { return cost; },
+    async waitForStartingState() { return { desiredCount: 1, runningCount: 1 }; },
+    async waitForWorkerReady() { return { workers: [{ taskId: 'ecs-unit' }] }; },
+    async sample() {
+      return {
+        timestamp: new Date(clock.value).toISOString(),
+        queue: { visibleMessages: 0, inFlightMessages: 0, oldestMessageAgeSeconds: 0 },
+        service: { desiredCount: 1, runningCount: 1 },
+      };
+    },
+    async injectJobs(jobs) { injectCalls += 1; clock.value += 20_001; return jobs.length; },
+    async scalingActivities() { return []; },
+    async resultsForSources(ids) { return { resultsProduced: 2, duplicateResults: 0, queueRemaining: 0, dlqDepth: 0, ids }; },
+    async workerLogs() { return []; },
+    logReferences() { return {}; },
+  };
+  try {
+    const result = await runAwsExperiment({
+      stage: guardStage, mode: 'fixed', repeatNumber: 1, outputDir: root,
+      executionNamespace: 'lag-unit', controller,
+      now: () => new Date(clock.value), sleep: async (milliseconds) => { clock.value += milliseconds; },
+    });
+    assert.equal(injectCalls, 1);
+    assert.equal(result.summary.injectionTiming.status, 'TIMING-INVALID');
+    assert.match(result.summary.injectionTiming.invalidReason, /dispatch started 10001ms late/);
+    assert.equal(result.summary.injectionTiming.dispatchedIncidents, 1);
+    assert.equal(result.summary.injectionTiming.submittedJobs, 2);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

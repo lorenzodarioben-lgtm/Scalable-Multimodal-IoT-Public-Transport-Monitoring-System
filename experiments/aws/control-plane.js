@@ -261,16 +261,21 @@ export class AwsControlPlane {
 
   async injectJobs(jobs) {
     const QueueUrl = await this.#queueUrl(this.analysisQueueName);
-    let sent = 0;
-    for (const entries of chunk(jobs, 10)) {
+    // SQS permits at most ten entries per SendMessageBatch request. Submit all
+    // batches for one logical incident together so five 10-message requests do
+    // not serially turn a one-second arrival schedule into an injector-bound
+    // workload. Each request remains independently atomic; no retry is hidden
+    // here, so a partial failure stops the run instead of creating duplicates.
+    const batches = chunk(jobs, 10);
+    const outcomes = await Promise.all(batches.map(async (entries) => {
       const out = await this.sqs.send(new this.sdk.sqs.SendMessageBatchCommand({
         QueueUrl,
         Entries: entries.map((job, index) => ({ Id: String(index), MessageBody: JSON.stringify(job) })),
       }));
       if (out.Failed?.length) throw new Error(`SQS rejected ${out.Failed.length} analysis job(s)`);
-      sent += out.Successful?.length ?? 0;
-    }
-    return sent;
+      return out.Successful?.length ?? 0;
+    }));
+    return outcomes.reduce((total, count) => total + count, 0);
   }
 
   async scalingActivities() {

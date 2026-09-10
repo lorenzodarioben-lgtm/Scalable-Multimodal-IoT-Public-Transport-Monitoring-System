@@ -62,6 +62,7 @@ export function buildAwsSummary({ manifest, samples, scalingActivities, accounti
     workloadStartedAt,
     measurementStartedAt: manifest.measurementStartedAt ?? null,
     finishedAt,
+    injectionTiming: manifest.injectionTiming ?? null,
     results: {
       expectedJobs: expected,
       resultsProduced,
