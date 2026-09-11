@@ -145,6 +145,48 @@ Resources:
               Value:
                 Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactServiceName'
 
+  # Target tracking remains the normal steady-state controller and the only
+  # scale-in path. This separate policy deliberately accelerates scale-out
+  # only when the same genuine BacklogPerTask signal becomes excessive.
+  FastBacklogScaleOutPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: UseBacklogPerTask
+    Properties:
+      PolicyName: !Sub '${ResourcePrefix}-fast-backlog-scale-out'
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref RouteImpactScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        MetricAggregationType: Average
+        Cooldown: 60
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            ScalingAdjustment: 4
+
+  FastBacklogScaleOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: UseBacklogPerTask
+    Properties:
+      AlarmName: !Sub '${ResourcePrefix}-fast-backlog-scale-out'
+      AlarmDescription: >
+        Fast scale-out only when BacklogPerTask exceeds the existing target.
+        Target tracking remains responsible for steady state and all scale-in.
+      Namespace: !Ref MetricNamespace
+      MetricName: BacklogPerTask
+      Dimensions:
+        - Name: ServiceName
+          Value:
+            Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactServiceName'
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: !Ref TargetBacklogPerTask
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref FastBacklogScaleOutPolicy
+
   # ---- documented fallback: track raw queue depth ------------------------
   QueueDepthPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy

@@ -266,6 +266,14 @@ the Application Auto Scaling first-use/service-linked-role outcome observable
 and cheap to stop on. A successful stack does not prove scaling yet; wait for
 the metric and a workload-driven transition below.
 
+When `ScalingMode=BacklogPerTask`, the scaling stack also creates a fast
+scale-out-only CloudWatch alarm and step policy. The alarm evaluates the
+existing `SIT314/Transport` `BacklogPerTask` metric every 60 seconds, alarms
+after one above-target datapoint, and applies `ChangeInCapacity +4`. It shares
+the existing target value (default 75), keeps the min/max envelope at 1–5, and
+does not add a step-scaling scale-in path. The original target-tracking policy
+remains the steady-state controller and remains solely responsible for scale-in.
+
 If Lambda or EventBridge creation is denied, redeploy with the documented fallback
 and record the deviation in `docs/IMPLEMENTATION_DECISIONS.md`:
 
