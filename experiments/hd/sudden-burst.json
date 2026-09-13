@@ -1,0 +1,42 @@
+{
+  "name": "hd-sudden-burst",
+  "description": "HD PLANNED EXPERIMENT ONLY. A deterministic abrupt increase that cannot be forecast before it appears and therefore tests whether the retained reactive path remains the safety net.",
+  "evidenceClassification": {
+    "status": "HD PLANNED EXPERIMENT",
+    "notDistinctionEvidence": true,
+    "executionStatus": "NOT EXECUTED"
+  },
+  "workloadClass": "SUDDEN_BURST",
+  "warmupSeconds": 30,
+  "measurementSeconds": 600,
+  "incident": {
+    "scenario": "bus-breakdown",
+    "transportMode": "bus",
+    "reason": "breakdown",
+    "severity": "high",
+    "vehicleId": "BUS-HD-002",
+    "routeId": "703",
+    "affectedLocations": 5,
+    "jobsPerIncident": 50,
+    "notificationsPerIncident": 200
+  },
+  "arrival": {
+    "mode": "piecewise-incident-interval",
+    "segments": [
+      { "startOffsetSeconds": 0, "endOffsetSeconds": 210, "incidentIntervalSeconds": 5 },
+      { "startOffsetSeconds": 210, "endOffsetSeconds": 510, "incidentIntervalSeconds": 1 },
+      { "startOffsetSeconds": 510, "endOffsetSeconds": 630, "incidentIntervalSeconds": 5 }
+    ]
+  },
+  "worker": {
+    "minTasks": 1,
+    "maxTasks": 5,
+    "processingDelayMs": 50,
+    "processingCpuIterations": 0,
+    "targetBacklogPerTask": 75
+  },
+  "comparison": {
+    "baseline": "Final Distinction reactive policy: target tracking plus fast BPT step scale-out",
+    "treatment": "HD hybrid predictive-reactive controller with the same reactive fallback"
+  }
+}

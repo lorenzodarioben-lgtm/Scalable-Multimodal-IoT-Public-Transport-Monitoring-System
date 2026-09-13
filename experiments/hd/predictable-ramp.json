@@ -1,0 +1,44 @@
+{
+  "name": "hd-predictable-ramp",
+  "description": "HD PLANNED EXPERIMENT ONLY. A deterministic, gradually rising incident schedule designed to give the short-horizon predictor time to act before severe queue pressure.",
+  "evidenceClassification": {
+    "status": "HD PLANNED EXPERIMENT",
+    "notDistinctionEvidence": true,
+    "executionStatus": "NOT EXECUTED"
+  },
+  "workloadClass": "PREDICTABLE_RAMP",
+  "warmupSeconds": 30,
+  "measurementSeconds": 600,
+  "incident": {
+    "scenario": "bus-breakdown",
+    "transportMode": "bus",
+    "reason": "breakdown",
+    "severity": "high",
+    "vehicleId": "BUS-HD-001",
+    "routeId": "703",
+    "affectedLocations": 5,
+    "jobsPerIncident": 50,
+    "notificationsPerIncident": 200
+  },
+  "arrival": {
+    "mode": "piecewise-incident-interval",
+    "segments": [
+      { "startOffsetSeconds": 0, "endOffsetSeconds": 150, "incidentIntervalSeconds": 5 },
+      { "startOffsetSeconds": 150, "endOffsetSeconds": 270, "incidentIntervalSeconds": 3 },
+      { "startOffsetSeconds": 270, "endOffsetSeconds": 390, "incidentIntervalSeconds": 2 },
+      { "startOffsetSeconds": 390, "endOffsetSeconds": 510, "incidentIntervalSeconds": 1.5 },
+      { "startOffsetSeconds": 510, "endOffsetSeconds": 630, "incidentIntervalSeconds": 1 }
+    ]
+  },
+  "worker": {
+    "minTasks": 1,
+    "maxTasks": 5,
+    "processingDelayMs": 50,
+    "processingCpuIterations": 0,
+    "targetBacklogPerTask": 75
+  },
+  "comparison": {
+    "baseline": "Final Distinction reactive policy: target tracking plus fast BPT step scale-out",
+    "treatment": "HD hybrid predictive-reactive controller with the same reactive fallback"
+  }
+}
