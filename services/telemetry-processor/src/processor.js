@@ -46,6 +46,7 @@ export class TelemetryProcessor {
     thresholds = THRESHOLDS,
     failureInjection = FAILURE_INJECTION,
     random = Math.random,
+    hdArrivalObserver = null,
   }) {
     this.store = store;
     this.analysisQueue = analysisQueue;
@@ -53,6 +54,7 @@ export class TelemetryProcessor {
     this.thresholds = thresholds;
     this.failureInjection = failureInjection;
     this.random = random;
+    this.hdArrivalObserver = hdArrivalObserver;
     this.counters = {
       stored: 0,
       duplicates: 0,
@@ -153,6 +155,21 @@ export class TelemetryProcessor {
 
     const { incidentId, jobs, locations } = buildAnalysisJobs(event, evaluation);
     const published = await this.#publishJobs(jobs);
+
+    if (this.hdArrivalObserver && published > 0) {
+      try {
+        await this.hdArrivalObserver.publish({
+          signalId: event.eventId, publishedJobCount: published,
+        });
+      } catch (error) {
+        // The independent D reactive path protects processing if HD telemetry
+        // fails. Do not retry an already claimed business event just to emit a
+        // predictor signal; its jobs are already in SQS.
+        this.logger.error('HD_ARRIVAL_SIGNAL_FAILED', {
+          eventId: event.eventId, error: error.message,
+        });
+      }
+    }
 
     this.counters.incidents += 1;
     this.counters.jobsPublished += published;

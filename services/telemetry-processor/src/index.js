@@ -17,6 +17,7 @@ import { getStore } from '@sit314/shared/store';
 import { createMetrics } from '@sit314/shared/metrics';
 import { createWorker } from '@sit314/shared/worker';
 import { TelemetryProcessor } from './processor.js';
+import { createHdAwsArrivalObserver } from './hd-arrival-observer.js';
 
 const logger = createLogger('telemetry-processor', {
   jsonFile: process.env.LOG_JSON_FILE || null,
@@ -26,7 +27,13 @@ const analysisQueue = getQueue(QUEUES.analysis);
 const store = getStore();
 const metrics = createMetrics('telemetry-processor');
 
-const processor = new TelemetryProcessor({ store, analysisQueue, logger });
+const hdArrivalObserver = process.env.HD_ARRIVAL_SIGNAL_QUEUE_URL
+  ? await createHdAwsArrivalObserver({
+    queueUrl: process.env.HD_ARRIVAL_SIGNAL_QUEUE_URL,
+    runId: process.env.HD_ARRIVAL_RUN_ID || 'production',
+    region: process.env.AWS_REGION,
+  }) : null;
+const processor = new TelemetryProcessor({ store, analysisQueue, logger, hdArrivalObserver });
 
 process.stdout.write(`${banner('SIT314 telemetry processor', {
   'Input queue': telemetryQueue.name,

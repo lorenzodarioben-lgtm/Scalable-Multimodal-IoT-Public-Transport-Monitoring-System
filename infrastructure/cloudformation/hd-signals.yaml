@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated SIT314 HD analysis-arrival signal queue and predictor state.
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-hd-transport
+    AllowedPattern: '^sit314-hd-[a-z0-9-]+$'
+Resources:
+  ArrivalSignalDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-arrival-dlq.fifo'
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-HD-Transport-IoT }
+  ArrivalSignalQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ResourcePrefix}-arrival.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: false
+      VisibilityTimeout: 120
+      MessageRetentionPeriod: 345600
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ArrivalSignalDlq.Arn
+        maxReceiveCount: 5
+      Tags:
+        - { Key: Project, Value: SIT314-HD-Transport-IoT }
+  PredictorState:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ResourcePrefix}-predictor-state'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: RunId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: RunId, KeyType: HASH }
+      TimeToLiveSpecification:
+        AttributeName: ExpiresAt
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - { Key: Project, Value: SIT314-HD-Transport-IoT }
+Outputs:
+  ArrivalSignalQueueUrl:
+    Value: !Ref ArrivalSignalQueue
+    Export: { Name: !Sub '${AWS::StackName}-ArrivalSignalQueueUrl' }
+  ArrivalSignalQueueArn:
+    Value: !GetAtt ArrivalSignalQueue.Arn
+    Export: { Name: !Sub '${AWS::StackName}-ArrivalSignalQueueArn' }
+  ArrivalSignalDlqUrl:
+    Value: !Ref ArrivalSignalDlq
+  PredictorStateTableName:
+    Value: !Ref PredictorState
+    Export: { Name: !Sub '${AWS::StackName}-PredictorStateTableName' }
+  PredictorStateTableArn:
+    Value: !GetAtt PredictorState.Arn
+    Export: { Name: !Sub '${AWS::StackName}-PredictorStateTableArn' }

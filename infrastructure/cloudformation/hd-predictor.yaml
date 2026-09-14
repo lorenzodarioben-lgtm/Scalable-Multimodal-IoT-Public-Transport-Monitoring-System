@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated SIT314 HD event-driven predictive scale-out Lambda.
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-hd-transport
+    AllowedPattern: '^sit314-hd-[a-z0-9-]+$'
+  SignalsStackName:
+    Type: String
+  QueuesStackName:
+    Type: String
+  EcsStackName:
+    Type: String
+  ControllerMode:
+    Type: String
+    Default: reactive
+    AllowedValues: [reactive, hybrid]
+  LambdaCodeBucket:
+    Type: String
+  LambdaCodeKey:
+    Type: String
+  ExistingLambdaRoleArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$'
+Conditions:
+  CreateLambdaRole: !Equals [!Ref ExistingLambdaRoleArn, '']
+Resources:
+  PredictorRole:
+    Type: AWS::IAM::Role
+    Condition: CreateLambdaRole
+    Properties:
+      RoleName: !Sub '${ResourcePrefix}-predictor-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HdPredictorAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
+                Resource:
+                  Fn::ImportValue: !Sub '${SignalsStackName}-ArrivalSignalQueueArn'
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem]
+                Resource:
+                  Fn::ImportValue: !Sub '${SignalsStackName}-PredictorStateTableArn'
+              - Effect: Allow
+                Action: ecs:DescribeServices
+                Resource: '*'
+              - Effect: Allow
+                Action: ecs:UpdateService
+                Resource: !Sub
+                  - 'arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:service/${Cluster}/${Service}'
+                  - Cluster:
+                      Fn::ImportValue: !Sub '${EcsStackName}-ClusterName'
+                    Service:
+                      Fn::ImportValue: !Sub '${EcsStackName}-RouteImpactServiceName'
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: SIT314/HDTransport
+  PredictorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ResourcePrefix}-predictor'
+      RetentionInDays: 7
+  PredictorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ResourcePrefix}-predictor'
+      Runtime: nodejs22.x
+      Handler: experiments/hd/aws/handler.handler
+      Timeout: 60
+      MemorySize: 256
+      Role: !If [CreateLambdaRole, !GetAtt PredictorRole.Arn, !Ref ExistingLambdaRoleArn]
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key: !Ref LambdaCodeKey
+      Environment:
+        Variables:
+          HD_RESOURCE_PREFIX: !Ref ResourcePrefix
+          HD_CONTROLLER_MODE: !Ref ControllerMode
+          HD_STATE_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SignalsStackName}-PredictorStateTableName'
+          HD_ANALYSIS_QUEUE_URL:
+            Fn::ImportValue: !Sub '${QueuesStackName}-AnalysisQueueUrl'
+          HD_HISTORY_SIZE: '8'
+          HD_FORECAST_HORIZON_SECONDS: '80'
+          HD_PER_TASK_JOBS_PER_SECOND: '42.467'
+          HD_RISING_SLOPE_THRESHOLD: '0.02'
+          HD_HYSTERESIS_COUNT: '2'
+          HD_DUPLICATE_COOLDOWN_SECONDS: '60'
+      Tags:
+        - { Key: Project, Value: SIT314-HD-Transport-IoT }
+  ArrivalEventMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn:
+        Fn::ImportValue: !Sub '${SignalsStackName}-ArrivalSignalQueueArn'
+      FunctionName: !Ref PredictorFunction
+      BatchSize: 1
+      Enabled: true
+Outputs:
+  PredictorFunctionName:
+    Value: !Ref PredictorFunction
+  ControllerMode:
+    Value: !Ref ControllerMode

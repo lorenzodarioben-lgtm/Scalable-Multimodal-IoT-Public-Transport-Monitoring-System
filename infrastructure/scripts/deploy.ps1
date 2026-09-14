@@ -57,6 +57,8 @@ param(
     [int]$MinTasks = 1,
     [int]$MaxTasks = 5,
     [int]$TargetBacklogPerTask = 75,
+    [string]$MetricNamespace = 'SIT314/Transport',
+    [string]$HdArrivalSignalQueueUrl = '',
 
     [switch]$WhatIfOnly
 )
@@ -185,8 +187,13 @@ foreach ($stack in $Stacks) {
                 # which makes an otherwise valid subnet id fail validation.
                 ("SubnetIds=" + ($SubnetIds -join ',')),
                 "RouteImpactImage=$RouteImpactImage",
-                "WorkerProcessingDelayMs=$WorkerProcessingDelayMs"
+                "WorkerProcessingDelayMs=$WorkerProcessingDelayMs",
+                "MetricNamespace=$MetricNamespace"
             )
+            if ($HdArrivalSignalQueueUrl) {
+                $p += "HdArrivalSignalQueueUrl=$HdArrivalSignalQueueUrl"
+                $p += "HdSignalsStackName=$Prefix-hd-signals"
+            }
             if ($TelemetryProcessorImage) { $p += "TelemetryProcessorImage=$TelemetryProcessorImage" }
             if ($NotificationWorkerImage) { $p += "NotificationWorkerImage=$NotificationWorkerImage" }
             if ($ExistingExecutionRoleArn) { $p += "ExistingExecutionRoleArn=$ExistingExecutionRoleArn" }
@@ -203,6 +210,7 @@ foreach ($stack in $Stacks) {
                 "MaxTasks=$MaxTasks",
                 "TargetBacklogPerTask=$TargetBacklogPerTask"
             )
+            $p += "MetricNamespace=$MetricNamespace"
             if ($ExistingLambdaRoleArn) { $p += "ExistingLambdaRoleArn=$ExistingLambdaRoleArn" }
             Invoke-Stack -Name 'scaling' -Template 'scaling.yaml' -ParameterOverrides $p -NeedsIam
         }

@@ -85,6 +85,15 @@ Parameters:
       Documented TEST PARAMETER (see docs/SCALABILITY_TESTING.md). Adds a fixed
       service time per job so queue build-up and scaling are observable at an
       affordable workload size. Default 0 = off.
+  MetricNamespace:
+    Type: String
+    Default: SIT314/Transport
+  HdArrivalSignalQueueUrl:
+    Type: String
+    Default: ''
+  HdSignalsStackName:
+    Type: String
+    Default: ''
   LogRetentionDays:
     Type: Number
     Default: 7
@@ -106,6 +115,7 @@ Conditions:
   DeployTelemetryProcessor: !Not [!Equals [!Ref TelemetryProcessorImage, '']]
   DeployNotificationWorker: !Not [!Equals [!Ref NotificationWorkerImage, '']]
   UseRegionOverride: !Not [!Equals [!Ref AwsRegionOverride, '']]
+  EnableHdArrivalSignals: !Not [!Equals [!Ref HdArrivalSignalQueueUrl, '']]
 
 Resources:
   Cluster:
@@ -213,7 +223,18 @@ Resources:
                 Resource: '*'
                 Condition:
                   StringEquals:
-                    cloudwatch:namespace: SIT314/Transport
+                    cloudwatch:namespace: !Ref MetricNamespace
+        - !If
+          - EnableHdArrivalSignals
+          - PolicyName: HdArrivalSignalAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: sqs:SendMessage
+                  Resource:
+                    Fn::ImportValue: !Sub '${HdSignalsStackName}-ArrivalSignalQueueArn'
+          - !Ref 'AWS::NoValue'
       Tags:
         - { Key: Project, Value: SIT314-Transport-IoT }
         - { Key: Owner, Value: !Ref Owner }
@@ -263,6 +284,7 @@ Resources:
             - { Name: QUEUE_BACKEND, Value: aws }
             - { Name: STORE_BACKEND, Value: aws }
             - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: METRIC_NAMESPACE, Value: !Ref MetricNamespace }
             - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
             - Name: AWS_REGION
               Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']
@@ -324,12 +346,17 @@ Resources:
             - { Name: QUEUE_BACKEND, Value: aws }
             - { Name: STORE_BACKEND, Value: aws }
             - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: METRIC_NAMESPACE, Value: !Ref MetricNamespace }
             - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
             - Name: AWS_REGION
               Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']
             - { Name: WORKER_CONCURRENCY, Value: !Ref WorkerConcurrency }
             - { Name: WORKER_WAIT_TIME_SECONDS, Value: '20' }
             - { Name: FAILURE_INJECTION_ENABLED, Value: 'false' }
+            - !If
+              - EnableHdArrivalSignals
+              - { Name: HD_ARRIVAL_SIGNAL_QUEUE_URL, Value: !Ref HdArrivalSignalQueueUrl }
+              - !Ref 'AWS::NoValue'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -375,6 +402,7 @@ Resources:
             - { Name: QUEUE_BACKEND, Value: aws }
             - { Name: STORE_BACKEND, Value: aws }
             - { Name: METRICS_BACKEND, Value: aws }
+            - { Name: METRIC_NAMESPACE, Value: !Ref MetricNamespace }
             - { Name: RESOURCE_PREFIX, Value: !Ref ResourcePrefix }
             - Name: AWS_REGION
               Value: !If [UseRegionOverride, !Ref AwsRegionOverride, !Ref 'AWS::Region']

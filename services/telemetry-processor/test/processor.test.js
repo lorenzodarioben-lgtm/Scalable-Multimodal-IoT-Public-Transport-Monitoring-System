@@ -135,6 +135,28 @@ test('a bus breakdown fans out into the configured number of jobs', async () => 
   h.cleanup();
 });
 
+test('HD post-fanout signal counts the accepted analysis jobs once', async () => {
+  const signals = [];
+  const h = harness({ processor: { hdArrivalObserver: {
+    publish: async (signal) => { signals.push(signal); },
+  } } });
+  const event = busEvent({ health: 'breakdown', delaySeconds: 1500 });
+  assert.equal((await h.processor.handle(event)).jobs, 50);
+  assert.deepEqual(signals, [{ signalId: event.eventId, publishedJobCount: 50 }]);
+  assert.equal((await h.processor.handle(event)).duplicate, true);
+  assert.equal(signals.length, 1);
+  h.cleanup();
+});
+
+test('HD arrival-signal failure does not retry already accepted business jobs', async () => {
+  const h = harness({ processor: { hdArrivalObserver: {
+    publish: async () => { throw new Error('HD signal unavailable'); },
+  } } });
+  assert.equal((await h.processor.handle(busEvent({ health: 'breakdown' }))).jobs, 50);
+  assert.equal(h.analysisQueue.sent.length, 50);
+  h.cleanup();
+});
+
 test('tram, train and multimodal fan-outs match the approved experiment stages', async () => {
   const tram = harness();
   assert.equal((await tram.processor.handle(tramEvent())).jobs, 250);

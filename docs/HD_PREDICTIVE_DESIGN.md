@@ -1,11 +1,12 @@
 # HD Predictive-Reactive Controller Design
 
-## Local-only implementation status
+## Implementation status
 
 [`experiments/hd/predictive-controller.js`](../experiments/hd/predictive-controller.js)
 is a deterministic, side-effect-free controller. It imports no AWS SDK and
-does not invoke AWS. Its only output is a scale-out recommendation; a future
-HD-only deployment adapter would be responsible for acting on that output.
+does not invoke AWS. Its only output is a scale-out recommendation. The HD-only
+adapter in [`experiments/hd/aws/`](../experiments/hd/aws/) is prepared locally
+and tested with fake clients; it has not been deployed or invoked against AWS.
 
 The existing Distinction formal runner remains untouched because it is a
 carefully validated experiment harness. Its `controller` interface is the
@@ -90,11 +91,36 @@ guessed. State serialization supports deterministic restoration across events.
 
 The local tuning record is in [HD_LOCAL_EVALUATION.md](HD_LOCAL_EVALUATION.md).
 
-## Future deployment adapter, explicitly out of scope now
+## Prepared HD AWS boundary — local code only
 
-The local controller is intentionally vendor-neutral. A later HD deployment
-must add an HD-only adapter that reads the current ECS desired/running counts,
-supplies the reactive floor, and performs an increase only when the controller
-returns `shouldRequestScaleOut`. It must never issue a scale-in request.
+The optional HD telemetry-processor hook emits an analysis-job count only
+after a successful fan-out. Each signal has a stable event ID. The matched HD
+experiment injector will emit the same schema because the formal runner sends
+analysis jobs directly and bypasses the telemetry processor. Its signal send
+must fail the experiment if it fails; application traffic logs
+`HD_ARRIVAL_SIGNAL_FAILED` and retains the independent reactive safety path.
 
-No such adapter is deployed or called in this phase.
+The HD-specific FIFO signal queue invokes a packaged Lambda one message at a
+time. A per-run DynamoDB item stores the 10 s arrival bin, recent signal IDs,
+controller samples, pending forecasts, and a pending scale request. A
+version-conditional write commits the signal before the ECS update. If ECS
+fails, the FIFO message retries and resumes the pending request without
+counting the signal again. If ECS succeeds but the final state write fails,
+the retry checks live desired capacity and avoids a second increase.
+
+The adapter reads live desired/running capacity and requests only an increase
+bounded to five tasks. It does not perform predictive scale-in. The HD
+CloudFormation templates prepare the FIFO queue, DLQ, state table, Lambda,
+event mapping and metric namespace `SIT314/HDTransport` under an HD prefix.
+The existing target-tracking and fast reactive definitions remain intact in
+the separate HD environment. Genuine reactive `BacklogPerTask` uses only the
+`ServiceName` dimension; predictor-observed queue/BPT metrics also carry
+`RunId` and must not be substituted for the reactive CloudWatch series.
+
+The application signal hook is best-effort after business job publication:
+an unavailable signal queue can omit a predictor observation without losing
+analysis jobs. A validity gate must inspect this log and the signal DLQ.
+SQS approximate depth and a direct ECS desired-count request can race with
+the independent target-tracking controller. The first cloud smoke test must
+verify permissions, signal throughput, metric publication and that predictive
+capacity persists long enough to become `WORKER_READY`.

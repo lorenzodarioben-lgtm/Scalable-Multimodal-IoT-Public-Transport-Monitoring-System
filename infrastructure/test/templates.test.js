@@ -54,7 +54,8 @@ test('no template hard-codes an account id, region or credential', () => {
 test('every resource name is derived from the project prefix', () => {
   for (const [name, doc] of Object.entries(templates)) {
     assert.ok(doc.Parameters?.ResourcePrefix, `${name}: missing ResourcePrefix parameter`);
-    assert.equal(doc.Parameters.ResourcePrefix.Default, 'sit314-transport');
+    assert.equal(doc.Parameters.ResourcePrefix.Default,
+      name.startsWith('hd-') ? 'sit314-hd-transport' : 'sit314-transport');
   }
 });
 
@@ -236,7 +237,8 @@ test('iot rule: forwards the normalised topic to the telemetry queue', () => {
 test('every template tags its resources for the project', () => {
   for (const [name, doc] of Object.entries(templates)) {
     const text = fs.readFileSync(path.join(CFN_DIR, name), 'utf8');
-    assert.match(text, /SIT314-Transport-IoT/, `${name}: resources must carry the project tag`);
+    assert.match(text, name.startsWith('hd-') ? /SIT314-HD-Transport-IoT/ : /SIT314-Transport-IoT/,
+      `${name}: resources must carry the project tag`);
   }
 });
 
@@ -283,6 +285,8 @@ test('every cross-stack import is matched by an export in the producing stack', 
     QueuesStackName: 'queues.yaml',
     TablesStackName: 'dynamodb.yaml',
     EcsStackName: 'ecs.yaml',
+    HdSignalsStackName: 'hd-signals.yaml',
+    SignalsStackName: 'hd-signals.yaml',
   };
   const exportsByTemplate = Object.fromEntries(
     Object.entries(templates).map(([name, doc]) => [name, collectExports(doc)]),
