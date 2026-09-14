@@ -29,7 +29,8 @@ const args = process.argv.slice(2);
 const targets = args.length ? args : [`${TEMPLATES}/queues.yaml`,
   `${TEMPLATES}/dynamodb.yaml`, `${TEMPLATES}/iot-rule.yaml`,
   `${TEMPLATES}/ecs.yaml`, `${TEMPLATES}/scaling.yaml`];
-if (!args.length) targets.push(`${TEMPLATES}/hd-signals.yaml`, `${TEMPLATES}/hd-predictor.yaml`);
+if (!args.length) targets.push(`${TEMPLATES}/hd-code.yaml`,
+  `${TEMPLATES}/hd-signals.yaml`, `${TEMPLATES}/hd-predictor.yaml`);
 
 /**
  * Invokes the cfn-lint console script if it happens to be on PATH.

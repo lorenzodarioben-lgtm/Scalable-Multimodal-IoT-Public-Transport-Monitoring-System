@@ -70,6 +70,7 @@ export async function createHdAwsPorts({ region, prefix, stateTableName, analysi
             MetricName: point.name,
             Value: point.value,
             Timestamp: new Date(point.atMs),
+            StorageResolution: 1,
             Unit: /Rate|Error/.test(point.name) ? 'Count/Second' : 'Count',
             Dimensions: Object.entries(point.dimensions).map(([Name, Value]) => ({ Name, Value })),
           })),

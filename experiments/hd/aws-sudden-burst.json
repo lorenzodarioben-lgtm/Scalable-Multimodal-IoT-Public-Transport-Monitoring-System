@@ -1,0 +1,15 @@
+{
+  "name": "hd-sudden-burst-matched-study",
+  "evidenceClassification": "HD PLANNED EXPERIMENT; NOT EXECUTED",
+  "profileFile": "sudden-burst.json",
+  "seed": 3142026,
+  "repeatCount": 3,
+  "sampleIntervalSeconds": 10,
+  "drainDeadlineSeconds": 300,
+  "timingGuard": {
+    "maxDispatchStartLagIntervals": 1,
+    "sustainedStartLagIntervals": 0.5,
+    "sustainedStartLagIncidents": 3
+  },
+  "arms": ["reactive", "hybrid"]
+}

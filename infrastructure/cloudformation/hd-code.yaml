@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated encrypted SIT314 HD Lambda deployment-artifact bucket.
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: sit314-hd-transport
+    AllowedPattern: '^sit314-hd-[a-z0-9-]+$'
+Resources:
+  HdCodeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ResourcePrefix}-${AWS::AccountId}-${AWS::Region}-code'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - { Key: Project, Value: SIT314-HD-Transport-IoT }
+Outputs:
+  CodeBucketName:
+    Value: !Ref HdCodeBucket

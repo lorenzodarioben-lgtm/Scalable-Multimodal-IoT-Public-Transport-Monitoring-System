@@ -38,6 +38,7 @@ function validatePorts(ports) {
 export async function processAnalysisArrival({
   signal: rawSignal, mode, ports, serviceName,
   controllerConfig = {}, observationIntervalSeconds = 10, seenIdLimit = 2048,
+  now = () => Date.now(),
 }) {
   const signal = parseAnalysisArrivalSignal(rawSignal);
   if (!['reactive', 'hybrid'].includes(mode)) throw new Error('mode must be reactive or hybrid');
@@ -65,15 +66,16 @@ export async function processAnalysisArrival({
       || target < 1 || target > 5) throw new Error('invalid current ECS capacity');
     const scaleRequested = target > desired;
     if (scaleRequested) await ports.requestScaleOut(target, { runId: signal.runId, signalId: pending.signalId });
+    const requestedAtMs = scaleRequested ? now() : null;
     state.pendingScaleRequest = null;
     await ports.putState(state, state.version);
     state.version += 1;
     if (scaleRequested) {
       try {
-        await ports.publishMetrics([metric('PredictiveScaleRequest', target, signal, pending.atMs, serviceName)]);
+        await ports.publishMetrics([metric('PredictiveScaleRequest', target, signal, requestedAtMs, serviceName)]);
       } catch { /* scaling succeeded; a telemetry fault cannot undo it */ }
     }
-    return { scaleRequested, target };
+    return { scaleRequested, target, requestedAtMs, decisionAtMs: pending.atMs };
   }
 
   if (state.seenSignalIds.includes(signal.signalId)) {

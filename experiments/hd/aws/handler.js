@@ -35,8 +35,9 @@ export async function runHdHandler(event, {
     controllerConfig,
     observationIntervalSeconds: 10,
   });
-  console.log(JSON.stringify({ requestId, mode,
-    signalId: JSON.parse(event.Records[0].body).signalId, result }));
+  const signal = JSON.parse(event.Records[0].body);
+  console.log(JSON.stringify({ requestId, mode, runId: signal.runId,
+    signalId: signal.signalId, result }));
   return result;
 }
 
