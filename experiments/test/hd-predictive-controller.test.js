@@ -141,6 +141,30 @@ test('linear prediction and MAE are deterministic and explainable', () => {
   ]), 2);
 });
 
+test('state round trip preserves cooldown and a repeated observation is harmless', () => {
+  const original = controller();
+  for (const [second, rate] of [[0, 10], [10, 15], [20, 20], [30, 25], [40, 30], [50, 35], [60, 40]]) {
+    observe(original, second, rate);
+  }
+  const state = JSON.parse(JSON.stringify(original.exportState()));
+  const restored = controller({ state });
+  assert.deepEqual(restored.exportState(), state);
+  const repeated = observe(restored, 60, 40);
+  assert.equal(repeated.reason, 'duplicate-observation');
+  assert.equal(repeated.shouldRequestScaleOut, false);
+  assert.deepEqual(restored.exportState(), state);
+  assert.equal(observe(restored, 70, 45).reason, 'hold-duplicate-request');
+});
+
+test('invalid, conflicting and zero-running observations are handled explicitly', () => {
+  const instance = controller();
+  assert.throws(() => observe(instance, 0, null), /finite/);
+  assert.throws(() => observe(instance, 0, -1), /negative/);
+  assert.equal(observe(instance, 0, 10, { runningTasks: 0 }).observedFloorTasks, 1);
+  assert.throws(() => observe(instance, 0, 11), /conflicting duplicate/);
+  assert.throws(() => observe(instance, -1, 10), /chronological/);
+});
+
 test('HD workload profiles are deterministic, complete, and marked as planned rather than evidence', () => {
   for (const file of ['predictable-ramp.json', 'sudden-burst.json']) {
     const profile = JSON.parse(fs.readFileSync(path.join(root, 'experiments', 'hd', file), 'utf8'));

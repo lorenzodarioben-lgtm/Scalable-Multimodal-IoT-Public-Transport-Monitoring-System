@@ -22,6 +22,9 @@ aws-credentials*
 
 # ---- generated experiment artifacts (can be large) ----
 artifacts/
+!experiments/hd/artifacts/
+!experiments/hd/artifacts/local-parameter-study.json
+!experiments/hd/artifacts/local-parameter-study.csv
 local-data/
 node-red/data/
 *.log

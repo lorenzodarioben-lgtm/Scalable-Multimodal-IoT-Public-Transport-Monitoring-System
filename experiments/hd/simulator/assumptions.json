@@ -1,0 +1,20 @@
+{
+  "classification": "LOCAL DESIGN/TUNING EVIDENCE; NOT FINAL AWS HD EVIDENCE",
+  "timeStepSeconds": 0.5,
+  "observationIntervalSeconds": 10,
+  "reactiveMetricIntervalSeconds": 60,
+  "reactiveRequestDelaySeconds": 62.512,
+  "taskReadyDelaySeconds": 40.047,
+  "singleTaskJobsPerSecond": 42.467,
+  "maxAfterArrivalSeconds": 600,
+  "targetBacklogPerTask": 75,
+  "minTasks": 1,
+  "maxTasks": 5,
+  "fastReactiveTaskIncrease": 4,
+  "assumptionNotes": {
+    "service": "Fixed-arm three-run mean. Assumes linear task capacity; D does not establish a per-task multi-worker throughput law.",
+    "reactive": "62.512 s is from the first genuine above-target BPT minute to the single valid fast-reactive retest request. The model adds this delay after a simulated 60 s sample; actual alarm phase and metric lag vary.",
+    "startup": "40.047 s is the slowest of four request-to-WORKER_READY intervals in the single valid retest. Observed range is 32.390–40.047 s.",
+    "queue": "Fluid-capacity FIFO approximation; no SQS polling, network, Lambda, or AWS control-plane variability. BPT here is modelled backlog/running, not genuine CloudWatch data."
+  }
+}

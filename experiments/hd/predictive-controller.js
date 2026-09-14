@@ -13,17 +13,16 @@ const DEFAULTS = Object.freeze({
   targetBacklogPerTask: 75,
   // Conservative observed single-worker completion rate from valid D fixed runs.
   perTaskSustainableJobsPerSecond: 42.467,
-  historySize: 6,
-  predictionHorizonSeconds: 110,
+  historySize: 8,
+  predictionHorizonSeconds: 80,
   minRisingSlopeJobsPerSecondSquared: 0.02,
   requiredConsecutiveRecommendations: 2,
   duplicateRequestCooldownSeconds: 60,
 });
 
 function finite(value, label) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) throw new Error(`${label} must be finite`);
-  return number;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${label} must be finite`);
+  return value;
 }
 
 function positive(value, label) {
@@ -40,6 +39,12 @@ function nonNegative(value, label) {
 
 function whole(value, label) {
   const number = positive(value, label);
+  if (!Number.isInteger(number)) throw new Error(`${label} must be an integer`);
+  return number;
+}
+
+function nonNegativeWhole(value, label) {
+  const number = nonNegative(value, label);
   if (!Number.isInteger(number)) throw new Error(`${label} must be an integer`);
   return number;
 }
@@ -137,7 +142,7 @@ export function predictionMae(pairs = []) {
  * capacity floor; recommendations can therefore never reduce it.
  */
 export class HybridPredictiveController {
-  constructor({ now = () => Date.now(), ...options } = {}) {
+  constructor({ now = () => Date.now(), state = null, ...options } = {}) {
     if (typeof now !== 'function') throw new Error('now must be a function');
     this.now = now;
     this.config = normaliseConfig(options);
@@ -145,6 +150,43 @@ export class HybridPredictiveController {
     this.consecutivePositiveRecommendations = 0;
     this.lastScaleRequestAtMs = null;
     this.lastRequestedTasks = null;
+    if (state !== null) this.restoreState(state);
+  }
+
+  exportState() {
+    return {
+      samples: this.samples.map((sample) => ({ ...sample })),
+      consecutivePositiveRecommendations: this.consecutivePositiveRecommendations,
+      lastScaleRequestAtMs: this.lastScaleRequestAtMs,
+      lastRequestedTasks: this.lastRequestedTasks,
+    };
+  }
+
+  restoreState(state) {
+    if (!state || !Array.isArray(state.samples) || state.samples.length > this.config.historySize) {
+      throw new Error('invalid controller state samples');
+    }
+    const samples = state.samples.map((sample, index) => ({
+      atMs: finite(sample?.atMs, `state.samples[${index}].atMs`),
+      arrivalRateJobsPerSecond: nonNegative(
+        sample?.arrivalRateJobsPerSecond, `state.samples[${index}].arrivalRateJobsPerSecond`,
+      ),
+    }));
+    for (let index = 1; index < samples.length; index += 1) {
+      if (samples[index].atMs <= samples[index - 1].atMs) throw new Error('state samples must increase');
+    }
+    const consecutive = nonNegativeWhole(
+      state.consecutivePositiveRecommendations, 'state.consecutivePositiveRecommendations',
+    );
+    const lastAt = state.lastScaleRequestAtMs === null ? null
+      : finite(state.lastScaleRequestAtMs, 'state.lastScaleRequestAtMs');
+    const lastTasks = state.lastRequestedTasks === null ? null
+      : whole(state.lastRequestedTasks, 'state.lastRequestedTasks');
+    if ((lastAt === null) !== (lastTasks === null)) throw new Error('incomplete last scale request state');
+    this.samples = samples;
+    this.consecutivePositiveRecommendations = consecutive;
+    this.lastScaleRequestAtMs = lastAt;
+    this.lastRequestedTasks = lastTasks;
   }
 
   observe({
@@ -160,19 +202,15 @@ export class HybridPredictiveController {
     const rate = nonNegative(arrivalRateJobsPerSecond, 'arrivalRateJobsPerSecond');
     const visible = nonNegative(visibleBacklog, 'visibleBacklog');
     const bpt = nonNegative(backlogPerTask, 'backlogPerTask');
-    const running = whole(runningTasks, 'runningTasks');
-    const desired = whole(desiredTasks, 'desiredTasks');
-    const reactiveFloor = whole(reactiveRequiredTasks, 'reactiveRequiredTasks');
+    const running = nonNegativeWhole(runningTasks, 'runningTasks');
+    const desired = nonNegativeWhole(desiredTasks, 'desiredTasks');
+    const reactiveFloor = nonNegativeWhole(reactiveRequiredTasks, 'reactiveRequiredTasks');
     const observedFloorTasks = clamp(
       Math.max(this.config.minTasks, running, desired, reactiveFloor),
       this.config.minTasks,
       this.config.maxTasks,
     );
     const previous = this.samples.at(-1);
-    if (previous && timestamp <= previous.atMs) throw new Error('observations must be chronological');
-    this.samples.push({ atMs: timestamp, arrivalRateJobsPerSecond: rate });
-    if (this.samples.length > this.config.historySize) this.samples.shift();
-
     const common = {
       observedAtMs: timestamp,
       observedArrivalRateJobsPerSecond: rate,
@@ -182,6 +220,13 @@ export class HybridPredictiveController {
       shouldRequestScaleOut: false,
       predictionHorizonSeconds: this.config.predictionHorizonSeconds,
     };
+    if (previous && timestamp < previous.atMs) throw new Error('observations must be chronological');
+    if (previous && timestamp === previous.atMs) {
+      if (rate !== previous.arrivalRateJobsPerSecond) throw new Error('conflicting duplicate observation');
+      return { ...common, reason: 'duplicate-observation', sampleCount: this.samples.length };
+    }
+    this.samples.push({ atMs: timestamp, arrivalRateJobsPerSecond: rate });
+    if (this.samples.length > this.config.historySize) this.samples.shift();
     if (this.samples.length < this.config.historySize) {
       this.consecutivePositiveRecommendations = 0;
       return { ...common, reason: 'insufficient-history', sampleCount: this.samples.length };
@@ -189,10 +234,16 @@ export class HybridPredictiveController {
 
     const model = fitLinearRateModel(this.samples);
     const slope = model.slopeJobsPerSecondSquared;
+    const forecastAtMs = timestamp + this.config.predictionHorizonSeconds * 1000;
+    const predictedArrivalRateJobsPerSecond = model.predictAt(forecastAtMs);
+    const forecast = {
+      forecastAtMs,
+      predictedArrivalRateJobsPerSecond: round(predictedArrivalRateJobsPerSecond),
+    };
     if (slope <= -this.config.minRisingSlopeJobsPerSecondSquared) {
       this.consecutivePositiveRecommendations = 0;
       return {
-        ...common,
+        ...common, ...forecast,
         reason: 'hold-falling-traffic',
         sampleCount: this.samples.length,
         slopeJobsPerSecondSquared: round(slope, 6),
@@ -201,15 +252,13 @@ export class HybridPredictiveController {
     if (slope < this.config.minRisingSlopeJobsPerSecondSquared) {
       this.consecutivePositiveRecommendations = 0;
       return {
-        ...common,
+        ...common, ...forecast,
         reason: 'hold-flat-or-noisy-traffic',
         sampleCount: this.samples.length,
         slopeJobsPerSecondSquared: round(slope, 6),
       };
     }
 
-    const forecastAtMs = timestamp + this.config.predictionHorizonSeconds * 1000;
-    const predictedArrivalRateJobsPerSecond = model.predictAt(forecastAtMs);
     const predictedNetJobs = Math.max(0,
       (predictedArrivalRateJobsPerSecond
         - observedFloorTasks * this.config.perTaskSustainableJobsPerSecond)
@@ -230,8 +279,7 @@ export class HybridPredictiveController {
       ...common,
       sampleCount: this.samples.length,
       slopeJobsPerSecondSquared: round(slope, 6),
-      forecastAtMs,
-      predictedArrivalRateJobsPerSecond: round(predictedArrivalRateJobsPerSecond),
+      ...forecast,
       predictedVisibleBacklog: round(predictedVisibleBacklog),
       tasksForPredictedRate: clamp(tasksForPredictedRate, this.config.minTasks, this.config.maxTasks),
       tasksForPredictedBacklog: clamp(tasksForPredictedBacklog, this.config.minTasks, this.config.maxTasks),

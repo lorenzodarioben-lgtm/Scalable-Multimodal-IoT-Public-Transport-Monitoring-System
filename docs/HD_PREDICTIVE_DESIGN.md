@@ -31,9 +31,9 @@ observes queue state after work arrives and publishes on a one-minute schedule.
 | Parameter | Value | Rationale |
 | --- | ---: | --- |
 | Arrival-rate sample interval | 10 s (planned) | Short enough to observe the workload profile while keeping observations explainable. |
-| History | 6 samples / 60 s | Enough points for a small linear fit without a training dataset. |
+| History | 8 samples / 80 s | Selected from the 40/60/80 s local sensitivity grid for lower task-seconds with the same modelled ramp backlog result. |
 | Forecast method | Rolling ordinary least-squares linear regression | Deterministic, inspectable slope and intercept; no opaque model or framework. |
-| Prediction horizon | 110 s | The final D fast-reactive evidence measured 62.512 s from first above-target BPT minute to scale request, plus up to 40.047 s request-to-ready. The 110 s horizon covers the observed 102.559 s path with a small margin. |
+| Prediction horizon | 80 s | Selected from the 80/100/110/120 s local sensitivity grid. In the planned ramp, the selected predictor requests at 420 s and the modelled worker is ready at 460.5 s, before the 50 jobs/s segment at 510 s. This is a local result, not an AWS guarantee. |
 | Per-task capacity assumption | 42.467 jobs/s | Conservative initial value from the final D fixed-arm mean completion throughput. It is a control assumption to be sensitivity-tested, not a claim of intrinsic task capacity. |
 | Target | 75 jobs/task | Unchanged from final D. |
 | Bounds | 1–5 tasks | Unchanged from final D. |
@@ -48,7 +48,7 @@ For rate samples `(t, r)`, the controller fits:
 ```text
 r(t) = a + b t
 r̂ = max(0, r(now + 110 s))
-B̂ = visibleBacklog + max(0, r̂ - currentTasks × 42.467) × 110
+B̂ = visibleBacklog + max(0, r̂ - currentTasks × 42.467) × 80
 requiredTasks = clamp(1, 5,
   max(reactiveFloor, currentTasks, ceil(r̂ / 42.467), ceil(B̂ / 75)))
 ```
@@ -56,7 +56,7 @@ requiredTasks = clamp(1, 5,
 The controller recommends predictive scale-out only when all of the following
 are true:
 
-1. six chronological samples are available;
+1. eight chronological samples are available;
 2. `b >= 0.02 jobs/s²`;
 3. the bounded recommendation is above the observed reactive/current capacity
    floor;
@@ -83,8 +83,12 @@ Focused local tests cover:
 - no AWS SDK/control-plane import.
 
 `predictionMae` reports mean absolute error over future rate observations
-matched to prior forecasts at the declared horizon. End-of-run forecasts that
-lack a future observation are excluded rather than guessed.
+matched to prior forecasts at the declared horizon. The controller supplies a
+forecast for flat and falling traffic too, while withholding proactive action.
+End-of-run forecasts that lack a future observation are excluded rather than
+guessed. State serialization supports deterministic restoration across events.
+
+The local tuning record is in [HD_LOCAL_EVALUATION.md](HD_LOCAL_EVALUATION.md).
 
 ## Future deployment adapter, explicitly out of scope now
 

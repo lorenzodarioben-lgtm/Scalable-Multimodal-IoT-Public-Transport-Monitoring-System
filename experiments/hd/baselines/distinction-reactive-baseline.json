@@ -1,0 +1,50 @@
+{
+  "classification": "VALIDATED DISTINCTION AWS EVIDENCE; HD BASELINE INPUT",
+  "tag": "sit314-6.3d-final",
+  "commit": "06071c37c536e73fb036bb4f60279d7e595d23c2",
+  "sourceDocument": "docs/DISTINCTION_FINAL_RESULTS.md",
+  "artifactRoot": "../artifacts/aws-runs (in the original Distinction checkout; read only)",
+  "formalRunIds": {
+    "fixed": ["2026-09-22T04-08-14-508Z-incident-stage-1-fixed-r1", "2026-09-22T05-04-16-365Z-incident-stage-1-fixed-r2", "2026-09-22T08-00-13-078Z-incident-stage-1-fixed-r3"],
+    "autoscale": ["2026-09-22T04-26-29-694Z-incident-stage-1-autoscale-r1", "2026-09-22T05-22-47-142Z-incident-stage-1-autoscale-r2", "2026-09-22T08-20-10-918Z-incident-stage-1-autoscale-r3"]
+  },
+  "validFastReactiveRetestRunId": "2026-09-22T10-51-14-826Z-incident-stage-1-autoscale-r1",
+  "fixedThreeRun": {
+    "completionThroughputJobsPerSecond": [43.350, 42.410, 41.640],
+    "meanCompletionThroughputJobsPerSecond": 42.467,
+    "processingP95Ms": [52, 52, 52],
+    "peakRunningTasks": [1, 1, 1]
+  },
+  "targetTrackingOnlyThreeRun": {
+    "meanCompletionThroughputJobsPerSecond": 49.830,
+    "meanPeakVisibleBacklog": 1505,
+    "meanPeakBacklogPerTask": 1285.667,
+    "meanPeakOldestAgeSeconds": 38.333,
+    "meanDrainSeconds": 0,
+    "peakRunningTasks": [5, 5, 5],
+    "approximateRequestDelaySeconds": 230.6,
+    "requestDelayQualification": "Approximate mean from narrative in final D results; not individual raw repeat delays. Historical comparison only, not the HD reactive controller."
+  },
+  "finalFastReactiveBaselineSingleRetest": {
+    "firstAboveTargetBptMinute": "2026-09-22T10:51:00Z",
+    "scaleRequestAt": "2026-09-22T10:52:02.512Z",
+    "scaleRequestDelaySeconds": 62.512,
+    "workerReadyAt": ["2026-09-22T10:52:34.902Z", "2026-09-22T10:52:35.617Z", "2026-09-22T10:52:36.661Z", "2026-09-22T10:52:42.559Z"],
+    "requestToReadySeconds": [32.390, 33.105, 34.149, 40.047],
+    "completionThroughputJobsPerSecond": 48.830,
+    "processingP95Ms": 53,
+    "peakVisibleBacklog": 1042,
+    "peakBacklogPerTask": 192,
+    "peakOldestAgeSeconds": 24,
+    "drainSeconds": 11.784,
+    "taskSeconds": 2927.59,
+    "reliabilityFaults": 0
+  },
+  "capacity": { "minTasks": 1, "maxTasks": 5, "targetBacklogPerTask": 75, "fastReactiveStepIncrease": 4 },
+  "notes": [
+    "Fast-reactive values come from one valid retest, not three repeats.",
+    "The reported three-run autoscale mean predates the fast step policy and is not the HD reactive baseline.",
+    "One-task measured completion throughput is an empirical range, not guaranteed per-task multi-worker capacity.",
+    "The HD simulator must label its use of any of these measurements as assumptions, not AWS outcomes."
+  ]
+}
