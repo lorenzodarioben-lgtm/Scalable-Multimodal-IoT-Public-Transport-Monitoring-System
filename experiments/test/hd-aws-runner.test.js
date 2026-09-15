@@ -32,6 +32,8 @@ function fakeController() {
     collectHistory: async () => ({ source: 'fake historical CloudWatch',
       bpt: [{ timestamp: new Date(1000).toISOString(), value: 0 }],
       oldestMessageAge: [], predictive: {} }),
+    signalQueuesClean: async () => ({ arrival: { visible: 0, inFlight: 0 },
+      dlq: { visible: 0, inFlight: 0 } }),
   };
 }
 

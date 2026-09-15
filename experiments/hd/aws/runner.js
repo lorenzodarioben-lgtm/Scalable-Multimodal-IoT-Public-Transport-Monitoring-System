@@ -251,14 +251,19 @@ export async function runHdAwsExperiment({
     metricPoints: Object.fromEntries(Object.entries(history.predictive)
       .map(([name, points]) => [name, points.length])),
   };
+  let signalQueueError = null;
+  try { summary.hdSignalFinal = await controller.signalQueuesClean(); }
+  catch (error) { signalQueueError = error.message; }
   const countsClean = summary.results.resultsProduced === workload.expectedAnalysisJobs
     && summary.results.duplicateResults === 0 && summary.results.queueRemaining === 0
     && summary.results.dlqDepth === 0 && summary.results.lostOrUnaccounted === 0
     && summary.results.errorCount === 0 && !accounting.drainTimedOut;
   summary.validity = invalidReason ? invalidStatus
     : !countsClean ? 'RELIABILITY-INVALID'
+      : signalQueueError ? 'SIGNAL-QUEUE-INVALID'
       : !history.bpt.length ? 'PENDING_GENUINE_CLOUDWATCH_BPT'
         : 'PENDING_MANUAL_TIMELINE_REVIEW';
+  if (signalQueueError) summary.hdSignalQueueError = signalQueueError;
   writer.writeJson('summary.json', summary);
   return { runDir, manifest, summary, history };
 }
