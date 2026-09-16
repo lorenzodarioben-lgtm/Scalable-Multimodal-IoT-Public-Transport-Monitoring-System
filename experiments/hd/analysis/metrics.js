@@ -79,6 +79,18 @@ export function analyseHdRun(runDir, profile) {
   const firstRequestAtMs = requests[0]?.atMs ?? null;
   const readyEvents = (summary.results.workerReadyEvents || [])
     .map((event) => event.timestamp).sort();
+  const runningTasksById = new Map();
+  for (const sample of samples) {
+    for (const task of sample.tasks || []) {
+      if (task.startedAt && !runningTasksById.has(task.taskId)) {
+        runningTasksById.set(task.taskId, { taskId: task.taskId,
+          startedAt: task.startedAt, firstObservedAt: sample.timestamp });
+      }
+    }
+  }
+  const newRunningTasks = [...runningTasksById.values()]
+    .filter((task) => Date.parse(task.startedAt) >= workloadStartMs)
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
   const errors = history.predictive?.PredictionError?.map((point) => point.value) || [];
   const actualRates = history.predictive?.AnalysisArrivalRate || [];
   const falseRequests = predictive.filter((request) => !actualRates.some((point) => {
@@ -115,6 +127,11 @@ export function analyseHdRun(runDir, profile) {
     proactiveLeadSeconds: firstRequestAtMs === null || overloadAtMs === null
       ? null : round(Math.max(0, (overloadAtMs - firstRequestAtMs) / 1000)),
     firstWorkerReadyAt: readyEvents[0] ?? null,
+    firstNewTaskRunningAt: newRunningTasks[0]?.startedAt ?? null,
+    requestToFirstRunningSeconds: firstRequestAtMs === null || !newRunningTasks.length
+      ? null : round((Date.parse(newRunningTasks[0].startedAt) - firstRequestAtMs) / 1000),
+    newRunningTasks,
+    workerReadyEvents: summary.results.workerReadyEvents || [],
     allObservedWorkersReadyAt: readyEvents.at(-1) ?? null,
     requestToFirstReadySeconds: firstRequestAtMs === null || !readyEvents.length
       ? null : round((Date.parse(readyEvents[0]) - firstRequestAtMs) / 1000),
@@ -147,11 +164,13 @@ export function analyseHdRun(runDir, profile) {
 
 export const COMPARISON_METRICS = [
   'offeredJobsPerSecond', 'completedJobs', 'scaleRequestLatencySeconds',
-  'proactiveLeadSeconds', 'peakVisibleBacklog', 'peakBacklogPerTask',
+  'proactiveLeadSeconds', 'requestToFirstRunningSeconds', 'requestToFirstReadySeconds',
+  'peakVisibleBacklog', 'peakBacklogPerTask',
   'peakOldestMessageAgeSeconds', 'completionThroughputJobsPerSecond',
   'drainSeconds', 'processingP50Ms', 'processingP95Ms', 'peakRunningTasks',
   'taskSeconds', 'predictionMaeJobsPerSecond', 'predictionBiasJobsPerSecond',
-  'falseProactiveScaleOuts', 'errors', 'duplicates', 'dlq', 'unaccountedJobs',
+  'falseProactiveScaleOuts', 'errors', 'duplicates', 'duplicateJobsSkipped',
+  'dlq', 'unaccountedJobs',
 ];
 
 export function aggregateHdRuns(runs, { requireReviewed = true } = {}) {

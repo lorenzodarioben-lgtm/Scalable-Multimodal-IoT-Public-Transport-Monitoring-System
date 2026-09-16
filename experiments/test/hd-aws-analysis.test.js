@@ -69,11 +69,19 @@ test('run analysis uses genuine historical BPT and rejects unreviewed validity',
     write('scaling-activities.json', []); write('predictor-logs.json', []);
     write('review.json', { runId: 'synthetic-hd-test', status: 'VALID' });
     fs.writeFileSync(path.join(directory, 'samples.jsonl'), `${JSON.stringify({ timestamp: started,
-      queue: { visibleMessages: 500 }, service: { runningCount: 1 } })}\n`);
+      queue: { visibleMessages: 500 }, service: { runningCount: 1 },
+      tasks: [{ taskId: 'ecs-existing', startedAt: '2026-09-22T23:59:00Z' }] })}\n${JSON.stringify({
+      timestamp: '2026-09-23T00:01:00Z', queue: { visibleMessages: 100 },
+      service: { runningCount: 2 }, tasks: [
+        { taskId: 'ecs-existing', startedAt: '2026-09-22T23:59:00Z' },
+        { taskId: 'ecs-new', startedAt: '2026-09-23T00:00:45Z' },
+      ],
+    })}\n`);
     const run = analyseHdRun(directory, ramp);
     assert.equal(run.peakVisibleBacklog, 500);
     assert.equal(run.peakBacklogPerTask, 91);
     assert.equal(run.reviewStatus, 'VALID');
     assert.equal(run.predictionMaeJobsPerSecond, 2);
+    assert.equal(run.firstNewTaskRunningAt, '2026-09-23T00:00:45Z');
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

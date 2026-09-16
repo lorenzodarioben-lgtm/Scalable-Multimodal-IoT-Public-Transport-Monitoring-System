@@ -196,7 +196,21 @@ export class HdAwsControlPlane {
     return sent;
   }
 
-  async sample() { return this.base.sample(); }
+  async sample() {
+    const sample = await this.base.sample();
+    const listed = await this.base.ecs.send(new this.base.sdk.ecs.ListTasksCommand({
+      cluster: this.base.cluster, serviceName: this.base.service, desiredStatus: 'RUNNING',
+    }));
+    const taskArns = listed.taskArns || [];
+    const described = taskArns.length ? await this.base.ecs.send(new this.base.sdk.ecs.DescribeTasksCommand({
+      cluster: this.base.cluster, tasks: taskArns,
+    })) : { tasks: [] };
+    return { ...sample, tasks: (described.tasks || []).map((task) => ({
+      taskArn: task.taskArn, taskId: `ecs-${task.taskArn.split('/').at(-1)}`,
+      startedAt: task.startedAt ? new Date(task.startedAt).toISOString() : null,
+      lastStatus: task.lastStatus,
+    })) };
+  }
   async verifyProcessingCost(cost) { return this.base.verifyProcessingCost(cost); }
   async scalingActivities() { return this.base.scalingActivities(); }
   async resultsForSources(sources, expected) { return this.base.resultsForSources(sources, expected); }

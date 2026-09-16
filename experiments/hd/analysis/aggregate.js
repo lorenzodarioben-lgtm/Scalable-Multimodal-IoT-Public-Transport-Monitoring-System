@@ -41,18 +41,27 @@ export function analyseDirectory(inputDir, outputDir, { preview = false } = {}) 
     if (!profile) throw new Error(`unknown HD workload profile in ${directory}`);
     return analyseHdRun(directory, profile);
   });
-  const aggregate = aggregateHdRuns(runs, { requireReviewed: !preview });
+  // Preserve invalid/aborted attempts in input; only explicitly reviewed valid
+  // replacements enter the final three-repeat comparison.
+  const eligible = runs.filter((run) => preview
+    ? run.validity === 'PENDING_MANUAL_TIMELINE_REVIEW' && run.reviewStatus !== 'INVALID'
+    : run.reviewStatus === 'VALID');
+  const excluded = runs.filter((run) => !eligible.includes(run)).map((run) => ({
+    runId: run.runId, validity: run.validity, reviewStatus: run.reviewStatus,
+  }));
+  const aggregate = aggregateHdRuns(eligible, { requireReviewed: !preview });
+  aggregate.excludedAttempts = excluded;
   fs.mkdirSync(outputDir, { recursive: true });
   const compact = runs.map(({ raw, ...run }) => run);
   fs.writeFileSync(path.join(outputDir, 'run-metrics.json'), `${JSON.stringify(compact, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'aggregate.json'), `${JSON.stringify(aggregate, null, 2)}\n`);
   fs.writeFileSync(path.join(outputDir, 'comparison.md'), [
     `# ${aggregate.classification}`, '',
-    'All three repeats are shown. Mean changes are descriptive, not significance claims. Positive changes are increases.', '',
+    'All three valid repeats are shown; invalid/aborted attempts remain in the artifact directory and are listed in aggregate.json. Mean changes are descriptive, not significance claims. Positive changes are increases.', '',
     table(aggregate, 'PREDICTABLE_RAMP'), '', table(aggregate, 'SUDDEN_BURST'), '',
     'Task-seconds approximate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.',
   ].join('\n'));
-  for (const run of runs) writeRunCharts(run, path.join(outputDir, 'charts', run.runId));
+  for (const run of eligible) writeRunCharts(run, path.join(outputDir, 'charts', run.runId));
   for (const workloadClass of ['PREDICTABLE_RAMP', 'SUDDEN_BURST']) {
     for (const metric of ['peakVisibleBacklog', 'taskSeconds']) {
       const categories = ['reactive', 'hybrid'].map((arm) => ({ name: arm,

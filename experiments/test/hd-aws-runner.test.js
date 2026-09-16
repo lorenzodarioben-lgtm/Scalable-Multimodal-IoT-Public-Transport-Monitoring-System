@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { runHdAwsExperiment } from '../hd/aws/runner.js';
 import { loadHdAwsConfiguration } from '../hd/aws/workload.js';
-import { verifyHdScalingSnapshot } from '../hd/aws/control-plane.js';
+import { HdAwsControlPlane, verifyHdScalingSnapshot } from '../hd/aws/control-plane.js';
 
 const loaded = loadHdAwsConfiguration(new URL('../hd/aws-ramp.json', import.meta.url));
 const config = { ...loaded.config, repeatCount: 1, drainDeadlineSeconds: 5 };
@@ -95,4 +95,23 @@ test('HD preflight requires the frozen target, fast alarm, and selected controll
     alarm: { ...input.alarm, StateValue: 'ALARM' } }), /not ready/);
   assert.throws(() => verifyHdScalingSnapshot({ ...input,
     target: { MinCapacity: 1, MaxCapacity: 1 } }), /not 1–5/);
+});
+
+test('HD sampling retains exact ECS task identities and RUNNING timestamps', async () => {
+  class ListTasksCommand { constructor(input) { this.input = input; } }
+  class DescribeTasksCommand { constructor(input) { this.input = input; } }
+  const base = {
+    cluster: 'sit314-hd-test-cluster', service: 'sit314-hd-test-route-impact',
+    sample: async () => ({ timestamp: '2026-09-23T00:01:00Z', service: { runningCount: 2 } }),
+    sdk: { ecs: { ListTasksCommand, DescribeTasksCommand } },
+    ecs: { send: async (command) => command instanceof ListTasksCommand
+      ? { taskArns: ['arn:aws:ecs:us-east-1:123456789012:task/cluster/abc'] }
+      : { tasks: [{ taskArn: command.input.tasks[0], lastStatus: 'RUNNING',
+        startedAt: new Date('2026-09-23T00:00:45Z') }] } },
+  };
+  const plane = new HdAwsControlPlane({ base, lambdaSdk: { LambdaClient: class {} },
+    cwSdk: { CloudWatchClient: class {} }, region: 'us-east-1', prefix: 'sit314-hd-test' });
+  const sample = await plane.sample();
+  assert.equal(sample.tasks[0].taskId, 'ecs-abc');
+  assert.equal(sample.tasks[0].startedAt, '2026-09-23T00:00:45.000Z');
 });

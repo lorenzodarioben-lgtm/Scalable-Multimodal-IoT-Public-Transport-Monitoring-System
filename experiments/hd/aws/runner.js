@@ -256,6 +256,7 @@ export async function runHdAwsExperiment({
   catch (error) { signalQueueError = error.message; }
   const countsClean = summary.results.resultsProduced === workload.expectedAnalysisJobs
     && summary.results.duplicateResults === 0 && summary.results.queueRemaining === 0
+    && summary.results.duplicateJobsSkipped === 0
     && summary.results.dlqDepth === 0 && summary.results.lostOrUnaccounted === 0
     && summary.results.errorCount === 0 && !accounting.drainTimedOut;
   summary.validity = invalidReason ? invalidStatus

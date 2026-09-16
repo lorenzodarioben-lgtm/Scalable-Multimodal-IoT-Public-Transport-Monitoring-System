@@ -70,6 +70,7 @@ export function writeRunCharts(run, outputDir) {
       startedAt: start, endedAt: end, events: [
         { label: 'First overload', timestamp: run.firstOverloadAt },
         { label: 'Scale request', timestamp: run.firstScaleRequestAt },
+        { label: 'First new task RUNNING', timestamp: run.firstNewTaskRunningAt },
         { label: 'First worker ready', timestamp: run.firstWorkerReadyAt },
       ].filter((event) => event.timestamp) })],
   ];

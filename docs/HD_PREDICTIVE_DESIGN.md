@@ -48,7 +48,7 @@ For rate samples `(t, r)`, the controller fits:
 
 ```text
 r(t) = a + b t
-r̂ = max(0, r(now + 110 s))
+r̂ = max(0, r(now + 80 s))
 B̂ = visibleBacklog + max(0, r̂ - currentTasks × 42.467) × 80
 requiredTasks = clamp(1, 5,
   max(reactiveFloor, currentTasks, ceil(r̂ / 42.467), ceil(B̂ / 75)))

@@ -34,7 +34,7 @@ The 30 s warm-up is inside the first segment; scheduled arrivals span the full
 | 510–630 s | 1 s | 50 jobs/s | 120 |
 
 Each incident contains 50 analysis jobs: 330 incidents and 16,500 expected
-jobs. The gradual trend lets a 110 s forecast identify sustained pressure
+jobs. The gradual trend lets an 80 s forecast identify sustained pressure
 before the final 50 jobs/s segment. This is the primary predictive hypothesis
 test.
 
@@ -58,10 +58,10 @@ the intended safety path.
 | Category | Metric | Definition / collection |
 | --- | --- | --- |
 | Primary | Scale-request latency | From the declared workload reference point to the first controller/scaling activity request; also report predictive lead time where a treatment request occurs before actual pressure. |
-| Primary | Peak visible backlog, BPT, oldest-message age, post-arrival drain | Preserve raw queue samples; obtain BPT from genuine historical `SIT314/Transport` CloudWatch datapoints, not queue-depth inference. |
+| Primary | Peak visible backlog, BPT, oldest-message age, post-arrival drain | Preserve raw queue samples; obtain BPT from genuine historical `SIT314/HDTransport` CloudWatch datapoints for the isolated HD service, not queue-depth inference. |
 | Secondary | Completion throughput and processing p95 | Existing summary/log collection. |
 | Secondary | Task-seconds | Existing sampled running-task integration; compare as capacity-time cost. |
-| Secondary | Prediction MAE | Match each 110 s rate forecast to the actual later 10 s arrival-rate observation; exclude unmatched tail forecasts. |
+| Secondary | Prediction MAE | Match each 80 s rate forecast to the actual later 10 s arrival-rate observation; exclude unmatched tail forecasts. |
 | Reliability | Failures, duplicates, DLQ, unaccounted jobs | Existing DynamoDB/SQS/log accounting, with zero required for a valid run. |
 | Timing | Task RUNNING and `WORKER_READY` | Existing ECS and log evidence, correlated to both reactive and predictive requests. |
 
@@ -106,6 +106,7 @@ require all of the following after explicit authorisation:
    desired count to `max(current, reactive floor, recommendation)`, bounded
    1–5. It must not scale in and must not replace the reactive policy.
 
-These are a deployment design, not a statement that the resources already
-exist. No AWS API, infrastructure, deployment, workload, cleanup, push, or
-merge was performed for this plan.
+The HD-prefixed templates, Lambda adapter, matched runner and review-gated
+analysis are now prepared locally. They have not been deployed or invoked
+against AWS. No AWS API, deployment, workload, cleanup, push, or merge was
+performed for this plan.
