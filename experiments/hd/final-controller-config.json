@@ -1,0 +1,16 @@
+{
+  "classification": "FROZEN PRE-AWS HD TREATMENT CONFIGURATION; NOT AN AWS RESULT",
+  "sampleIntervalSeconds": 10,
+  "historySize": 8,
+  "predictionHorizonSeconds": 80,
+  "perTaskSustainableJobsPerSecond": 42.467,
+  "capacitySafetyFactor": 1,
+  "minRisingSlopeJobsPerSecondSquared": 0.02,
+  "requiredConsecutiveRecommendations": 2,
+  "duplicateRequestCooldownSeconds": 60,
+  "targetBacklogPerTask": 75,
+  "minTasks": 1,
+  "maxTasks": 5,
+  "predictiveScaleOutOnly": true,
+  "reactiveFallback": "Unchanged BPT target tracking plus 60-second 1-of-1 BPT>75 step scaling +4"
+}

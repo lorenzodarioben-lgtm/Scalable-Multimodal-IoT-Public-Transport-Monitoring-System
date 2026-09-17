@@ -7,6 +7,7 @@ import {
   HybridPredictiveController,
   fitLinearRateModel,
   predictionMae,
+  DEFAULT_HYBRID_CONTROLLER_CONFIG,
 } from '../hd/predictive-controller.js';
 import {
   createHdArrivalSchedule,
@@ -139,6 +140,65 @@ test('linear prediction and MAE are deterministic and explainable', () => {
     { predictedJobsPerSecond: 40, actualJobsPerSecond: 42 },
     { predictedJobsPerSecond: 20, actualJobsPerSecond: 18 },
   ]), 2);
+});
+
+test('three hand-calculated OLS histories preserve jobs/s, jobs and task units', () => {
+  const options = { historySize: 3, predictionHorizonSeconds: 10,
+    perTaskSustainableJobsPerSecond: 20, targetBacklogPerTask: 75,
+    requiredConsecutiveRecommendations: 1, minRisingSlopeJobsPerSecondSquared: 0.02 };
+  const run = (rates) => {
+    const instance = new HybridPredictiveController(options);
+    return rates.map((rate, index) => observe(instance, index * 10, rate)).at(-1);
+  };
+  // (10,20,30) at (0,10,20)s: b=1 jobs/s², forecast at 30s=40 jobs/s.
+  // Excess=(40-1×20) jobs/s ×10s=200 jobs; ceil(200/75)=3 tasks.
+  const rising = run([10, 20, 30]);
+  assert.equal(rising.slopeJobsPerSecondSquared, 1);
+  assert.equal(rising.predictedArrivalRateJobsPerSecond, 40);
+  assert.equal(rising.predictedVisibleBacklog, 200);
+  assert.equal(rising.recommendedTasks, 3);
+  assert.equal(rising.shouldRequestScaleOut, true);
+  // Constant 10 jobs/s: b=0, forecast=10, one task remains sufficient.
+  const flat = run([10, 10, 10]);
+  assert.equal(flat.slopeJobsPerSecondSquared, 0);
+  assert.equal(flat.predictedArrivalRateJobsPerSecond, 10);
+  assert.equal(flat.recommendedTasks, 1);
+  assert.equal(flat.shouldRequestScaleOut, false);
+  // (20,10,0): b=-1; raw forecast at 30s=-10, clamped to 0 jobs/s.
+  const falling = run([20, 10, 0]);
+  assert.equal(falling.slopeJobsPerSecondSquared, -1);
+  assert.equal(falling.predictedArrivalRateJobsPerSecond, 0);
+  assert.equal(falling.recommendedTasks, 1);
+  assert.equal(falling.shouldRequestScaleOut, false);
+});
+
+test('frozen treatment JSON matches controller, Lambda and planned AWS profiles', () => {
+  const frozen = JSON.parse(fs.readFileSync(path.join(root, 'experiments/hd/final-controller-config.json'), 'utf8'));
+  for (const key of ['historySize', 'predictionHorizonSeconds', 'perTaskSustainableJobsPerSecond',
+    'minRisingSlopeJobsPerSecondSquared', 'requiredConsecutiveRecommendations',
+    'duplicateRequestCooldownSeconds', 'targetBacklogPerTask', 'minTasks', 'maxTasks']) {
+    assert.equal(DEFAULT_HYBRID_CONTROLLER_CONFIG[key], frozen[key], key);
+  }
+  assert.equal(frozen.sampleIntervalSeconds, 10);
+  assert.equal(frozen.capacitySafetyFactor, 1);
+  assert.equal(frozen.predictiveScaleOutOnly, true);
+  const template = fs.readFileSync(path.join(root, 'infrastructure/cloudformation/hd-predictor.yaml'), 'utf8');
+  for (const [name, value] of Object.entries({
+    HD_HISTORY_SIZE: frozen.historySize,
+    HD_FORECAST_HORIZON_SECONDS: frozen.predictionHorizonSeconds,
+    HD_PER_TASK_JOBS_PER_SECOND: frozen.perTaskSustainableJobsPerSecond,
+    HD_RISING_SLOPE_THRESHOLD: frozen.minRisingSlopeJobsPerSecondSquared,
+    HD_HYSTERESIS_COUNT: frozen.requiredConsecutiveRecommendations,
+    HD_DUPLICATE_COOLDOWN_SECONDS: frozen.duplicateRequestCooldownSeconds,
+  })) assert.match(template, new RegExp(`${name}: '${value}'`));
+  const handler = fs.readFileSync(path.join(root, 'experiments/hd/aws/handler.js'), 'utf8');
+  assert.match(handler, /observationIntervalSeconds: 10/);
+  for (const file of ['predictable-ramp.json', 'sudden-burst.json']) {
+    const profile = JSON.parse(fs.readFileSync(path.join(root, 'experiments/hd', file), 'utf8'));
+    assert.equal(profile.worker.minTasks, frozen.minTasks);
+    assert.equal(profile.worker.maxTasks, frozen.maxTasks);
+    assert.equal(profile.worker.targetBacklogPerTask, frozen.targetBacklogPerTask);
+  }
 });
 
 test('state round trip preserves cooldown and a repeated observation is harmless', () => {

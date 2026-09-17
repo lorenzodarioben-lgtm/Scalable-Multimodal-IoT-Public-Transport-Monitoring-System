@@ -1,12 +1,14 @@
 # Research-Informed Hybrid Predictive–Reactive Autoscaling for a Bursty IoT Pipeline
 
-**Draft for SIT314 6.4HD — not a final result.** The main report should be typeset to 4–5 pages, excluding references and appendix. All HD AWS results remain uncollected. Local model outcomes below are design evidence only.
+**Near-final draft for SIT314 6.4HD — not a final result.** Typeset the main report to 4–5 pages, excluding references and appendix. All HD AWS result fields remain uncollected. Local model and mock outcomes are design/verification evidence only and must never be substituted for cloud results.
 
 ## 1. Problem and question
 
 The Distinction system processes simulated multimodal transport incidents through SQS and ECS Fargate. Each incident fans out into analysis jobs; a queue-based BacklogPerTask (BPT) metric controls a one-to-five-worker service. The final D deployment retains target tracking at BPT 75 and adds a fast reactive alarm (>75, one 60-second period, +4 tasks). In one valid final-D retest, the fast request followed the first above-target BPT minute by 62.512 s. The retest completed 31,500 jobs reliably but still reached 1,042 visible queued jobs and a 24 s oldest-message age. These are **calibration observations**, not a matched HD comparison.
 
 Research question: can a lightweight short-horizon arrival predictor, combined with the unchanged reactive safeguards, reduce scale-out delay and queue pressure under a learnable traffic ramp without compromising abrupt-burst safety or reliability? The treatment is deliberately scale-out only. It may consume more task-seconds, so a capacity-time trade-off is part of the answer.
+
+The research gap is practical and bounded: the final-D fast alarm remains reactive to a delayed backlog metric. It cannot request workers before a predictable rise has created measured pressure. This study tests whether analysis-job arrivals—available immediately after successful fan-out—provide useful lead time in this particular IoT pipeline, while holding the final-D reactive control and worker cost constant across the new matched arms. It is not a claim of a generally superior autoscaler.
 
 ## 2. Research context
 
@@ -16,7 +18,7 @@ Wang, Chandra and Weissman's *Jingle* investigates IoT-informed hybrid predictiv
 
 The HD environment is separately prefixed `sit314-hd-transport`; live Distinction infrastructure and evidence remain unchanged. After successful analysis-job fan-out, an idempotent `{runId, signalId, publishedJobCount, atMs}` observation enters an HD FIFO SQS queue. A Lambda aggregates 10-second bins into per-run DynamoDB state. The matched experiment injector uses the same signal schema because it sends analysis jobs directly. The Lambda records observed arrival rate, forecast, error, task recommendation, scale request and task count in `SIT314/HDTransport`. Genuine reactive BPT retains only the service dimension; it is not the predictor's queue-depth-derived BPT.
 
-For eight chronological rates \((t_i,r_i)\), ordinary least squares fits \(r(t)=a+bt\), with \(b=\sum(t_i-\bar t)(r_i-\bar r)/\sum(t_i-\bar t)^2\) and \(a=\bar r-b\bar t\). The bounded 80-second forecast is \(\hat r=\max(0,a+b(t_{now}+80))\). Using observed single-task capacity \(c=42.467\) jobs/s, current running/desired/reactive floor \(n\), queue \(B\), target 75, and horizon \(H=80\), the controller computes \(\hat B=B+\max(0,\hat r-nc)H\) and \(n'=\operatorname{clamp}_{1,5}\{\max[n,\lceil\hat r/c\rceil,\lceil\hat B/75\rceil]\}\). A rising slope of at least 0.02 jobs/s² and two consecutive positive recommendations are required; same-or-lower duplicate requests are suppressed for 60 s. The adapter checks live desired count and never reduces it. Existing target tracking and the 60-second +4 alarm remain active in **both** arms.
+For eight chronological 10-second rates \((t_i,r_i)\), ordinary least squares fits \(r(t)=a+bt\), with \(b=\sum(t_i-\bar t)(r_i-\bar r)/\sum(t_i-\bar t)^2\) and \(a=\bar r-b\bar t\). Time is seconds, rate is jobs/s, and slope is jobs/s². The bounded 80-second forecast is \(\hat r=\max(0,a+b(t_{now}+80))\). Using observed single-task capacity \(c=42.467\) jobs/s, current running/desired/reactive floor \(n\), queue \(B\), target 75, and horizon \(H=80\), the controller computes \(\hat B=B+\max(0,\hat r-nc)H\) jobs and \(n'=\operatorname{clamp}_{1,5}\{\max[n,\lceil\hat r/c\rceil,\lceil\hat B/75\rceil]\}\) tasks. A rising slope of at least 0.02 jobs/s² and two consecutive positive recommendations are required; same-or-lower duplicate requests are suppressed for 60 s. The adapter checks live desired count and never reduces it. Existing target tracking and the 60-second +4 alarm remain active in **both** arms. `HD_CONTROLLER_FREEZE.md` explains every parameter and three hand-calculated histories.
 
 All selected parameters were fixed after a 48-candidate deterministic local sensitivity study. The study modelled the final-D reactive timing and observed fixed-worker throughput, but did not model AWS publication jitter, Fargate contention or permission failures. In that **local model only**, hybrid requests during the ramp at 420 s (reactive 603 s), with a 50-job peak versus 946.427, at a 22.3% task-second increase. In the burst, prediction only reacts **after** the 210 s onset; this is a fallback test, not a pre-burst forecasting success. These values are explicitly not final HD evidence.
 
@@ -24,23 +26,29 @@ All selected parameters were fixed after a 48-candidate deterministic local sens
 
 Two deterministic workload classes each have a 30 s warm-up and 600 s measurement. The ramp rises from 10 to 16.667, 25, 33.333 and 50 jobs/s, producing 16,500 jobs. The burst stays at 10 jobs/s, jumps to 50 jobs/s from 210–510 s, then returns to 10 jobs/s, producing 18,300 jobs. Each class has reactive and hybrid arms, each with valid r1/r2/r3: 12 planned runs. The logical jobs, seed, per-job processing delay (50 ms), 1–5 capacity bounds, target 75 and fast reactive policy are identical across arms. Each run uses a fresh execution ID and a clean one-task start. No alarm is forced and no capacity is manually changed during arrivals. The unchanged schedule-lag guard invalidates tardy injection; a failed run is retained and not silently rerun.
 
-The primary outcomes are first scale request relative to the declared high-load offset, proactive lead if before it, peak visible SQS backlog, **genuine historical CloudWatch BPT**, and oldest-message age. Worker-ready latency, throughput, drain, task-seconds, p50/p95 processing latency, forecast MAE/bias, reliability and false predictive requests are secondary. A review-gated analysis script must show every repeat, mean, median, sample SD and descriptive percentage change. Three repeats cannot justify a significance claim.
+The primary outcomes are first scale request relative to the declared high-load offset, proactive lead if before it, peak visible SQS backlog, **genuine historical CloudWatch BPT**, and oldest-message age. Worker-ready latency, throughput, drain, task-seconds, p50/p95 processing latency, forecast MAE/bias, reliability and false predictive requests are secondary. Task-seconds integrate sampled *running* tasks over the common 600 s measurement interval; they are a resource-use proxy, **not measured AWS cost**. A review-gated analysis script must show every repeat, mean, median, sample SD and descriptive percentage change. Three repeats cannot justify a significance claim. The frozen matrix, stop rules and confound checks are in `HD_EXPERIMENT_MATRIX.md`.
 
-## 5. Results and interpretation
+## 5. Results and interpretation — insert only reviewed AWS evidence
 
-[TBD: AWS RAMP RESULTS]
+[TBD_RAMP_TABLE: reactive and hybrid r1/r2/r3, mean/median/sample SD and descriptive change for first request/ready, peak queue, genuine BPT, age, task-seconds, throughput, p95, faults.]
 
-[TBD: AWS BURST RESULTS]
+[TBD_RAMP_FIGURE: same-axis, all-repeat-mean queue and task traces; show individual-run spread or link raw appendix.]
 
-[TBD: TASK-SECONDS RESULT]
+[TBD_BURST_TABLE: the same metrics and all six raw burst repeat values. State whether predictive action occurred only after the 210 s onset.]
 
-Interpret benefit only if the HD hybrid makes additional workers ready earlier and reduces queue pressure in the matched ramp, with reliable job accounting. Assess the burst separately: a non-anticipatory controller should not be presented as predicting an abrupt jump. Explain any backlog benefit that coincides with higher task-seconds or extra scale-outs. Compare HD arms with one another, not with an unmatched D single run. No final claim is made here.
+[TBD_TASK_SECONDS: measurement-window integral, per-run and class mean; quantify queue benefit versus extra capacity-time without calling it a monetary cost.]
+
+[TBD_PREDICTION_ERROR: paired observed/forecast rate figure, MAE, signed bias, point count and false proactive requests; explain missing/late bins if any.]
+
+[TBD_FINAL_DISCUSSION: did additional workers become WORKER_READY before queued work cleared? Was any apparent improvement instead caused by reactive alarm, startup variance, or unequal offered timing? Explain any contrary or null result rather than excluding it.]
+
+Interpret benefit only if the HD hybrid makes additional workers ready earlier and reduces queue pressure in the matched ramp, with reliable job accounting. Assess the burst separately: a non-anticipatory controller should not be presented as predicting an abrupt jump. Explain any backlog benefit that coincides with higher task-seconds or extra scale-outs. Compare HD arms with one another, not with an unmatched D single run. No final claim is made here. Use only chart output generated from twelve manually reviewed valid AWS artifacts; the mock SVGs are layout checks and must not appear in the final report.
 
 ## 6. Threats and conclusion
 
 The synthetic two-shape workload, 1–5 task range, single Academy region, approximate CloudWatch/SQS observations, Fargate startup variability, small repeat count and capacity assumption bound external and internal validity. The local sensitivity grid can overfit the designed ramp; the parameters are therefore frozen before cloud evaluation. Task-seconds approximate worker use, not AWS charges. The full mitigation table is in `HD_THREATS_TO_VALIDITY.md`.
 
-[TBD: FINAL CONCLUSION AFTER AWS]
+[TBD_FINAL_CONCLUSION: answer the research question separately for ramp and burst, give the measured trade-off and bounds, and state if the hypothesis was not supported.]
 
 ## References
 

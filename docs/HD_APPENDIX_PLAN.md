@@ -1,17 +1,27 @@
-# HD appendix and provenance plan
+# HD appendix structure — evidence to collect later
 
-Only include HD AWS screenshots/data after those resources and runs actually exist. The 4–5 page main report should carry the compact design diagram, two matched outcome tables and one or two legible charts; the appendix carries implementation/deployment proof.
+The main report target is 4–5 pages excluding references and appendix. Put only two matched outcome tables and the most explanatory 2–3 figures in the main text. The appendix carries raw provenance; it must not manufacture cloud screenshots or treat mock charts as results.
 
-| Appendix item | Source to preserve | Required proof |
-| --- | --- | --- |
-| A. Source/config index | HD commit/tag, `experiments/hd/predictive-controller.js`, `experiments/hd/aws/`, `shared/hd/arrival-signal.js`, `experiments/hd/*.json` | Exact commit, frozen controller settings and both workload definitions. |
-| B. Infrastructure | `hd-code.yaml`, `hd-signals.yaml`, `hd-predictor.yaml`, HD-prefixed `ecs.yaml`/`scaling.yaml` stacks | Stack IDs, HD-only prefix, separate queue/state/Lambda/ECS, reactive policy and target 75. |
-| C. Local validation | `local-parameter-study.json/.csv`, `HD_LOCAL_EVALUATION.md`, test/lint output | Clearly mark LOCAL DESIGN/TUNING EVIDENCE — NOT FINAL AWS HD EVIDENCE. |
-| D. Deployment screenshots | CloudFormation, ECS, Lambda, SQS, DynamoDB and scaling/alarm views | Same account/region, HD names, no D mutation; redact account identifiers if publishing. |
-| E. Matched-run manifests | All twelve `manifest.json`, `injection-timing.json`, `review.json` | Fresh run ID, logical digest parity by repeat, schedule validity and explicit manual review. |
-| F. Raw queues and scaling | `samples.jsonl`, `scaling-activities.json`, `predictor-logs.json`, worker logs | 10 s samples, scale request, RUNNING, WORKER_READY, end queue/DLQ. |
-| G. Genuine metrics | `cloudwatch-history.json` | Historical BPT and oldest-age datapoints, metric dimensions, observation window and prediction-error series. Do not substitute inferred BPT. |
-| H. Formal tables/charts | `experiments/hd/analysis/aggregate.js` output | All raw repeats, mean/median/SD, backlog, delay, task-seconds, forecast errors and reliability. |
-| I. Final state and version | Final local Git commit/tag, clean HD and D states, cleanup proof when authorised | Distinguish cleanup after submission from tonight's no-cloud boundary. |
+## A. Research-informed algorithm and frozen configuration
 
-Do not put full console dumps or twelve near-identical screenshots in the main report. Retain the invalid-run artifacts in an explicitly labelled excluded section; never delete them to improve an average.
+Include a compact source excerpt for OLS slope/intercept, non-negative 80 s forecast, projected backlog, `ceil`/1–5 recommendation, rising-slope gate, two-decision hysteresis, 60 s cooldown and scale-out-only adapter. Cite `experiments/hd/predictive-controller.js`, `experiments/hd/final-controller-config.json`, `docs/HD_CONTROLLER_FREEZE.md` and the four checked references. Label the 48-candidate sensitivity table and D-trace replay **LOCAL DESIGN / SANITY EVIDENCE, NOT FINAL HD AWS EVIDENCE**.
+
+## B. Isolated HD AWS deployment
+
+Later capture the seven `sit314-hd-transport-*` CloudFormation stacks, HD ECR image digest, ECS task CPU/memory, SQS working/signal queues and DLQs, predictor DynamoDB table, Lambda mode/event mapping and HD-only scaling policies/alarm. Record account/region/timestamp while redacting sensitive identifiers for publication. Show D tag/check-out safety and the D-video-before-HD gate. Resource mapping is in `docs/HD_RESOURCE_ISOLATION.md`; no AWS screenshots exist yet.
+
+## C. Predictor metrics and scaling chronology
+
+For each arm and workload class preserve historical CloudWatch `AnalysisArrivalRate`, `PredictedArrivalRate`, `PredictionError`, genuine `BacklogPerTask` and SQS oldest-age JSON with namespace, dimensions, statistic, period and collection window. Preserve Lambda logs, Application Auto Scaling activities, ECS desired/running/pending samples, new task IDs, RUNNING and `WORKER_READY` timestamps. Show which policy requested the first scale-out. **Never compute a replacement BPT from raw SQS depth.**
+
+## D. Raw predictable-ramp results
+
+List reactive and hybrid r1/r2/r3 manifests, logical digests, exact injection timing, all raw outcomes, review decisions, excluded/invalid attempts, matching-image/CPU/memory proof, final queue/DLQ state and common-axis comparison charts. Give raw values plus mean/median/sample SD and descriptive percentage changes; include measured-window task-seconds.
+
+## E. Raw sudden-burst results
+
+Use the same fields and chart scales/definitions as D. Explicitly distinguish pre-burst prediction from post-onset reaction and note any false proactive requests or degraded reliability. Do not suppress null or adverse results.
+
+## F. Reproducibility and verification
+
+Record frozen profile/config hashes, HD commit and local tag when created, reviewed run IDs, command sequence, `npm test`, infra lint, production audit and script/package verification outputs. Link `artifacts/hd-aws-runs/`, aggregate JSON/Markdown/SVG, and the local-only mock/test artifacts as **separate** classifications. State that n=3 supports descriptive, not significance, claims. Preserve HD-only cleanup plan but execute cleanup only after explicit authorisation.

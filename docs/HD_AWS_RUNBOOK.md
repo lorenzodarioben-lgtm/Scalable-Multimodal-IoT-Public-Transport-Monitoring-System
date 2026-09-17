@@ -33,18 +33,19 @@ Record the selected VPC and **two public subnets** as `$hdVpcId` and `$hdSubnetI
 
 ## B. Deploy isolated HD resources in dependency order
 
-All commands below are for tomorrow only. Review each stack change set before committing to long-lived resources, and preserve outputs. Existing D resources should not change.
+All commands below are for a later, explicitly authorised AWS session only. Review each stack change set before committing to long-lived resources, and preserve outputs. Existing D resources should not change. Use the HD-only guarded wrappers; the generic deployment scripts default to the D prefix and must not be called directly.
 
 ```powershell
-./infrastructure/scripts/deploy.ps1 -Stacks queues,tables -Prefix $hdPrefix -Region $hdRegion
+./infrastructure/scripts/deploy-hd.ps1 -Stage queues -ExecuteHdDeployment -Region $hdRegion
+./infrastructure/scripts/deploy-hd.ps1 -Stage tables -ExecuteHdDeployment -Region $hdRegion
 aws cloudformation deploy --region $hdRegion --stack-name "$hdPrefix-hd-code" --template-file infrastructure/cloudformation/hd-code.yaml --parameter-overrides "ResourcePrefix=$hdPrefix"
 aws cloudformation deploy --region $hdRegion --stack-name "$hdPrefix-hd-signals" --template-file infrastructure/cloudformation/hd-signals.yaml --parameter-overrides "ResourcePrefix=$hdPrefix"
-./infrastructure/scripts/build-and-push.ps1 -Services route-impact-worker -Prefix $hdPrefix -Region $hdRegion -Tag hd-local
+./infrastructure/scripts/build-hd-image.ps1 -ExecuteHdImagePush -Region $hdRegion -Tag hd-local
 ./infrastructure/scripts/package-hd-predictor.ps1
 aws s3 cp artifacts/hd-predictor.zip "s3://$hdCodeBucket/hd-predictor.zip" --region $hdRegion
 $hdSignalUrl = aws cloudformation describe-stacks --region $hdRegion --stack-name "$hdPrefix-hd-signals" --query "Stacks[0].Outputs[?OutputKey=='ArrivalSignalQueueUrl'].OutputValue | [0]" --output text
-./infrastructure/scripts/deploy.ps1 -Stacks ecs -Prefix $hdPrefix -Region $hdRegion -RouteImpactImage $hdImage -VpcId $hdVpcId -SubnetIds $hdSubnetIds -ExistingExecutionRoleArn $hdLabRoleArn -ExistingTaskRoleArn $hdLabRoleArn -WorkerProcessingDelayMs 50 -MetricNamespace 'SIT314/HDTransport' -HdArrivalSignalQueueUrl $hdSignalUrl
-./infrastructure/scripts/deploy.ps1 -Stacks scaling -Prefix $hdPrefix -Region $hdRegion -ScalingMode BacklogPerTask -MinTasks 1 -MaxTasks 5 -TargetBacklogPerTask 75 -MetricNamespace 'SIT314/HDTransport' -ExistingLambdaRoleArn $hdLabRoleArn
+./infrastructure/scripts/deploy-hd.ps1 -Stage ecs -ExecuteHdDeployment -Region $hdRegion -RouteImpactImage $hdImage -VpcId $hdVpcId -SubnetIds $hdSubnetIds -ExistingExecutionRoleArn $hdLabRoleArn -ExistingTaskRoleArn $hdLabRoleArn -ArrivalSignalQueueUrl $hdSignalUrl
+./infrastructure/scripts/deploy-hd.ps1 -Stage scaling -ExecuteHdDeployment -Region $hdRegion -ExistingLambdaRoleArn $hdLabRoleArn
 aws cloudformation deploy --region $hdRegion --stack-name "$hdPrefix-hd-predictor" --template-file infrastructure/cloudformation/hd-predictor.yaml --parameter-overrides "ResourcePrefix=$hdPrefix" "SignalsStackName=$hdPrefix-hd-signals" "QueuesStackName=$hdPrefix-queues" "EcsStackName=$hdPrefix-ecs" "ControllerMode=reactive" "LambdaCodeBucket=$hdCodeBucket" "LambdaCodeKey=hd-predictor.zip" "ExistingLambdaRoleArn=$hdLabRoleArn" --capabilities CAPABILITY_NAMED_IAM
 ```
 
@@ -70,25 +71,24 @@ Use that command only for a verified HD service in the post-run reset window. In
 
 ## D. Matched run sequence
 
-Controller mode is an HD Lambda stack parameter. Switch **between** runs only; wait for `LastUpdateStatus=Successful` before injection. Redeploy with **all** predictor parameters when switching (do not accidentally drop code location/role):
+Controller mode is an HD Lambda stack parameter. Switch **between** runs only; wait for `LastUpdateStatus=Successful` before injection. The guarded wrapper preserves all stack parameters and verifies the Lambda update. `invoke-hd-run.ps1` calls it automatically before exactly one run; never hand-edit a config or directly invoke the generic D-default script.
 
 ```powershell
-$hdMode = 'reactive' # set to 'hybrid' only for the hybrid arm
-aws cloudformation deploy --region $hdRegion --stack-name "$hdPrefix-hd-predictor" --template-file infrastructure/cloudformation/hd-predictor.yaml --parameter-overrides "ResourcePrefix=$hdPrefix" "SignalsStackName=$hdPrefix-hd-signals" "QueuesStackName=$hdPrefix-queues" "EcsStackName=$hdPrefix-ecs" "ControllerMode=$hdMode" "LambdaCodeBucket=$hdCodeBucket" "LambdaCodeKey=hd-predictor.zip" "ExistingLambdaRoleArn=$hdLabRoleArn" --capabilities CAPABILITY_NAMED_IAM
-aws lambda get-function-configuration --region $hdRegion --function-name "$hdPrefix-predictor" --query '{mode:Environment.Variables.HD_CONTROLLER_MODE,update:LastUpdateStatus}'
+./infrastructure/scripts/set-hd-mode.ps1 -Mode reactive -CodeBucket $hdCodeBucket -ExistingLambdaRoleArn $hdLabRoleArn -ExecuteHdModeChange -Region $hdRegion
 ```
 
 Execute **one command at a time** after clean preflight/reset. For each `r=1,2,3`, use reactive then hybrid (or another predeclared alternation), but never omit or cherry-pick a repeat. Use distinct execution IDs; the CLI generates them. The runner verifies workload, policy, queue, BPT, readiness and controller mode before injection, records all artifacts in `artifacts/hd-aws-runs/`, and leaves technically clean runs `PENDING_MANUAL_TIMELINE_REVIEW`.
 
 ```powershell
-node experiments/hd/aws/run-hd-aws-experiment.js --execute-hd-aws --config experiments/hd/aws-ramp.json --arm reactive --repeat 1 --prefix $hdPrefix
-# After reset and $hdMode='hybrid' stack update:
-node experiments/hd/aws/run-hd-aws-experiment.js --execute-hd-aws --config experiments/hd/aws-ramp.json --arm hybrid --repeat 1 --prefix $hdPrefix
-# Repeat the same paired sequence with --repeat 2 and --repeat 3.
-# Then use --config experiments/hd/aws-sudden-burst.json for reactive/hybrid r1/r2/r3.
+./infrastructure/scripts/invoke-hd-run.ps1 -Profile ramp -Arm reactive -Repeat 1 -CodeBucket $hdCodeBucket -ExistingLambdaRoleArn $hdLabRoleArn -ExecuteHdRun -Region $hdRegion
+# After reviewing this artifact and re-establishing the clean one-task baseline:
+./infrastructure/scripts/invoke-hd-run.ps1 -Profile ramp -Arm hybrid -Repeat 1 -CodeBucket $hdCodeBucket -ExistingLambdaRoleArn $hdLabRoleArn -ExecuteHdRun -Region $hdRegion
+# Repeat the paired sequence for r2/r3, then Profile burst for both arms r1/r2/r3.
 ```
 
-Execution ledger (each row is a separate, manually gated command using the CLI pattern above; set `$hdMode` to the row's arm and redeploy predictor before the run):
+Execution ledger (each row is a separate, manually gated wrapper call; the wrapper sets and verifies the row's mode, then runs once):
+
+The wrapper refuses an existing artifact for the same class/arm/repeat. An aborted or invalid attempt must first receive a `review.json` with its exact run ID, `status: "INVALID"`, a dated review and a substantive basis. Only then may an operator add `-AllowReviewedReplacement` for that one row; retain the old artifact. This is never an automatic rerun.
 
 | Order | Config | Arm | `--repeat` | Clean reset required before |
 | ---: | --- | --- | ---: | --- |

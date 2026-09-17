@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyseHdRun, aggregateHdRuns, percentChange } from './metrics.js';
-import { barChart, writeRunCharts } from './charts.js';
+import { barChart, writeRunCharts, writeComparisonCharts } from './charts.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const profiles = Object.fromEntries(['predictable-ramp', 'sudden-burst'].map((name) => {
@@ -31,25 +31,42 @@ function table(aggregate, workloadClass) {
   return lines.join('\n');
 }
 
-export function analyseDirectory(inputDir, outputDir, { preview = false } = {}) {
+export function analyseDirectory(inputDir, outputDir, { preview = false, mock = false } = {}) {
   const directories = fs.readdirSync(inputDir, { withFileTypes: true })
     .filter((item) => item.isDirectory() && fs.existsSync(path.join(inputDir, item.name, 'manifest.json')))
     .map((item) => path.join(inputDir, item.name));
-  const runs = directories.map((directory) => {
+  const runs = [];
+  const excluded = [];
+  for (const directory of directories) {
     const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
+    const isMock = manifest.evidenceClassification === 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE';
+    if (isMock !== mock) throw new Error(`mock/AWS artifact boundary mismatch in ${directory}`);
     const profile = profiles[manifest.workload?.stage];
     if (!profile) throw new Error(`unknown HD workload profile in ${directory}`);
-    return analyseHdRun(directory, profile);
-  });
+    const summaryFile = path.join(directory, 'summary.json');
+    if (!fs.existsSync(summaryFile)) {
+      excluded.push({ runId: manifest.runId, validity: 'INCOMPLETE_ARTIFACT', reviewStatus: 'UNREVIEWED' });
+      continue;
+    }
+    const summary = JSON.parse(fs.readFileSync(summaryFile, 'utf8'));
+    if (summary.validity !== 'PENDING_MANUAL_TIMELINE_REVIEW') {
+      excluded.push({ runId: manifest.runId, validity: summary.validity, reviewStatus: 'UNREVIEWED' });
+      continue;
+    }
+    runs.push(analyseHdRun(directory, profile, { allowMock: mock }));
+  }
+  if (mock && runs.some((run) => run.classification !== 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE')) {
+    throw new Error('mock analysis cannot mix in AWS-labelled runs');
+  }
   // Preserve invalid/aborted attempts in input; only explicitly reviewed valid
   // replacements enter the final three-repeat comparison.
   const eligible = runs.filter((run) => preview
     ? run.validity === 'PENDING_MANUAL_TIMELINE_REVIEW' && run.reviewStatus !== 'INVALID'
     : run.reviewStatus === 'VALID');
-  const excluded = runs.filter((run) => !eligible.includes(run)).map((run) => ({
+  excluded.push(...runs.filter((run) => !eligible.includes(run)).map((run) => ({
     runId: run.runId, validity: run.validity, reviewStatus: run.reviewStatus,
-  }));
-  const aggregate = aggregateHdRuns(eligible, { requireReviewed: !preview });
+  })));
+  const aggregate = aggregateHdRuns(eligible, { requireReviewed: !preview, mock });
   aggregate.excludedAttempts = excluded;
   fs.mkdirSync(outputDir, { recursive: true });
   const compact = runs.map(({ raw, ...run }) => run);
@@ -61,24 +78,28 @@ export function analyseDirectory(inputDir, outputDir, { preview = false } = {}) 
     table(aggregate, 'PREDICTABLE_RAMP'), '', table(aggregate, 'SUDDEN_BURST'), '',
     'Task-seconds approximate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.',
   ].join('\n'));
-  for (const run of eligible) writeRunCharts(run, path.join(outputDir, 'charts', run.runId));
+  for (const run of eligible) writeRunCharts(run, path.join(outputDir, 'charts', run.runId), { mock });
   for (const workloadClass of ['PREDICTABLE_RAMP', 'SUDDEN_BURST']) {
     for (const metric of ['peakVisibleBacklog', 'taskSeconds']) {
       const categories = ['reactive', 'hybrid'].map((arm) => ({ name: arm,
         value: aggregate.groups[workloadClass][arm].metrics[metric].mean }));
       fs.writeFileSync(path.join(outputDir, `${workloadClass}-${metric}.svg`), barChart({
-        title: `${workloadClass}: ${metric} (AWS run means)`, yLabel: metric, categories,
+        title: `${workloadClass}: ${metric} (all-repeat means)`, yLabel: metric, categories,
+        watermark: mock ? 'MOCK DATA — NOT EXPERIMENTAL EVIDENCE' : '',
       }));
     }
+    writeComparisonCharts(eligible, aggregate, workloadClass,
+      path.join(outputDir, 'charts', workloadClass), { mock });
   }
   return { runs: compact, aggregate };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const inputDir = argument('--input'); const outputDir = argument('--output');
-  if (!inputDir || !outputDir) throw new Error('usage: node experiments/hd/analysis/aggregate.js --input artifacts/hd-aws-runs --output artifacts/hd-analysis [--preview]');
+  if (!inputDir || !outputDir) throw new Error('usage: node experiments/hd/analysis/aggregate.js --input artifacts/hd-aws-runs --output artifacts/hd-analysis [--preview] [--mock]');
   const outcome = analyseDirectory(path.resolve(inputDir), path.resolve(outputDir), {
     preview: process.argv.includes('--preview'),
+    mock: process.argv.includes('--mock'),
   });
   process.stdout.write(`${outcome.aggregate.classification}; ${outcome.runs.length} runs analysed\n`);
 }

@@ -7,6 +7,7 @@ import { mean, percentile, round, sleep as defaultSleep } from '@sit314/shared/u
 import { createAwsArtifactWriter } from '../../aws/artifacts.js';
 import { buildAwsSummary } from '../../aws/summary.js';
 import { createHdAwsWorkload } from './workload.js';
+import { integrateRunningTaskSeconds } from './task-seconds.js';
 
 const date = (value) => value instanceof Date ? value : new Date(value);
 
@@ -237,6 +238,16 @@ export async function runHdAwsExperiment({
     accounting, workerLogs, finishedAt });
   summary.arm = arm;
   summary.results.processingLatencyP50Ms = processingP50(workerLogs);
+  summary.results.sampledRunTaskSeconds = summary.results.taskSeconds;
+  let taskSecondsError = null;
+  try {
+    summary.results.taskSeconds = integrateRunningTaskSeconds(samples,
+      manifest.measurementStartedAt,
+      new Date(startMs + workload.scheduledArrivalSeconds * 1000).toISOString());
+  } catch (error) {
+    summary.results.taskSeconds = null;
+    taskSecondsError = error.message;
+  }
   summary.accounting = accounting;
   summary.artifacts = { runDirectory: runDir, samples: writer.samplesPath };
   await sleep(metricsGraceMs); // historical metric retrieval is outside measured duration.
@@ -259,12 +270,33 @@ export async function runHdAwsExperiment({
     && summary.results.duplicateJobsSkipped === 0
     && summary.results.dlqDepth === 0 && summary.results.lostOrUnaccounted === 0
     && summary.results.errorCount === 0 && !accounting.drainTimedOut;
+  const taskStateInconsistent = samples.some((sample) => {
+    const state = sample.service;
+    return !state || !Number.isInteger(state.desiredCount) || state.desiredCount < 1 || state.desiredCount > 5
+      || !Number.isInteger(state.runningCount) || state.runningCount < 1 || state.runningCount > 5
+      || !Number.isInteger(state.pendingCount) || state.pendingCount < 0 || state.pendingCount > 5;
+  });
+  const missingRequiredMetrics = [];
+  if (!history.bpt.length) missingRequiredMetrics.push('genuine BacklogPerTask');
+  if (!(history.predictive?.AnalysisArrivalRate?.length > 0)) missingRequiredMetrics.push('AnalysisArrivalRate');
+  if (arm === 'hybrid' && !(history.predictive?.PredictedArrivalRate?.length > 0)) {
+    missingRequiredMetrics.push('PredictedArrivalRate');
+  }
+  if (arm === 'hybrid' && !(history.predictive?.PredictionError?.length > 0)) {
+    missingRequiredMetrics.push('PredictionError');
+  }
+  if (samples.some((sample) => sample.queue?.visibleMessages > 0)
+    && !history.oldestMessageAge.length) missingRequiredMetrics.push('ApproximateAgeOfOldestMessage');
+  if (summary.results.taskSeconds === null) missingRequiredMetrics.push('measurement task-seconds');
+  summary.missingRequiredMetrics = missingRequiredMetrics;
   summary.validity = invalidReason ? invalidStatus
     : !countsClean ? 'RELIABILITY-INVALID'
       : signalQueueError ? 'SIGNAL-QUEUE-INVALID'
-      : !history.bpt.length ? 'PENDING_GENUINE_CLOUDWATCH_BPT'
+      : taskStateInconsistent ? 'TASK-STATE-INVALID'
+      : missingRequiredMetrics.length ? 'PENDING_REQUIRED_METRICS'
         : 'PENDING_MANUAL_TIMELINE_REVIEW';
   if (signalQueueError) summary.hdSignalQueueError = signalQueueError;
+  if (taskSecondsError) summary.taskSecondsError = taskSecondsError;
   writer.writeJson('summary.json', summary);
   return { runDir, manifest, summary, history };
 }

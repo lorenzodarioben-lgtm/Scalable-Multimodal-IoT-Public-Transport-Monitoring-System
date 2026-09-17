@@ -211,7 +211,21 @@ export class HdAwsControlPlane {
       lastStatus: task.lastStatus,
     })) };
   }
-  async verifyProcessingCost(cost) { return this.base.verifyProcessingCost(cost); }
+  async verifyProcessingCost(cost) {
+    const verified = await this.base.verifyProcessingCost(cost);
+    const service = await this.base.serviceSnapshot();
+    const output = await this.base.ecs.send(new this.base.sdk.ecs.DescribeTaskDefinitionCommand({
+      taskDefinition: service.taskDefinition,
+    }));
+    const task = output.taskDefinition;
+    const worker = task?.containerDefinitions?.find((item) => item.name === 'route-impact-worker');
+    if (!worker?.image || !task?.cpu || !task?.memory
+      || !worker.image.includes(`/${this.prefix}-route-impact-worker:`)) {
+      throw new Error('HD worker image, CPU or memory is not verifiably isolated');
+    }
+    return { ...verified, taskDefinitionArn: service.taskDefinition,
+      workerImage: worker.image, taskCpu: task.cpu, taskMemory: task.memory };
+  }
   async scalingActivities() { return this.base.scalingActivities(); }
   async resultsForSources(sources, expected) { return this.base.resultsForSources(sources, expected); }
   async workerLogs(window) { return this.base.workerLogs(window); }

@@ -56,7 +56,7 @@ export function firstOverloadOffsetSeconds(profile, capacityJobsPerSecond = 42.4
     ?.startOffsetSeconds ?? null;
 }
 
-export function analyseHdRun(runDir, profile) {
+export function analyseHdRun(runDir, profile, { allowMock = false } = {}) {
   const manifest = readJson(path.join(runDir, 'manifest.json'));
   const summary = readJson(path.join(runDir, 'summary.json'));
   const history = readJson(path.join(runDir, 'cloudwatch-history.json'));
@@ -66,7 +66,17 @@ export function analyseHdRun(runDir, profile) {
   if (manifest.workload.stage !== profile.name || summary.runId !== manifest.runId) {
     throw new Error(`artifact/profile identity mismatch: ${runDir}`);
   }
-  if (!String(history.source).includes('CloudWatch')) throw new Error('historical CloudWatch provenance absent');
+  const isMock = manifest.evidenceClassification === 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE';
+  if (isMock && !allowMock) throw new Error('mock artifact cannot be analysed as AWS evidence');
+  if (!isMock && history.source !== 'genuine historical CloudWatch GetMetricStatistics') {
+    throw new Error('genuine historical CloudWatch provenance absent');
+  }
+  if (isMock && history.source !== 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE') {
+    throw new Error('mock artifact provenance mismatch');
+  }
+  if (!Array.isArray(history.bpt) || !history.bpt.length) {
+    throw new Error('historical BacklogPerTask datapoints are missing');
+  }
   const namespace = manifest.workload.executionNamespace;
   const predictive = predictedRequests(logs, namespace);
   const reactive = reactiveRequests(activities);
@@ -104,12 +114,19 @@ export function analyseHdRun(runDir, profile) {
   const reviewPath = path.join(runDir, 'review.json');
   const review = fs.existsSync(reviewPath) ? readJson(reviewPath) : null;
   return {
-    classification: 'AWS HD RUN ARTIFACT — REVIEW REQUIRED BEFORE FINAL CLAIM',
+    classification: isMock ? 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE'
+      : 'AWS HD RUN ARTIFACT — REVIEW REQUIRED BEFORE FINAL CLAIM',
     runId: manifest.runId, artifactDirectory: runDir,
+    workloadStartedAt: manifest.workloadStartedAt,
     workloadClass: profile.workloadClass, arm: manifest.arm, repeatNumber: manifest.repeatNumber,
     executionNamespace: namespace, validity: summary.validity,
     reviewStatus: review?.runId === manifest.runId && summary.validity === 'PENDING_MANUAL_TIMELINE_REVIEW'
+      && Number.isFinite(Date.parse(review.reviewedAt)) && typeof review.basis === 'string' && review.basis.length >= 15
       ? review.status : 'UNREVIEWED',
+    logicalDigest: manifest.workload.logicalDigest,
+    workerImage: manifest.processingCostVerified?.workerImage,
+    taskCpu: manifest.processingCostVerified?.taskCpu,
+    taskMemory: manifest.processingCostVerified?.taskMemory,
     expectedJobs: summary.results.expectedJobs,
     submittedJobs: summary.injectionTiming.submittedJobs,
     completedJobs: summary.results.resultsProduced,
@@ -173,7 +190,7 @@ export const COMPARISON_METRICS = [
   'dlq', 'unaccountedJobs',
 ];
 
-export function aggregateHdRuns(runs, { requireReviewed = true } = {}) {
+export function aggregateHdRuns(runs, { requireReviewed = true, mock = false } = {}) {
   const groups = {};
   for (const workloadClass of ['PREDICTABLE_RAMP', 'SUDDEN_BURST']) {
     groups[workloadClass] = {};
@@ -195,8 +212,30 @@ export function aggregateHdRuns(runs, { requireReviewed = true } = {}) {
       };
     }
   }
-  return { classification: requireReviewed ? 'REVIEWED AWS HD EVIDENCE'
-    : 'PRELIMINARY UNREVIEWED AWS HD ARTIFACT ANALYSIS', groups };
+  if (requireReviewed) {
+    for (const key of ['workerImage', 'taskCpu', 'taskMemory']) {
+      const values = new Set(runs.map((run) => run[key]));
+      if (values.size !== 1 || values.has(null) || values.has(undefined)) {
+        throw new Error(`HD study does not use one frozen ${key} across all runs`);
+      }
+    }
+    for (const workloadClass of ['PREDICTABLE_RAMP', 'SUDDEN_BURST']) {
+      for (const repeatNumber of [1, 2, 3]) {
+        const pair = runs.filter((run) => run.workloadClass === workloadClass
+          && run.repeatNumber === repeatNumber);
+        if (pair.length !== 2 || !pair[0].logicalDigest
+          || pair[0].logicalDigest !== pair[1].logicalDigest
+          || !pair[0].workerImage || pair[0].workerImage !== pair[1].workerImage
+          || !pair[0].taskCpu || pair[0].taskCpu !== pair[1].taskCpu
+          || !pair[0].taskMemory || pair[0].taskMemory !== pair[1].taskMemory) {
+          throw new Error(`${workloadClass}/r${repeatNumber} is not a matched workload and worker deployment`);
+        }
+      }
+    }
+  }
+  return { classification: mock ? 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE'
+    : requireReviewed ? 'REVIEWED AWS HD EVIDENCE'
+      : 'PRELIMINARY UNREVIEWED AWS HD ARTIFACT ANALYSIS', groups };
 }
 
 export function percentChange(baseline, treatment) {

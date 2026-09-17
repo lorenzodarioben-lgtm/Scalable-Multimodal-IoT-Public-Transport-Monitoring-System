@@ -25,6 +25,7 @@ artifacts/
 !experiments/hd/artifacts/
 !experiments/hd/artifacts/local-parameter-study.json
 !experiments/hd/artifacts/local-parameter-study.csv
+!experiments/hd/artifacts/d-trace-replay.json
 local-data/
 node-red/data/
 *.log

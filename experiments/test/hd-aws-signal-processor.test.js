@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   createAnalysisArrivalSignal,
 } from '../../shared/hd/arrival-signal.js';
@@ -7,6 +10,8 @@ import { HD_METRIC_NAMES, HD_METRIC_NAMESPACE, processAnalysisArrival } from '..
 import { createHdAwsPorts } from '../hd/aws/ports.js';
 import { runHdHandler } from '../hd/aws/handler.js';
 import { createHdArrivalObserver } from '../../services/telemetry-processor/src/hd-arrival-observer.js';
+import { generateIncidentJobs } from '../runner/job-generator.js';
+import { loadHdAwsConfiguration } from '../hd/aws/workload.js';
 
 function fakePorts({ desiredTasks = 1, runningTasks = 1, visibleBacklog = 0 } = {}) {
   const states = new Map();
@@ -14,11 +19,18 @@ function fakePorts({ desiredTasks = 1, runningTasks = 1, visibleBacklog = 0 } = 
   const metrics = [];
   let failNextScale = false;
   let failNextStore = false;
+  let failNextRead = false;
+  let failNextMetrics = false;
   return {
     calls, metrics, states,
     failScaleOnce() { failNextScale = true; },
     failStoreOnce() { failNextStore = true; },
-    getState: async (runId) => states.has(runId) ? structuredClone(states.get(runId)) : null,
+    failReadOnce() { failNextRead = true; },
+    failMetricsOnce() { failNextMetrics = true; },
+    getState: async (runId) => {
+      if (failNextRead) { failNextRead = false; throw new Error('DynamoDB read fault'); }
+      return states.has(runId) ? structuredClone(states.get(runId)) : null;
+    },
     putState: async (state, expectedVersion) => {
       if (failNextStore) { failNextStore = false; throw new Error('conditional state fault'); }
       const current = states.get(state.runId);
@@ -33,7 +45,10 @@ function fakePorts({ desiredTasks = 1, runningTasks = 1, visibleBacklog = 0 } = 
       desiredTasks = target;
       calls.push({ target, context });
     },
-    publishMetrics: async (points) => { metrics.push(...points); },
+    publishMetrics: async (points) => {
+      if (failNextMetrics) { failNextMetrics = false; throw new Error('CloudWatch metric fault'); }
+      metrics.push(...points);
+    },
     current() { return { desiredTasks, runningTasks, visibleBacklog }; },
   };
 }
@@ -204,4 +219,89 @@ test('Lambda handler is injectable and rejects unsafe configuration before creat
   await assert.rejects(runHdHandler(event, { env: { ...env, HD_RESOURCE_PREFIX: 'sit314-transport' },
     portsFactory: async () => { created = true; return fakePorts(); } }), /safely/);
   assert.equal(created, false);
+});
+
+test('missing and late arrival bins retain counts without fabricating history', async () => {
+  const ports = fakePorts();
+  const invoke = (index, count) => processAnalysisArrival({ signal: signal(index, count),
+    mode: 'hybrid', ports, serviceName: 'sit314-hd-transport-route-impact', controllerConfig });
+  await invoke(0, 50);
+  await invoke(3, 100);
+  assert.deepEqual(ports.metrics.filter((item) => item.name === 'AnalysisArrivalRate').map((item) => item.value),
+    [5, 0, 0]);
+  const late = await invoke(1, 50);
+  assert.equal(late.acceptedJobs, 50);
+  assert.equal(ports.states.get('hd-test-run').binJobs, 150);
+  const duplicate = await invoke(1, 50);
+  assert.equal(duplicate.acceptedJobs, 0);
+});
+
+test('DynamoDB read, conditional write and CloudWatch metric failures fail safely', async () => {
+  const ports = fakePorts();
+  ports.failReadOnce();
+  await assert.rejects(processAnalysisArrival({ signal: signal(0), mode: 'hybrid', ports,
+    serviceName: 'sit314-hd-transport-route-impact', controllerConfig }), /read fault/);
+  assert.equal(ports.states.size, 0);
+  await processAnalysisArrival({ signal: signal(0), mode: 'hybrid', ports,
+    serviceName: 'sit314-hd-transport-route-impact', controllerConfig });
+  ports.failMetricsOnce();
+  const second = await processAnalysisArrival({ signal: signal(1), mode: 'hybrid', ports,
+    serviceName: 'sit314-hd-transport-route-impact', controllerConfig });
+  assert.match(second.metricError, /CloudWatch metric fault/);
+  assert.equal(ports.states.get('hd-test-run').binJobs, 100);
+  assert.equal(ports.calls.length, 0);
+  const conflictPorts = { ...ports, putState: async () => { throw new Error('conditional version conflict'); } };
+  await assert.rejects(processAnalysisArrival({ signal: signal(2), mode: 'hybrid', ports: conflictPorts,
+    serviceName: 'sit314-hd-transport-route-impact', controllerConfig }), /version conflict/);
+  assert.equal(ports.states.get('hd-test-run').binJobs, 100);
+});
+
+test('mock post-fanout → FIFO → Lambda state → bounded ECS request → metrics chain', async () => {
+  const { profile } = loadHdAwsConfiguration(new URL('../hd/aws-ramp.json', import.meta.url));
+  const firstIncident = generateIncidentJobs(profile.incident, 1, 'hd-rehearsal-incident',
+    { createdAt: '2026-09-23T00:00:00Z' });
+  assert.equal(firstIncident.length, 50);
+  const sent = [];
+  let clock = 0;
+  const observer = createHdArrivalObserver({ queueUrl: 'https://example.invalid/arrival.fifo',
+    runId: 'hd-local-rehearsal', now: () => clock,
+    send: async (message) => { sent.push(message); } });
+  const ports = fakePorts();
+  const env = { HD_RESOURCE_PREFIX: 'sit314-hd-transport', HD_CONTROLLER_MODE: 'hybrid',
+    AWS_REGION: 'us-east-1', HD_STATE_TABLE_NAME: 'fake-state', HD_ANALYSIS_QUEUE_URL: 'fake-analysis',
+    HD_HISTORY_SIZE: '8', HD_FORECAST_HORIZON_SECONDS: '80',
+    HD_PER_TASK_JOBS_PER_SECOND: '42.467', HD_RISING_SLOPE_THRESHOLD: '0.02',
+    HD_HYSTERESIS_COUNT: '2', HD_DUPLICATE_COOLDOWN_SECONDS: '60' };
+  const results = [];
+  for (let index = 0; index < 10; index += 1) {
+    clock = index * 10_000;
+    await observer.publish({ signalId: `fanout-${index}`,
+      publishedJobCount: index === 0 ? firstIncident.length : 50 * (index + 1) });
+    const message = sent.at(-1);
+    results.push(await runHdHandler({ Records: [{ body: message.MessageBody }] }, {
+      env, portsFactory: async () => ports }));
+  }
+  assert.equal(JSON.parse(sent[0].MessageBody).publishedJobCount, 50);
+  assert.equal(ports.states.get('hd-local-rehearsal').seenSignalIds.length, 10);
+  assert.equal(ports.metrics.find((item) => item.name === 'AnalysisArrivalRate').value, 5);
+  assert.ok(ports.metrics.some((item) => item.name === 'PredictedArrivalRate'));
+  assert.equal(ports.calls.length, 1);
+  assert.equal(ports.calls[0].target, 5);
+  assert.equal(ports.current().desiredTasks, 5);
+  assert.ok(ports.metrics.every((item) => item.namespace === HD_METRIC_NAMESPACE
+    && item.dimensions.ServiceName === 'sit314-hd-transport-route-impact'
+    && item.dimensions.RunId === 'hd-local-rehearsal'));
+  const repeat = await runHdHandler({ Records: [{ body: sent.at(-1).MessageBody }] }, {
+    env, portsFactory: async () => ports });
+  assert.equal(repeat.duplicate, true);
+  assert.equal(ports.calls.length, 1);
+  assert.equal(ports.states.get('hd-local-rehearsal').seenSignalIds.length, 10);
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-hd-rehearsal-'));
+  try {
+    const artifact = { classification: 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE',
+      acceptedJobSignals: results.reduce((sum, item) => sum + item.acceptedJobs, 0),
+      desired: ports.current().desiredTasks, metrics: ports.metrics.length, scaleRequests: ports.calls.length };
+    fs.writeFileSync(path.join(directory, 'mock-artifact.json'), JSON.stringify(artifact));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'mock-artifact.json'))).scaleRequests, 1);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

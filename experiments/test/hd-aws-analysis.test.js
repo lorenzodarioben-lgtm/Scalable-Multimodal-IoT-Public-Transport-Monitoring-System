@@ -26,6 +26,9 @@ test('aggregation rejects missing, duplicate, invalid, or unreviewed repeats', (
       runId: `${workloadClass}-${arm}-${repeatNumber}`, workloadClass, arm, repeatNumber,
       validity: 'PENDING_MANUAL_TIMELINE_REVIEW', reviewStatus: 'VALID',
       completedJobs: 100, submittedJobs: 100, expectedJobs: 100,
+      logicalDigest: `${workloadClass}-${repeatNumber}-logical`,
+      workerImage: '123.dkr.ecr.us-east-1.amazonaws.com/sit314-hd-transport-route-impact-worker:hd-frozen',
+      taskCpu: '256', taskMemory: '512',
       peakVisibleBacklog: arm === 'reactive' ? 100 : 80,
     }))));
   const result = aggregateHdRuns(runs);
@@ -38,6 +41,10 @@ test('aggregation rejects missing, duplicate, invalid, or unreviewed repeats', (
     ? { ...run, reviewStatus: 'UNREVIEWED' } : run)), /without VALID review/);
   assert.throws(() => aggregateHdRuns(runs.map((run, i) => i === 0
     ? { ...run, submittedJobs: 99 } : run)), /without VALID review/);
+  assert.throws(() => aggregateHdRuns(runs.map((run, i) => i === 0
+    ? { ...run, logicalDigest: 'different' } : run)), /not a matched workload/);
+  assert.throws(() => aggregateHdRuns(runs.map((run, i) => i === 0
+    ? { ...run, taskCpu: '512' } : run)), /one frozen taskCpu/);
 });
 
 test('SVG charts have independent single-unit axes and escaped labels', () => {
@@ -67,7 +74,8 @@ test('run analysis uses genuine historical BPT and rejects unreviewed validity',
       bpt: [{ timestamp: started, value: 91 }], oldestMessageAge: [{ timestamp: started, value: 8 }],
       predictive: { PredictionError: [{ timestamp: started, value: -2 }] } });
     write('scaling-activities.json', []); write('predictor-logs.json', []);
-    write('review.json', { runId: 'synthetic-hd-test', status: 'VALID' });
+    write('review.json', { runId: 'synthetic-hd-test', status: 'VALID',
+      reviewedAt: '2026-09-23T01:00:00Z', basis: 'Checked full timing and accounting evidence' });
     fs.writeFileSync(path.join(directory, 'samples.jsonl'), `${JSON.stringify({ timestamp: started,
       queue: { visibleMessages: 500 }, service: { runningCount: 1 },
       tasks: [{ taskId: 'ecs-existing', startedAt: '2026-09-22T23:59:00Z' }] })}\n${JSON.stringify({
