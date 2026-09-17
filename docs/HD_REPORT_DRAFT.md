@@ -44,7 +44,9 @@ The synthetic two-shape workload, 1–5 task range, single Academy region, appro
 
 ## References
 
-[1] Y. Wang, A. Chandra, J. Weissman, “Jingle: IoT-Informed Autoscaling for Efficient Resource Management in Edge Computing,” CCGrid 2024, doi:10.1109/CCGrid59990.2024.00052.  
-[2] M. Masdari, A. Khoshnevis, “A survey and classification of the workload forecasting methods in cloud computing,” *Cluster Computing* 23(4), 2399–2424, 2020, doi:10.1007/s10586-019-03010-3.  
-[3] J. Kumar, R. Goomer, A. K. Singh, “Long Short Term Memory Recurrent Neural Network (LSTM-RNN) Based Workload Forecasting Model for Cloud Datacenters,” *Procedia Computer Science* 125, 676–682, 2018, doi:10.1016/j.procs.2017.12.087.  
+[1] Y. Wang, A. Chandra, J. Weissman, “Jingle: IoT-Informed Autoscaling for Efficient Resource Management in Edge Computing,” CCGrid 2024, doi:10.1109/CCGrid59990.2024.00052.
+
+[2] M. Masdari, A. Khoshnevis, “A survey and classification of the workload forecasting methods in cloud computing,” *Cluster Computing* 23(4), 2399–2424, 2020, doi:10.1007/s10586-019-03010-3.
+
+[3] J. Kumar, R. Goomer, A. K. Singh, “Long Short Term Memory Recurrent Neural Network (LSTM-RNN) Based Workload Forecasting Model for Cloud Datacenters,” *Procedia Computer Science* 125, 676–682, 2018, doi:10.1016/j.procs.2017.12.087.
 [4] A. K. Mogal, V. P. Sonaje, “Predictive Autoscaling for Containerized Applications Using Machine Learning,” IC-CGU 2024, doi:10.1109/IC-CGU58078.2024.10530773.

@@ -13,7 +13,9 @@ try {
     New-Item -ItemType Directory -Force -Path (Join-Path $stage 'experiments/hd/aws') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $stage 'shared/hd') | Out-Null
     Copy-Item -LiteralPath (Join-Path $repoRoot 'package.json') -Destination (Join-Path $stage 'package.json')
-    Copy-Item -Path (Join-Path $repoRoot 'experiments/hd/aws/*.js') -Destination (Join-Path $stage 'experiments/hd/aws')
+    foreach ($source in @('handler.js', 'ports.js', 'signal-processor.js')) {
+        Copy-Item -LiteralPath (Join-Path $repoRoot "experiments/hd/aws/$source") -Destination (Join-Path $stage 'experiments/hd/aws')
+    }
     Copy-Item -LiteralPath (Join-Path $repoRoot 'experiments/hd/predictive-controller.js') -Destination (Join-Path $stage 'experiments/hd/predictive-controller.js')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'shared/hd/arrival-signal.js') -Destination (Join-Path $stage 'shared/hd/arrival-signal.js')
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $outputFull -Force
