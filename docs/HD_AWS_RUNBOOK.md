@@ -1,5 +1,7 @@
 # HD AWS execution runbook — TOMORROW ONLY
 
+**24 September partial-state checkpoint:** HD `queues`, `tables`, `hd-code` and `hd-signals` stacks are already `CREATE_COMPLETE`; the Lambda zip is in the HD code bucket. HD ECR repository exists but `hd-local` has **no verified image digest** after two stalled pushes. No HD ECS/scaling/predictor Lambda/smoke/formal run exists. Read `HD_READY_FOR_AWS.md` and its machine-readable checkpoint first; diagnose/finish the exact HD image push before moving to ECS. Do not blindly rerun already completed foundational deployment steps or delete partial HD resources.
+
 **Do not execute this runbook during the local-only sprint.** It contains live AWS calls and HD workload injection. The Distinction demonstration video must be recorded **before** starting any HD deployment. All stacks here use `sit314-hd-transport`; never use `sit314-transport` as the deployment prefix. Stop on any failed preflight, unexpectedly dirty D resources, missing Academy permission, timing-invalid run, queue/DLQ residue, or budget concern. Do not alter the D stacks or tag.
 
 ## A. Preconditions and first checks

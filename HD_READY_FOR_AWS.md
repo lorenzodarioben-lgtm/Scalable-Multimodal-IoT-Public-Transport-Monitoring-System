@@ -1,6 +1,6 @@
-# HD AWS readiness gate — 23 September 2026
+# HD AWS readiness gate — 24 September 2026
 
-This is a **local pre-AWS audit**, not a deployment instruction. No AWS call, HD deployment, workload or cleanup occurred in this sprint. The final Distinction demonstration video has **not** been recorded, so the absolute cloud-start prerequisite is unmet.
+The Distinction report and demonstration video are now completed/submitted. An authorised live readiness attempt was made in AWS Academy `us-east-1` as assumed role `voclabs/user4880853=s224658462@deakin.edu.au` (account `371985210444`). **No HD workload, formal repeat, or cloud cleanup was run.** This is a gate record, not permission to begin the formal matrix.
 
 | Gate | Local result |
 | --- | --- |
@@ -14,10 +14,18 @@ This is a **local pre-AWS audit**, not a deployment instruction. No AWS call, HD
 | Experiment/evidence analysis | 12-run matrix and timing guard frozen; mock twelve-run aggregation, invalid-attempt exclusion, genuine-BPT provenance gate and mock-watermarked charts tested. |
 | Report/appendix/rollback | Near-final report draft retains structured AWS placeholders; A–F appendix and exact evidence checklist prepared; HD-only cleanup requires later explicit authorisation. |
 | Secrets and dependency audit | No credential pattern found in edited HD sources/docs; `npm audit --omit=dev` reported 0 production vulnerabilities. |
-| Full verification | `npm test`: **231/231 passed**; `npm run lint:infra`: no findings; PowerShell parser/package check passed; `git diff --check` clean. |
+| Full verification | After the smoke-harness defect fix: `npm test` **232/232 passed**; `npm run lint:infra` no findings; PowerShell parser passed; `npm audit --omit=dev` zero production vulnerabilities; `git diff --check` clean. |
 
-Cloud-only smoke gates, deliberately not asserted here: fresh Academy identity/role permissions, Lambda's availability of required AWS SDK v3 modules (including `@aws-sdk/lib-dynamodb`), event-source mapping, live metric publication/timing and final clean HD baseline. The bounded 100-job smoke must pass before any formal HD repeat; a failed gate means stop, not redirect resources to D.
+## Live outcome and stop point
 
-**Blocking prerequisite:** record the Distinction video first. No AWS command is authorised by this document alone. After the video, obtain explicit cloud-work authorisation, fresh Academy credentials and enough lab time/budget, then follow `docs/HD_AWS_RUNBOOK.md` one step at a time.
+- Read-only D check before and after: D tag/HEAD remain `06071c37c536e73fb036bb4f60279d7e595d23c2`; D ECS remains **1/1/0** on the original task definition, target **1–5**, BPT target **75**, fast step **+4**, analysis queue/DLQ **0/0**. No tracked D file or D stack/policy/queue was modified.
+- The isolated HD `queues`, `tables`, `hd-code` and `hd-signals` CloudFormation stacks reached `CREATE_COMPLETE`. The HD Lambda zip was uploaded only to `sit314-hd-transport-371985210444-us-east-1-code/hd-predictor.zip`. The HD predictor-state table is `ACTIVE`.
+- Docker built the separate `sit314-hd-transport-route-impact-worker:hd-local` image and created its HD ECR repository. Two ECR push attempts stalled on the remaining layer (first roughly 12 minutes, second roughly 9 minutes). Read-only ECR verification returned **no tagged image/digest**. Both attempts were stopped; this was not an AWS permission denial. Exact transport/root cause is still unknown.
+- Therefore **HD ECS, scaling, predictor Lambda and the smoke were not deployed/run**. Academy permissions beyond the completed stack/ECR/S3 operations, Lambda SDK v3 runtime modules, event mapping, real forecast/scale timing and worker readiness remain unverified. Preserve the partial HD resources; do not treat them as a clean formal baseline or delete them without separate authorisation.
+- A genuine smoke-harness coverage defect was corrected locally in commit `422e6c7`: the old 100-job/two-signal smoke could not fill the frozen eight-bin history. The new bounded 1,150-job hybrid smoke changes no formal workload or controller parameter. It must pass its arrival, forecast, recommendation, single scale-out, new worker readiness, deduplication, accounting and DLQ checks before any formal run.
+
+Machine-readable read-only checkpoint: `artifacts/hd-smoke-readiness/2026-09-24-partial-deployment.json`. Next authorised step is to diagnose the HD ECR upload or safely resume the **same** HD image push; verify a digest before proceeding with HD ECS. Then complete isolated scaling/Lambda deployment and the smoke gate. Do not start a ramp or burst formal repeat from this partial state.
+
+**Material blocker:** no verified HD ECR image and no completed predictive smoke. Deployment alone would not establish readiness; the full real smoke path is required.
 
 NOT READY FOR AWS EXPERIMENT

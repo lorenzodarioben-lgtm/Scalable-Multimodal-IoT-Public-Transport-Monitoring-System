@@ -1,5 +1,7 @@
 # SIT314 6.4HD pre-AWS handoff — 23 September 2026
 
+**24 September live update:** The D report/video have since been completed/submitted and an authorised HD deployment attempt began. Four HD-only foundational stacks were created, but ECR never produced a tagged worker image after two stalled pushes. No HD ECS service, predictor Lambda, smoke or formal run was started. The old 100-job smoke was replaced by a tested 1,150-job hybrid smoke in commit `422e6c7`; frozen treatment/formal workloads are unchanged. `HD_READY_FOR_AWS.md` and `artifacts/hd-smoke-readiness/2026-09-24-partial-deployment.json` supersede the historical pre-AWS status below. **Current status: NOT READY FOR AWS EXPERIMENT.** Preserve partial HD resources and do not start a formal repeat.
+
 **LOCAL WORK COMPLETE; NO HD AWS EXPERIMENT RUN.** The Distinction demonstration video is still unrecorded. Do not call AWS, deploy, run workloads or clean cloud resources until that prerequisite and a new explicit authorisation are satisfied. Read `HD_READY_FOR_AWS.md` and `docs/HD_AWS_RUNBOOK.md` before later cloud work. The readiness gate currently concludes **NOT READY FOR AWS EXPERIMENT** because of the video.
 
 ## Version and D safety
