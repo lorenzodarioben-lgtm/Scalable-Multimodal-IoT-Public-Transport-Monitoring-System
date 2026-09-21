@@ -34,13 +34,46 @@ export function buildPredictiveSmokePlan(workload) {
   return groups;
 }
 
-function parsePredictorEvents(events, runId) {
+export function parsePredictorEvents(events, runId) {
   return events.flatMap((event) => {
     try {
-      const data = JSON.parse(event.message);
+      // Lambda adds a timestamp/request-id/level prefix to console JSON lines.
+      const jsonStart = event.message.indexOf('{');
+      if (jsonStart < 0) return [];
+      const data = JSON.parse(event.message.slice(jsonStart));
       return data.runId === runId ? [{ timestamp: event.timestamp, ...data }] : [];
     } catch { return []; }
   });
+}
+
+export function reviewPredictorLogEvidence(initialSummary, predictorLogs) {
+  const events = parsePredictorEvents(predictorLogs, initialSummary.runId);
+  const requests = events.filter((event) => event.result?.scaleRequested);
+  const checks = {
+    ...initialSummary.checks,
+    acceptedSignals: events.filter((event) => event.result?.acceptedJobs > 0).length === 11,
+    duplicateDeliveriesSuppressed: events.filter((event) => event.result?.duplicate
+      && event.result?.acceptedJobs === 0).length >= 2,
+    onePredictiveRequest: requests.length === 1 && requests[0].result.target >= 2
+      && requests[0].result.target <= 5,
+    noPredictiveScaleIn: requests.every((event) => event.result.target >= 2),
+  };
+  return { ...initialSummary, scaleRequests: requests.map((event) => ({
+    timestamp: event.timestamp, result: event.result,
+  })), checks, passed: Object.values(checks).every(Boolean),
+  review: { kind: 'post-hoc log-parser correction; same smoke artifact; no workload rerun',
+    parsedPredictorEvents: events.length, originalPassed: initialSummary.passed } };
+}
+
+function reviewExistingSmoke(runDirectory) {
+  const allowedRoot = path.join(root, 'artifacts/hd-smoke-runs');
+  const resolved = path.resolve(runDirectory);
+  if (path.dirname(resolved) !== allowedRoot) throw new Error('review path must be one HD smoke run directory');
+  const read = (name) => JSON.parse(fs.readFileSync(path.join(resolved, name), 'utf8'));
+  const reviewed = reviewPredictorLogEvidence(read('summary.json'), read('predictor-logs.json'));
+  fs.writeFileSync(path.join(resolved, 'summary-reviewed.json'), `${JSON.stringify(reviewed, null, 2)}\n`);
+  process.stdout.write(`HD SMOKE OFFLINE REVIEW ${reviewed.passed ? 'PASS' : 'INCOMPLETE'} ${resolved}\n`);
+  if (!reviewed.passed) process.exitCode = 1;
 }
 
 async function main() {
@@ -101,7 +134,7 @@ async function main() {
       state = await ports.getState(runId);
       try { await control.signalQueuesClean(); queuesClean = true; }
       catch { queuesClean = false; }
-      if (state?.lastRequestedTasks > 1 && sample.service.runningCount > 1
+      if (state?.controllerState?.lastRequestedTasks > 1 && sample.service.runningCount > 1
         && sample.queue.visibleMessages === 0 && sample.queue.inFlightMessages === 0
         && queuesClean) break;
       await sleep(5000);
@@ -182,5 +215,7 @@ async function main() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main();
+  const reviewIndex = process.argv.indexOf('--review-existing-smoke');
+  if (reviewIndex >= 0) reviewExistingSmoke(process.argv[reviewIndex + 1]);
+  else main();
 }

@@ -41,6 +41,7 @@
     "tap": "node scripts/mqtt-tap.js"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.1125.0",
     "@sit314/notification-worker": "*",
     "@sit314/route-impact-worker": "*",
     "@sit314/shared": "*",
