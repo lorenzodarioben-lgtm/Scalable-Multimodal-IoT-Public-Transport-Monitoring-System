@@ -91,6 +91,45 @@ test('HD runner withholds validity when required historical metrics are absent',
   } finally { fs.rmSync(outputDir, { recursive: true, force: true }); }
 });
 
+test('hybrid formal runner validates real Lambda log prefix and fails closed if absent', async () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sit314-hd-predictor-log-'));
+  let clock = Date.parse('2026-09-23T02:00:00Z');
+  const controller = fakeController(() => new Date(clock));
+  const runId = 'fake-hybrid-log-gate';
+  controller.collectHistory = async () => ({ source: 'genuine historical CloudWatch GetMetricStatistics',
+    bpt: [{ timestamp: new Date(clock).toISOString(), value: 0 }], oldestMessageAge: [],
+    predictive: { AnalysisArrivalRate: [{ value: 50 }],
+      PredictedArrivalRate: [{ value: 60 }], PredictionError: [{ value: -10 }],
+      PredictiveScaleRequest: [{ value: 2 }] } });
+  controller.predictorLogs = async () => controller.signals.map((signal, index) => ({
+    timestamp: new Date(clock).toISOString(),
+    message: `${new Date(clock).toISOString()}\t469a5a77-7d64-5d0b-ab30-395966c0e5cf\tINFO\t${JSON.stringify({
+      runId, signalId: signal.signalId, result: { acceptedJobs: 50,
+        scaleRequested: index === 0, target: index === 0 ? 2 : null,
+        requestedAtMs: clock, decisionAtMs: clock } })}` }));
+  try {
+    const run = async (logs) => {
+      controller.predictorLogs = logs;
+      return runHdAwsExperiment({ config, profile, arm: 'hybrid', repeatNumber: 1,
+        executionNamespace: runId, controller, outputDir, now: () => new Date(clock),
+        sleep: async (ms) => { clock += ms; }, setIntervalFn: () => 1,
+        clearIntervalFn: () => {}, metricsGraceMs: 0 });
+    };
+    const observed = controller.predictorLogs;
+    const valid = await run(observed);
+    assert.equal(valid.summary.validity, 'PENDING_MANUAL_TIMELINE_REVIEW');
+    assert.equal(valid.summary.hdPredictorLogEvidence.acceptedSignals, 3);
+    assert.equal(valid.summary.hdPredictorLogEvidence.uniqueAcceptedSignals, 3);
+    assert.equal(valid.summary.hdPredictorLogEvidence.acceptedJobs, 150);
+    assert.equal(valid.summary.hdPredictorLogEvidence.scaleRequests, 1);
+    controller.signals.length = 0;
+    const missing = await run(async () => []);
+    assert.equal(missing.summary.validity, 'PENDING_REQUIRED_METRICS');
+    assert.ok(missing.summary.missingRequiredMetrics.includes('parsed predictor Lambda signal logs'));
+    assert.ok(missing.summary.missingRequiredMetrics.includes('parsed predictor Lambda scale-request logs'));
+  } finally { fs.rmSync(outputDir, { recursive: true, force: true }); }
+});
+
 test('measurement task-seconds clip piecewise capacity to the declared window', () => {
   const origin = Date.parse('2026-09-23T00:00:00Z');
   const sample = (second, runningCount) => ({ timestamp: new Date(origin + second * 1000).toISOString(),

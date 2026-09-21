@@ -32,3 +32,14 @@ test('HD deployment/image/mode wrappers require explicit switches before AWS and
   assert.match(read('infrastructure/scripts/build-hd-image.ps1'), /-Prefix 'sit314-hd-transport'/);
   assert.match(read('experiments/hd/aws/run-hd-aws-experiment.js'), /HD-only resource prefix required/);
 });
+
+test('optional HD notification consumer is guarded by its exact image repository and digest', () => {
+  const build = read('infrastructure/scripts/build-hd-image.ps1');
+  const deploy = read('infrastructure/scripts/deploy-hd.ps1');
+  assert.match(build, /ValidateSet\('route-impact-worker', 'notification-worker'\)/);
+  assert.match(build, /-Services @\(\$Service\)/);
+  assert.match(deploy, /\$hdPrefix-notification-worker:/);
+  assert.match(deploy, /HD notification image has no verified ECR digest/);
+  assert.match(deploy, /\$arguments\.NotificationWorkerImage = \$NotificationWorkerImage/);
+  assert.match(deploy, /\$arguments\.WhatIfOnly = \$true/);
+});

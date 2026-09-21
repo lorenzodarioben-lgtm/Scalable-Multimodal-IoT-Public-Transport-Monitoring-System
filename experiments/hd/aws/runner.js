@@ -8,6 +8,7 @@ import { createAwsArtifactWriter } from '../../aws/artifacts.js';
 import { buildAwsSummary } from '../../aws/summary.js';
 import { createHdAwsWorkload } from './workload.js';
 import { integrateRunningTaskSeconds } from './task-seconds.js';
+import { parsePredictorEvents } from './predictor-logs.js';
 
 const date = (value) => value instanceof Date ? value : new Date(value);
 
@@ -254,6 +255,13 @@ export async function runHdAwsExperiment({
   const history = await controller.collectHistory({ runId: executionNamespace,
     startedAt: manifest.workloadStartedAt, finishedAt });
   writer.writeJson('cloudwatch-history.json', history);
+  const parsedPredictorEvents = parsePredictorEvents(predictorLogs, executionNamespace);
+  const acceptedPredictorEvents = parsedPredictorEvents.filter((event) => event.result.acceptedJobs > 0);
+  summary.hdPredictorLogEvidence = { parsedEvents: parsedPredictorEvents.length,
+    acceptedSignals: acceptedPredictorEvents.length,
+    uniqueAcceptedSignals: new Set(acceptedPredictorEvents.map((event) => event.signalId)).size,
+    acceptedJobs: acceptedPredictorEvents.reduce((sum, event) => sum + event.result.acceptedJobs, 0),
+    scaleRequests: parsedPredictorEvents.filter((event) => event.result.scaleRequested).length };
   summary.hdHistory = {
     source: history.source,
     peakBacklogPerTask: history.bpt.length ? Math.max(...history.bpt.map((x) => x.value)) : null,
@@ -284,6 +292,15 @@ export async function runHdAwsExperiment({
   }
   if (arm === 'hybrid' && !(history.predictive?.PredictionError?.length > 0)) {
     missingRequiredMetrics.push('PredictionError');
+  }
+  if (arm === 'hybrid' && (summary.hdPredictorLogEvidence.acceptedSignals !== workload.incidentCount
+    || summary.hdPredictorLogEvidence.uniqueAcceptedSignals !== workload.incidentCount
+    || summary.hdPredictorLogEvidence.acceptedJobs !== workload.expectedAnalysisJobs)) {
+    missingRequiredMetrics.push('parsed predictor Lambda signal logs');
+  }
+  if (arm === 'hybrid' && (history.predictive?.PredictiveScaleRequest?.length > 0)
+    && summary.hdPredictorLogEvidence.scaleRequests === 0) {
+    missingRequiredMetrics.push('parsed predictor Lambda scale-request logs');
   }
   if (samples.some((sample) => sample.queue?.visibleMessages > 0)
     && !history.oldestMessageAge.length) missingRequiredMetrics.push('ApproximateAgeOfOldestMessage');

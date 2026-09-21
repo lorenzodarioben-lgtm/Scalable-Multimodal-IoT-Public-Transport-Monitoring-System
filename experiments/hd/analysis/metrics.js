@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { profileArrivalRates } from '../workload-profile.js';
+import { parsePredictorEvents } from '../aws/predictor-logs.js';
 
 function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
 function readJsonl(file) {
@@ -29,16 +30,14 @@ export function describe(values) {
 }
 
 function predictedRequests(logs, namespace) {
-  return logs.flatMap((event) => {
-    try {
-      const item = JSON.parse(event.message);
-      if (item.runId !== namespace || !item.result?.scaleRequested) return [];
-      return [{ atMs: Number(item.result.requestedAtMs),
-        desiredTasks: Number(item.result.target),
-        decisionAtMs: Number(item.result.decisionAtMs),
-        logTimestamp: event.timestamp }];
-    } catch { return []; }
-  }).filter((item) => Number.isFinite(item.atMs)).sort((a, b) => a.atMs - b.atMs);
+  return parsePredictorEvents(logs, namespace).filter((item) => item.result.scaleRequested)
+    .map((item) => ({ atMs: Number(item.result.requestedAtMs),
+      desiredTasks: Number(item.result.target),
+      decisionAtMs: Number(item.result.decisionAtMs),
+      logTimestamp: item.timestamp }))
+    .filter((item) => Number.isFinite(item.atMs) && Number.isInteger(item.desiredTasks)
+      && item.desiredTasks >= 2 && item.desiredTasks <= 5)
+    .sort((a, b) => a.atMs - b.atMs);
 }
 
 function reactiveRequests(activities) {
@@ -78,6 +77,7 @@ export function analyseHdRun(runDir, profile, { allowMock = false } = {}) {
     throw new Error('historical BacklogPerTask datapoints are missing');
   }
   const namespace = manifest.workload.executionNamespace;
+  const predictorEvents = parsePredictorEvents(logs, namespace);
   const predictive = predictedRequests(logs, namespace);
   const reactive = reactiveRequests(activities);
   const requests = [...predictive.map((item) => ({ ...item, source: 'predictive' })),
@@ -111,6 +111,12 @@ export function analyseHdRun(runDir, profile, { allowMock = false } = {}) {
     .filter((value) => Number.isFinite(value));
   const taskCounts = samples.map((sample) => sample.service?.runningCount)
     .filter((value) => Number.isFinite(value));
+  const taskCountTimeline = samples.map((sample) => ({ timestamp: sample.timestamp,
+    desired: sample.service?.desiredCount, running: sample.service?.runningCount,
+    pending: sample.service?.pendingCount }));
+  const queueTimeline = samples.map((sample) => ({ timestamp: sample.timestamp,
+    visible: sample.queue?.visibleMessages, inFlight: sample.queue?.inFlightMessages,
+    oldestMessageAgeSeconds: sample.queue?.oldestMessageAgeSeconds }));
   const reviewPath = path.join(runDir, 'review.json');
   const review = fs.existsSync(reviewPath) ? readJson(reviewPath) : null;
   return {
@@ -175,6 +181,12 @@ export function analyseHdRun(runDir, profile, { allowMock = false } = {}) {
     unaccountedJobs: summary.results.lostOrUnaccounted,
     predictiveRequests: predictive,
     reactiveRequests: reactive,
+    predictorSamples: predictorEvents.filter((event) => event.result.acceptedJobs > 0)
+      .map((event) => ({ timestamp: event.timestamp, signalId: event.signalId,
+        result: event.result })),
+    predictedRateTimeline: history.predictive?.PredictedArrivalRate || [],
+    recommendationTimeline: history.predictive?.PredictiveRecommendedTasks || [],
+    taskCountTimeline, queueTimeline,
     raw: { samples, history },
   };
 }

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { analyseDirectory } from '../hd/analysis/aggregate.js';
+import { parsePredictorEvents } from '../hd/aws/predictor-logs.js';
 
 const classification = 'MOCK DATA; NOT EXPERIMENTAL EVIDENCE';
 const startedAt = '2026-09-23T00:00:00Z';
@@ -43,9 +44,10 @@ function createMockRun(root, workloadClass, arm, repeatNumber, { invalid = false
   write(directory, 'scaling-activities.json', arm === 'reactive'
     ? [{ Description: 'Setting desired count to 5.', StartTime: iso(100) }] : []);
   write(directory, 'predictor-logs.json', arm === 'hybrid'
-    ? [{ timestamp: iso(40), message: JSON.stringify({ runId, result: {
-      scaleRequested: true, target: 5, requestedAtMs: Date.parse(iso(40)), decisionAtMs: Date.parse(iso(40)),
-    } }) }] : []);
+    ? [{ timestamp: iso(40), message: `${iso(40)}\t469a5a77-7d64-5d0b-ab30-395966c0e5cf\tINFO\t${JSON.stringify({ runId, signalId: 'signal-4', result: {
+      acceptedJobs: 100, scaleRequested: true, target: 5,
+      requestedAtMs: Date.parse(iso(40)), decisionAtMs: Date.parse(iso(40)),
+    } })}` }] : []);
   write(directory, 'review.json', { runId, status: 'VALID', reviewedAt: iso(700),
     basis: 'Mock fixture timing and accounting verified' });
   fs.writeFileSync(path.join(directory, 'samples.jsonl'), [
@@ -77,6 +79,15 @@ test('full mock pipeline retains invalid attempts, calculates means and stamps c
     assert.equal(ramp.hybrid.metrics.peakVisibleBacklog.mean, 100);
     assert.equal(ramp.hybrid.metrics.taskSeconds.mean, 700);
     assert.equal(ramp.hybrid.metrics.predictionMaeJobsPerSecond.mean, 5);
+    const hybridFixture = path.join(input, 'MOCK-PREDICTABLE_RAMP-hybrid-r1');
+    assert.equal(parsePredictorEvents(JSON.parse(fs.readFileSync(path.join(hybridFixture,
+      'predictor-logs.json'), 'utf8')), 'MOCK-PREDICTABLE_RAMP-hybrid-r1').length, 1);
+    const hybridRun = result.runs.find((run) => run.runId === 'MOCK-PREDICTABLE_RAMP-hybrid-r1');
+    assert.equal(hybridRun.predictiveRequests[0].desiredTasks, 5);
+    assert.equal(hybridRun.predictorSamples[0].signalId, 'signal-4');
+    assert.equal(hybridRun.predictedRateTimeline[0].value, 25);
+    assert.equal(hybridRun.queueTimeline[1].visible, 100);
+    assert.equal(hybridRun.taskCountTimeline.at(-1).running, 5);
     assert.deepEqual(ramp.reactive.metrics.peakVisibleBacklog.raw, [200, 200, 200]);
     assert.match(fs.readFileSync(path.join(output, 'comparison.md'), 'utf8'), /-50%/);
     const svg = fs.readFileSync(path.join(output, 'charts/PREDICTABLE_RAMP/visible-backlog-comparison.svg'), 'utf8');

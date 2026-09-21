@@ -8,6 +8,8 @@ import { createAnalysisArrivalSignal } from '../../../shared/hd/arrival-signal.j
 import { loadHdAwsConfiguration, createHdAwsWorkload } from './workload.js';
 import { HdAwsControlPlane } from './control-plane.js';
 import { createHdAwsPorts } from './ports.js';
+import { parsePredictorEvents } from './predictor-logs.js';
+export { parsePredictorEvents } from './predictor-logs.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const prefix = 'sit314-hd-transport';
@@ -34,18 +36,6 @@ export function buildPredictiveSmokePlan(workload) {
   return groups;
 }
 
-export function parsePredictorEvents(events, runId) {
-  return events.flatMap((event) => {
-    try {
-      // Lambda adds a timestamp/request-id/level prefix to console JSON lines.
-      const jsonStart = event.message.indexOf('{');
-      if (jsonStart < 0) return [];
-      const data = JSON.parse(event.message.slice(jsonStart));
-      return data.runId === runId ? [{ timestamp: event.timestamp, ...data }] : [];
-    } catch { return []; }
-  });
-}
-
 export function reviewPredictorLogEvidence(initialSummary, predictorLogs) {
   const events = parsePredictorEvents(predictorLogs, initialSummary.runId);
   const requests = events.filter((event) => event.result?.scaleRequested);
@@ -63,6 +53,84 @@ export function reviewPredictorLogEvidence(initialSummary, predictorLogs) {
   })), checks, passed: Object.values(checks).every(Boolean),
   review: { kind: 'post-hoc log-parser correction; same smoke artifact; no workload rerun',
     parsedPredictorEvents: events.length, originalPassed: initialSummary.passed } };
+}
+
+/** The live and offline paths apply identical fail-closed checks to preserved evidence. */
+export function summariseSmokeEvidence({ manifest, dispatches, preflight, state, accounting,
+  samples, workerLogs, predictorLogs, history, signalQueuesClean }) {
+  const events = parsePredictorEvents(predictorLogs, manifest?.runId);
+  const requests = events.filter((event) => event.result.scaleRequested);
+  const newTasks = (samples || []).flatMap((sample) => sample.tasks || [])
+    .filter((task) => task.lastStatus === 'RUNNING'
+      && Date.parse(task.startedAt) >= Date.parse(manifest?.startedAt));
+  const newTaskIds = new Set(newTasks.map((task) => task.taskId.replace(/^ecs-/, '')));
+  const ready = (workerLogs || []).filter((event) => event.message?.includes('[WORKER_READY]')
+    && [...newTaskIds].some((id) => event.logStreamName?.includes(id)));
+  const plannedJobs = dispatches?.reduce((sum, item) => sum + item.jobs, 0);
+  const accepted = events.filter((event) => event.result.acceptedJobs > 0);
+  const duplicate = events.filter((event) => event.result.duplicate
+    && event.result.acceptedJobs === 0);
+  const publishedRate = history?.predictive?.AnalysisArrivalRate || [];
+  const expectedPeakRate = Math.max(0, ...(dispatches || []).map((item) => item.jobs / 10));
+  const checks = {
+    acceptedSignals: accepted.length === manifest?.signalCount
+      && new Set(accepted.map((event) => event.signalId)).size === manifest.signalCount
+      && accepted.reduce((sum, event) => sum + event.result.acceptedJobs, 0) === manifest.expectedJobs,
+    duplicateDeliveriesSuppressed: duplicate.length >= manifest?.duplicateDeliveryCount
+      && new Set(duplicate.map((event) => event.signalId)).size >= manifest.duplicateDeliveryCount,
+    stateRetainedElevenIds: state?.seenSignalIds?.length === manifest?.signalCount
+      && new Set(state.seenSignalIds).size === manifest.signalCount,
+    sensibleArrivalRate: expectedPeakRate > 0 && publishedRate.some((point) =>
+      point.value >= expectedPeakRate * 0.8 && point.value <= expectedPeakRate * 1.4),
+    forecastPublished: (history?.predictive?.PredictedArrivalRate || []).length > 0,
+    recommendationPublished: (history?.predictive?.PredictiveRecommendedTasks || [])
+      .some((point) => point.value >= 2 && point.value <= 5),
+    scaleRequestPublished: (history?.predictive?.PredictiveScaleRequest || [])
+      .some((point) => point.value >= 2 && point.value <= 5),
+    onePredictiveRequest: requests.length === 1 && requests[0].result.target >= 2
+      && requests[0].result.target <= 5,
+    noPredictiveScaleIn: requests.every((event) => event.result.target >= 2),
+    newEcsTaskRunning: newTaskIds.size > 0,
+    newWorkerReady: ready.length > 0,
+    jobsReconciled: plannedJobs === manifest?.expectedJobs
+      && accounting?.resultsProduced === manifest.expectedJobs
+      && accounting.duplicateResults === 0 && accounting.queueRemaining === 0
+      && accounting.dlqDepth === 0,
+    noWorkerErrors: Array.isArray(workerLogs) && workerLogs.length > 0
+      && !workerLogs.some((event) => event.message?.includes('[PROCESSING-FAILED]')),
+    signalQueuesClean: signalQueuesClean === true,
+    reactivePoliciesRetained: preflight?.scaling?.targetBacklogPerTask === 75
+      && preflight.scaling.fastStepIncrease === 4,
+    separateMetricNamespace: history?.source === 'genuine historical CloudWatch GetMetricStatistics',
+  };
+  return { classification: manifest?.classification, runId: manifest?.runId,
+    expectedJobs: manifest?.expectedJobs, completedJobs: accounting?.resultsProduced,
+    newTaskIds: [...newTaskIds], workerReadyEvents: ready.map((event) => ({
+      timestamp: event.timestamp, logStreamName: event.logStreamName, message: event.message })),
+    scaleRequests: requests.map((event) => ({ timestamp: event.timestamp, result: event.result })),
+    checks, passed: Object.values(checks).every(Boolean) };
+}
+
+function reprocessExistingSmoke(runDirectory) {
+  const allowedRoot = path.join(root, 'artifacts/hd-smoke-runs');
+  const resolved = path.resolve(runDirectory);
+  if (path.dirname(resolved) !== allowedRoot) throw new Error('reprocess path must be one HD smoke run directory');
+  const read = (name) => JSON.parse(fs.readFileSync(path.join(resolved, name), 'utf8'));
+  const original = read('summary.json');
+  const reviewed = read('summary-reviewed.json');
+  const summary = summariseSmokeEvidence({ manifest: read('manifest.json'),
+    dispatches: read('dispatches.json'), preflight: read('preflight.json').preflight,
+    state: read('predictor-state.json'), accounting: read('accounting.json'),
+    samples: read('samples.json'), workerLogs: read('worker-logs.json'),
+    predictorLogs: read('predictor-logs.json'), history: read('cloudwatch-history.json'),
+    // The original live gate recorded this attestation, but not a separate final signal snapshot.
+    signalQueuesClean: original.checks?.signalQueuesClean });
+  summary.reprocessing = { kind: 'automatic re-evaluation of preserved smoke evidence; no workload rerun',
+    signalQueuesCleanSource: 'original live summary attestation',
+    agreesWithReviewed: summary.passed === reviewed.passed };
+  fs.writeFileSync(path.join(resolved, 'summary-corrected.json'), `${JSON.stringify(summary, null, 2)}\n`);
+  process.stdout.write(`HD SMOKE OFFLINE AUTOMATIC ${summary.passed ? 'PASS' : 'INCOMPLETE'} ${resolved}\n`);
+  if (!summary.passed || !summary.reprocessing.agreesWithReviewed) process.exitCode = 1;
 }
 
 function reviewExistingSmoke(runDirectory) {
@@ -166,44 +234,8 @@ async function main() {
     await sleep(60_000); // CloudWatch historical metric ingestion, outside smoke injection.
     const history = await control.collectHistory({ runId, startedAt: manifest.startedAt, finishedAt: at() });
     write('cloudwatch-history.json', history);
-    const events = parsePredictorEvents(predictorLogs, runId);
-    const requests = events.filter((event) => event.result?.scaleRequested);
-    const newTasks = samples.flatMap((sample) => sample.tasks || [])
-      .filter((task) => Date.parse(task.startedAt) >= Date.parse(manifest.startedAt));
-    const newTaskIds = new Set(newTasks.map((task) => task.taskId.replace(/^ecs-/, '')));
-    const ready = workerLogs.filter((event) => event.message.includes('[WORKER_READY]')
-      && [...newTaskIds].some((id) => event.logStreamName?.includes(id)));
-    const checks = {
-      acceptedSignals: events.filter((event) => event.result?.acceptedJobs > 0).length === 11,
-      duplicateDeliveriesSuppressed: events.filter((event) => event.result?.duplicate
-        && event.result?.acceptedJobs === 0).length >= 2,
-      stateRetainedElevenIds: state?.seenSignalIds?.length === 11,
-      sensibleArrivalRate: history.predictive.AnalysisArrivalRate.some((point) => point.value >= 20
-        && point.value <= 35),
-      forecastPublished: history.predictive.PredictedArrivalRate.length > 0,
-      recommendationPublished: history.predictive.PredictiveRecommendedTasks.some((point) =>
-        point.value >= 2 && point.value <= 5),
-      scaleRequestPublished: history.predictive.PredictiveScaleRequest.some((point) =>
-        point.value >= 2 && point.value <= 5),
-      onePredictiveRequest: requests.length === 1 && requests[0].result.target >= 2
-        && requests[0].result.target <= 5,
-      noPredictiveScaleIn: requests.every((event) => event.result.target >= 2),
-      newEcsTaskRunning: newTaskIds.size > 0,
-      newWorkerReady: ready.length > 0,
-      jobsReconciled: accounting.resultsProduced === 1150 && accounting.duplicateResults === 0
-        && accounting.queueRemaining === 0 && accounting.dlqDepth === 0,
-      noWorkerErrors: !workerLogs.some((event) => event.message.includes('[PROCESSING-FAILED]')),
-      signalQueuesClean: queuesClean,
-      reactivePoliciesRetained: preflight.scaling.targetBacklogPerTask === 75
-        && preflight.scaling.fastStepIncrease === 4,
-      separateMetricNamespace: history.source === 'genuine historical CloudWatch GetMetricStatistics',
-    };
-    const summary = { classification: manifest.classification, runId, expectedJobs: 1150,
-      completedJobs: accounting.resultsProduced, newTaskIds: [...newTaskIds],
-      workerReadyEvents: ready.map((event) => ({ timestamp: event.timestamp,
-        logStreamName: event.logStreamName, message: event.message })),
-      scaleRequests: requests.map((event) => ({ timestamp: event.timestamp, result: event.result })),
-      checks, passed: Object.values(checks).every(Boolean) };
+    const summary = summariseSmokeEvidence({ manifest, dispatches, preflight, state,
+      accounting, samples, workerLogs, predictorLogs, history, signalQueuesClean: queuesClean });
     write('summary.json', summary);
     process.stdout.write(`HD PREDICTIVE SMOKE ${summary.passed ? 'PASS' : 'INCOMPLETE'} ${runDir}\n`);
     if (!summary.passed) process.exitCode = 1;
@@ -216,6 +248,8 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const reviewIndex = process.argv.indexOf('--review-existing-smoke');
-  if (reviewIndex >= 0) reviewExistingSmoke(process.argv[reviewIndex + 1]);
+  const reprocessIndex = process.argv.indexOf('--reprocess-existing-smoke');
+  if (reprocessIndex >= 0) reprocessExistingSmoke(process.argv[reprocessIndex + 1]);
+  else if (reviewIndex >= 0) reviewExistingSmoke(process.argv[reviewIndex + 1]);
   else main();
 }
