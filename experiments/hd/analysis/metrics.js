@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { profileArrivalRates } from '../workload-profile.js';
 import { parsePredictorEvents } from '../aws/predictor-logs.js';
+import { readHdSummary } from './summary-evidence.js';
 
 function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
 function readJsonl(file) {
@@ -57,7 +58,7 @@ export function firstOverloadOffsetSeconds(profile, capacityJobsPerSecond = 42.4
 
 export function analyseHdRun(runDir, profile, { allowMock = false } = {}) {
   const manifest = readJson(path.join(runDir, 'manifest.json'));
-  const summary = readJson(path.join(runDir, 'summary.json'));
+  const summary = readHdSummary(runDir);
   const history = readJson(path.join(runDir, 'cloudwatch-history.json'));
   const samples = readJsonl(path.join(runDir, 'samples.jsonl'));
   const activities = readJson(path.join(runDir, 'scaling-activities.json'));

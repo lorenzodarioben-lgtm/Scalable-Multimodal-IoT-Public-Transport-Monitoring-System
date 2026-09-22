@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyseHdRun, aggregateHdRuns, percentChange } from './metrics.js';
+import { readHdSummary } from './summary-evidence.js';
 import { barChart, writeRunCharts, writeComparisonCharts } from './charts.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -48,7 +49,7 @@ export function analyseDirectory(inputDir, outputDir, { preview = false, mock = 
       excluded.push({ runId: manifest.runId, validity: 'INCOMPLETE_ARTIFACT', reviewStatus: 'UNREVIEWED' });
       continue;
     }
-    const summary = JSON.parse(fs.readFileSync(summaryFile, 'utf8'));
+    const summary = readHdSummary(directory);
     if (summary.validity !== 'PENDING_MANUAL_TIMELINE_REVIEW') {
       excluded.push({ runId: manifest.runId, validity: summary.validity, reviewStatus: 'UNREVIEWED' });
       continue;

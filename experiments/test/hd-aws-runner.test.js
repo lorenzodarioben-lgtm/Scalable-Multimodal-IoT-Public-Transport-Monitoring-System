@@ -140,8 +140,10 @@ test('measurement task-seconds clip piecewise capacity to the declared window', 
   ], new Date(origin + 10_000).toISOString(), new Date(origin + 50_000).toISOString()), 100);
   assert.throws(() => integrateRunningTaskSeconds([sample(20, 1), sample(60, 1)],
     new Date(origin + 10_000).toISOString(), new Date(origin + 50_000).toISOString()), /cover/);
-  assert.throws(() => integrateRunningTaskSeconds([sample(0, 1), sample(30, 3), sample(20, 1)],
-    new Date(origin + 10_000).toISOString(), new Date(origin + 20_000).toISOString()), /increase/);
+  assert.equal(integrateRunningTaskSeconds([sample(0, 1), sample(30, 3), sample(20, 1)],
+    new Date(origin + 10_000).toISOString(), new Date(origin + 20_000).toISOString()), 10);
+  assert.throws(() => integrateRunningTaskSeconds([sample(0, 1), sample(20, 1), sample(20, 2)],
+    new Date(origin + 10_000).toISOString(), new Date(origin + 20_000).toISOString()), /unique/);
 });
 
 test('HD preflight requires the frozen target, fast alarm, and selected controller mode', () => {
