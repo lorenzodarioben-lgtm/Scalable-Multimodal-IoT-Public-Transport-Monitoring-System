@@ -18,10 +18,20 @@ The formal runner now records parsed predictor-signal/request counts and withhol
 
 Local verification: focused tests **15/15**, full `npm test` **236/236**, `npm run lint:infra` clean, PowerShell parsing clean, `npm audit --omit=dev --json` **0 production vulnerabilities** (119 production dependencies), and `git diff --check` clean.
 
-## Current AWS state and unresolved gate
+## Final isolation decision and current AWS state
 
 HD route-impact ECS **1/1/0**, notification ECS **1/1/0**; HD scalable target **1–5**, target tracking BPT **75**, fast step scale-out **+4** and alarm **OK**. The Lambda is `Active` in `hybrid` mode with frozen controller settings. Strongly consistent predictor state has `pendingScaleRequest: null`; ECS is idle at one task. Genuine recent `SIT314/HDTransport BacklogPerTask` datapoints are **0**. All eight HD queues/DLQs (analysis, arrival FIFO, notification, telemetry and their DLQs) are **0 visible / 0 in flight**.
 
-D route-impact ECS is **1/1/0** on the original task definition; target **1–5**, BPT **75**, fast **+4** policy and final D tag `sit314-6.3d-final^{}` at `06071c37c536e73fb036bb4f60279d7e595d23c2` remain intact. D analysis, analysis DLQ, telemetry and telemetry DLQ are **0/0**. However, the separate **D notification queue has 1,093,968 visible / 0 in flight** (notification DLQ 0/0). No prior count was captured in this HD checkpoint, so its age/change cannot be quantified; this run did not touch it. The user's explicit all-D-queues-clean gate is therefore not met. Do not purge or deploy to D under the current authorisation.
+D route-impact ECS is **1/1/0** on the original task definition; target **1–5**, BPT **75**, fast **+4** policy and final D tag `sit314-6.3d-final^{}` at `06071c37c536e73fb036bb4f60279d7e595d23c2` remain intact. D analysis and analysis DLQ are **0/0**. The separate D notification queue has **1,093,968 visible / 0 in flight** (notification DLQ 0/0). This is **KNOWN PRE-EXISTING OUT-OF-SCOPE DISTINCTION STATE** under the user's corrected readiness criterion. It was not touched by HD work and must not be purged, drained or given a D consumer as part of the HD experiment.
 
-**NOT READY FOR AWS EXPERIMENT.** The HD readiness blockers are resolved, but the separately required D notification queue clean check fails. Exact next step: obtain a scoped decision on whether this D notification backlog is an accepted out-of-scope D baseline or must be handled under separate D authorisation. Until that decision, do not start a formal HD ramp or burst experiment.
+The seven required isolation checks were verified from source **and** deployed configuration on 24 September:
+
+1. HD notification consumption uses `QUEUES.notifications` derived from deployed `RESOURCE_PREFIX=sit314-hd-transport`; it cannot select the D queue.
+2. HD route-impact alert writes use that same HD-derived queue; no D notification queue URL is supplied.
+3. The deployed HD route-impact and notification ECS task definitions contain only HD prefix/namespace configuration; the HD predictor Lambda environment contains only HD analysis URL, HD prefix/state table and frozen controller settings. The ECS stack imports notification ARN from `sit314-hd-transport-queues`, not the D stack.
+4. The formal collector resolves `${prefix}-analysis`/`${prefix}-analysis-results`; its CloudWatch history reads the HD BPT dimension and `AWS/SQS` oldest-age dimension for the HD analysis queue. It does not read D notification queue metrics.
+5. Deployed target tracking and fast alarm use `SIT314/HDTransport`; live BPT metric dimension is `ServiceName=sit314-hd-transport-route-impact`. Predictor metrics use HD namespace and that service plus per-run `RunId`.
+6. Per-run clean-state inspection is of HD analysis/DLQ, HD arrival/DLQ, HD notification/DLQ, HD ECS and HD BPT. The formal control-plane preflight is HD-prefixed; the operator additionally checks HD notification/DLQ before each run. The historical D notification queue is excluded.
+7. D analysis queue/DLQ remained 0/0; D ECS stayed 1/1/0 on the same task definition and D target tracking 75, range 1–5 and fast +4 remained intact. No D resource was modified.
+
+**READY FOR AWS EXPERIMENT.** The historical D notification backlog is explicitly out of scope. The next task is the frozen 12-run formal HD matrix, with a fresh HD-only clean-state gate before every run and no predictor/workload retuning. Smoke and local simulator evidence must not enter the formal aggregate.

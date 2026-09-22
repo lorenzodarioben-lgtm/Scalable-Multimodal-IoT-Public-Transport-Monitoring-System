@@ -1,8 +1,8 @@
-# HD AWS execution runbook — TOMORROW ONLY
+# HD AWS execution runbook — frozen formal study
 
-**24 September readiness update:** The isolated HD notification consumer naturally drained and accounted for all 4,600 preserved smoke alerts; all HD queues/DLQs are now 0/0. The corrected automatic summary passes on the existing smoke evidence. The separate D notification queue is not clean, so the explicit D-queues-clean gate remains unmet. **Read `HD_READY_FOR_AWS.md` for the current NOT READY decision.** The older `artifacts/hd-smoke-readiness/2026-09-24-smoke-gate.json` is a historical pre-consumer checkpoint. Do not repeat deployment or smoke, purge messages, or start formal work.
+**24 September final readiness decision:** The isolated HD notification consumer naturally drained and accounted for all 4,600 preserved smoke alerts; all HD queues/DLQs are 0/0. The corrected automatic summary passes on the existing smoke evidence. Seven source/deployed-config isolation checks confirm the historical D notification backlog is out of scope. **Read `HD_READY_FOR_AWS.md` for the READY decision.** The older `artifacts/hd-smoke-readiness/2026-09-24-smoke-gate.json` is a historical pre-consumer checkpoint. Never purge or drain the D notification queue. Gate each formal run on HD queues, ECS, BPT and mode.
 
-**Do not execute this runbook during the local-only sprint.** It contains live AWS calls and HD workload injection. The Distinction demonstration video must be recorded **before** starting any HD deployment. All stacks here use `sit314-hd-transport`; never use `sit314-transport` as the deployment prefix. Stop on any failed preflight, unexpectedly dirty D resources, missing Academy permission, timing-invalid run, queue/DLQ residue, or budget concern. Do not alter the D stacks or tag.
+The user has authorised the formal HD experiment following the corrected READY gate. This runbook contains live AWS calls and HD workload injection; its original deployment and smoke sections are historical and must not be rerun. All stacks use `sit314-hd-transport`; never use `sit314-transport` as the deployment prefix. Stop on failed HD preflight, a changed D analysis reference, missing Academy permission, timing-invalid run, queue/DLQ residue, or budget concern. Do not alter the D stacks, D notification queue or tag.
 
 ## A. Preconditions and first checks
 
