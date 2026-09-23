@@ -1,6 +1,8 @@
 # SIT314 6.4HD AWS readiness gate — 24 September 2026
 
-Branch: `hd/predictive-autoscaling`. Read current HEAD with `git rev-parse HEAD`. The 12 formal HD experiments have **not** started. No smoke workload was rerun, no queue was purged, the predictive controller and frozen workloads were not retuned, and no D resource was modified.
+Branch: `hd/predictive-autoscaling`. Read current HEAD with `git rev-parse HEAD`. At this original readiness decision, the 12 formal HD experiments had **not** started. No smoke workload was rerun, no queue was purged, the predictive controller and frozen workloads were not retuned, and no D resource was modified.
+
+**Later formal-progress update:** Formal work did begin after the READY decision. Three predictable-ramp rows (reactive r1, hybrid r1, reactive r2) are reviewed VALID; see `HD_FORMAL_PROGRESS.md`. The Academy session was then cancelled by `voc-cancel-cred`. The technical READY decision below still documents isolation, but further AWS work is operationally stopped until fresh credentials and a new clean-state preflight. Do not repeat the three valid rows.
 
 ## Smoke and notification accounting
 
