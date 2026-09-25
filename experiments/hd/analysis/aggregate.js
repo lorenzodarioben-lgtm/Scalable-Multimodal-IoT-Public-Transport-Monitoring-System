@@ -32,6 +32,16 @@ function table(aggregate, workloadClass) {
   return lines.join('\n');
 }
 
+function excludedReviewStatus(directory, runId) {
+  const reviewFile = path.join(directory, 'review.json');
+  if (!fs.existsSync(reviewFile)) return 'UNREVIEWED';
+  const review = JSON.parse(fs.readFileSync(reviewFile, 'utf8'));
+  return review.runId === runId && review.status === 'INVALID'
+    && Number.isFinite(Date.parse(review.reviewedAt))
+    && typeof review.basis === 'string' && review.basis.length >= 15
+    ? 'INVALID' : 'UNREVIEWED';
+}
+
 export function analyseDirectory(inputDir, outputDir, { preview = false, mock = false } = {}) {
   const directories = fs.readdirSync(inputDir, { withFileTypes: true })
     .filter((item) => item.isDirectory() && fs.existsSync(path.join(inputDir, item.name, 'manifest.json')))
@@ -46,12 +56,14 @@ export function analyseDirectory(inputDir, outputDir, { preview = false, mock = 
     if (!profile) throw new Error(`unknown HD workload profile in ${directory}`);
     const summaryFile = path.join(directory, 'summary.json');
     if (!fs.existsSync(summaryFile)) {
-      excluded.push({ runId: manifest.runId, validity: 'INCOMPLETE_ARTIFACT', reviewStatus: 'UNREVIEWED' });
+      excluded.push({ runId: manifest.runId, validity: 'INCOMPLETE_ARTIFACT',
+        reviewStatus: excludedReviewStatus(directory, manifest.runId) });
       continue;
     }
     const summary = readHdSummary(directory);
     if (summary.validity !== 'PENDING_MANUAL_TIMELINE_REVIEW') {
-      excluded.push({ runId: manifest.runId, validity: summary.validity, reviewStatus: 'UNREVIEWED' });
+      excluded.push({ runId: manifest.runId, validity: summary.validity,
+        reviewStatus: excludedReviewStatus(directory, manifest.runId) });
       continue;
     }
     runs.push(analyseHdRun(directory, profile, { allowMock: mock }));

@@ -23,6 +23,8 @@ function createMockRun(root, workloadClass, arm, repeatNumber, { invalid = false
       taskCpu: '256', taskMemory: '512' } });
   if (invalid) {
     write(directory, 'summary.json', { runId, validity: 'TIMING-INVALID' });
+    write(directory, 'review.json', { runId, status: 'INVALID', reviewedAt: iso(700),
+      basis: 'Reviewed partial timing failure and excluded this attempt' });
     return directory;
   }
   write(directory, 'summary.json', { runId, validity: 'PENDING_MANUAL_TIMELINE_REVIEW',
@@ -70,10 +72,14 @@ test('full mock pipeline retains invalid attempts, calculates means and stamps c
       }
     }
     createMockRun(input, 'PREDICTABLE_RAMP', 'reactive', 2, { invalid: true });
+    const incomplete = createMockRun(input, 'SUDDEN_BURST', 'hybrid', 2, { invalid: true });
+    fs.rmSync(path.join(incomplete, 'summary.json'));
     const result = analyseDirectory(input, output, { mock: true });
     assert.equal(result.aggregate.classification, classification);
-    assert.equal(result.aggregate.excludedAttempts.length, 1);
-    assert.equal(result.aggregate.excludedAttempts[0].validity, 'TIMING-INVALID');
+    assert.equal(result.aggregate.excludedAttempts.length, 2);
+    assert.deepEqual(result.aggregate.excludedAttempts.map((item) =>
+      [item.validity, item.reviewStatus]).sort(),
+    [['INCOMPLETE_ARTIFACT', 'INVALID'], ['TIMING-INVALID', 'INVALID']]);
     const ramp = result.aggregate.groups.PREDICTABLE_RAMP;
     assert.equal(ramp.reactive.metrics.peakVisibleBacklog.mean, 200);
     assert.equal(ramp.hybrid.metrics.peakVisibleBacklog.mean, 100);

@@ -31,10 +31,23 @@ if (Test-Path -LiteralPath $runRoot) {
                 throw 'Replacement requires an explicit INVALID review for the existing attempt.'
             }
             $review = Get-Content -LiteralPath $reviewFile -Raw | ConvertFrom-Json
-            $parsedReviewAt = [datetime]::MinValue
+            # ConvertFrom-Json turns ISO timestamps into DateTime values. Do not
+            # stringify and reparse them under the host's potentially different
+            # culture (for example en-ID versus the formatted MM/dd/yyyy text).
+            if ($review.reviewedAt -is [datetime]) {
+                $validReviewAt = $review.reviewedAt -gt [datetime]::MinValue
+            }
+            else {
+                $parsedReviewAt = [datetimeoffset]::MinValue
+                $validReviewAt = [datetimeoffset]::TryParse(
+                    [string]$review.reviewedAt,
+                    [System.Globalization.CultureInfo]::InvariantCulture,
+                    [System.Globalization.DateTimeStyles]::RoundtripKind,
+                    [ref]$parsedReviewAt)
+            }
             if ($review.runId -ne $manifest.runId -or $review.status -ne 'INVALID' -or
                 [string]::IsNullOrWhiteSpace($review.basis) -or $review.basis.Length -lt 15 -or
-                -not [datetime]::TryParse([string]$review.reviewedAt, [ref]$parsedReviewAt)) {
+                -not $validReviewAt) {
                 throw 'An existing potentially valid run cannot be replaced.'
             }
         }
