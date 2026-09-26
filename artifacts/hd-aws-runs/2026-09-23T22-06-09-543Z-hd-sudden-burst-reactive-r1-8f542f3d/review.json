@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T22-06-09-543Z-hd-sudden-burst-reactive-r1-8f542f3d",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T22:23:04Z",
+  "basis": "Frozen sudden-burst reactive r1 logical digest 369bca863e2cba7246578de0efa1cd3fb9b8ba7df253e7892d1008a556190623. All 366 incidents and 18300 jobs were submitted and completed at 29.035 jobs/s offered; maximum dispatch-start lag 26 ms passed the unchanged guard. 18300 worker completion log entries and 366 accepted predictor signals account for all analysis work; zero failures, duplicate results, analysis DLQ or unaccounted jobs. Genuine historical HD BPT and oldest-message-age contain 13 points each; peaks were BPT 691 and age 30 s, with sampled visible peak 790. Fast reactive +4 requested five at 22:11:45.530Z; four new WORKER_READY events occurred from 22:12:09.058Z to 22:12:11.713Z. Five running tasks were sampled during arrivals. Analysis, arrival, notification and telemetry queues/DLQs drained naturally to 0/0; notification DLQ remained zero. No missing required metric or methodology change."
+}

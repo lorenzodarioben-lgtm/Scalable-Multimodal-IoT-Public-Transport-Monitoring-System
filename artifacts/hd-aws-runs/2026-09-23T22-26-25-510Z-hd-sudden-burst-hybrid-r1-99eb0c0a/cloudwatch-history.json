@@ -1,0 +1,2224 @@
+{
+  "source": "genuine historical CloudWatch GetMetricStatistics",
+  "metricWindow": {
+    "startAt": "2026-09-23T22:25:38.484Z",
+    "endAt": "2026-09-23T22:38:10.734Z"
+  },
+  "bpt": [
+    {
+      "timestamp": "2026-09-23T22:25:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:26:00.000Z",
+      "value": 24,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:27:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:28:00.000Z",
+      "value": 4,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:29:00.000Z",
+      "value": 22,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:30:00.000Z",
+      "value": 112.5,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:31:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:32:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:33:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:34:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:35:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:36:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    },
+    {
+      "timestamp": "2026-09-23T22:37:00.000Z",
+      "value": 0,
+      "unit": "Count"
+    }
+  ],
+  "oldestMessageAge": [
+    {
+      "timestamp": "2026-09-23T22:25:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:26:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:27:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:28:00.000Z",
+      "value": 16,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:29:00.000Z",
+      "value": 20,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:30:00.000Z",
+      "value": 29,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:31:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:32:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:33:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:34:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:35:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:36:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    },
+    {
+      "timestamp": "2026-09-23T22:37:00.000Z",
+      "value": 0,
+      "unit": "Seconds"
+    }
+  ],
+  "predictive": {
+    "AnalysisArrivalRate": [
+      {
+        "timestamp": "2026-09-23T22:26:40.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:26:50.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:00.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:10.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:20.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:30.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:40.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 45,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 45,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 40,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 40,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 60,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 35,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 60,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 45,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 45,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 55,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 45,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 15,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 5,
+        "unit": "Count/Second"
+      }
+    ],
+    "PredictedArrivalRate": [
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 8.571,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 12.738,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 7.321,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 3.155,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 8.571,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 12.738,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 7.321,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 14.107,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 8.69,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 10.06,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 5.893,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 11.31,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 15.476,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 10.06,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 54.643,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 91.19,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 112.5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 114.821,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 112.976,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 105.714,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 83.333,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 44.464,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 54.048,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 47.262,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 58.214,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 41.845,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 48.631,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 48.631,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 48.631,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 54.048,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 58.214,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 41.845,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 59.583,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 32.262,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 50,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 44.583,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 51.369,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 51.488,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 59.643,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 49.94,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 59.643,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 44.405,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 58.155,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 45.833,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 1.25,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 0,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 12.738,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 7.202,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 11.369,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 0.417,
+        "unit": "Count/Second"
+      }
+    ],
+    "PredictiveRecommendedTasks": [
+      {
+        "timestamp": "2026-09-23T22:26:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:26:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      }
+    ],
+    "PredictiveScaleRequest": [
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      }
+    ],
+    "PredictionError": [
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 3.5709999999999997,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 2.7379999999999995,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": -2.6790000000000003,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": -11.845,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": -1.4290000000000003,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 7.738,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": -47.679,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": -35.893,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": -46.31,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": -34.94,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": -44.107,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": -38.69,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": -34.524,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": -39.94,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": -0.3569999999999993,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 46.19,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 57.5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 74.821,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 57.976,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 55.714,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 33.333,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": -10.536000000000001,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 4.048000000000002,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 7.262,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": -1.7860000000000014,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 6.844999999999999,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": -11.369,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 3.631,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": -6.369,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 9.048000000000002,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 3.2139999999999986,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": -8.155000000000001,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 9.582999999999998,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": -17.738,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": -5,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": -0.4170000000000016,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 46.369,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 36.488,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 54.643,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 34.94,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 49.643,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 34.405,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 48.155,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 35.833,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": -8.75,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": -10,
+        "unit": "Count/Second"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": -5,
+        "unit": "Count/Second"
+      }
+    ],
+    "RunningTaskCount": [
+      {
+        "timestamp": "2026-09-23T22:26:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:26:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 1,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 5,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 5,
+        "unit": "Count"
+      }
+    ],
+    "AnalysisQueueVisible": [
+      {
+        "timestamp": "2026-09-23T22:26:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:26:50.000Z",
+        "value": 8,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:10.000Z",
+        "value": 14,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:20.000Z",
+        "value": 8,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:30.000Z",
+        "value": 39,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 2,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 42,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 10,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 26,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 22,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 162,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 218,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 320,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 400,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 330,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 12,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 18,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 10,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 15,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 8,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      }
+    ],
+    "PredictorObservedBacklogPerTask": [
+      {
+        "timestamp": "2026-09-23T22:26:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:26:50.000Z",
+        "value": 8,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:10.000Z",
+        "value": 14,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:20.000Z",
+        "value": 8,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:30.000Z",
+        "value": 39,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:27:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:10.000Z",
+        "value": 2,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:20.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:30.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:40.000Z",
+        "value": 42,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:28:50.000Z",
+        "value": 10,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:10.000Z",
+        "value": 20,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:40.000Z",
+        "value": 26,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:29:50.000Z",
+        "value": 22,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:10.000Z",
+        "value": 162,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:20.000Z",
+        "value": 218,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:30.000Z",
+        "value": 320,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:40.000Z",
+        "value": 400,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:30:50.000Z",
+        "value": 66,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:00.000Z",
+        "value": 4,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:30.000Z",
+        "value": 4,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:40.000Z",
+        "value": 2.4,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:31:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:20.000Z",
+        "value": 3.6,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:32:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:00.000Z",
+        "value": 2,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:33:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:00.000Z",
+        "value": 3,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:10.000Z",
+        "value": 1.6,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:34:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:35:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:10.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:20.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:30.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:40.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T22:36:50.000Z",
+        "value": 0,
+        "unit": "Count"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T20-18-35-936Z-hd-predictable-ramp-hybrid-r1-cc19b00e",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T20:33:06Z",
+  "basis": "Frozen predictable-ramp hybrid r1 matched reactive r1 logical digest and worker deployment. All 330 incidents and 16500/16500 jobs submitted and completed; unchanged timing guard passed with 756 ms maximum dispatch-start lag. Zero processing failures, duplicate results, DLQ or unaccounted jobs; HD analysis and arrival queues/DLQs drained. Genuine historical HD BacklogPerTask and oldest-age each have 13 datapoints; predictor metrics include 56 forecast, 63 recommendation, 48 prediction-error and one scale-request point. Lambda logs show 330 unique accepted signals / 16500 jobs and one genuine predictive request to five at 20:26:39.632Z; four new ECS tasks RUNNING at 20:27:03–05Z and WORKER_READY at 20:27:06–08Z. Processing p50/p95 51/54 ms, peak BPT 40, visible backlog 63, task-seconds 1139.196. No evidence gap or retuning."
+}

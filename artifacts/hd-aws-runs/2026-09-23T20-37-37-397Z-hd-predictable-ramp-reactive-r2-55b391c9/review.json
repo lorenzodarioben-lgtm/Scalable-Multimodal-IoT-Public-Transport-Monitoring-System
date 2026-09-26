@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T20-37-37-397Z-hd-predictable-ramp-reactive-r2-55b391c9",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T20:52:18Z",
+  "basis": "Frozen ramp reactive r2: 330/330 incidents and 16500/16500 jobs submitted/completed; 26.189 jobs/s offered and 168 ms maximum start lag below unchanged timing guard. 16500 worker completion log entries and 330 accepted Lambda signals account for all jobs; zero failures, duplicate results, DLQ or unaccounted jobs. Genuine historical HD BacklogPerTask and oldest-message-age each include 13 datapoints; visible backlog peak 1001, BPT peak 911, age peak 32 s. Fast reactive +4 requested five tasks at 20:47:45.530Z; four new tasks reached RUNNING and WORKER_READY, first ready 24.097 s later. HD analysis and signal queues/DLQs drained. No missing required metric or methodology change."
+}

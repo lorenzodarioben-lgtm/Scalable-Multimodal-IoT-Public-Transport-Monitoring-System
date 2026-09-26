@@ -1,0 +1,127 @@
+{
+  "runId": "2026-09-23T21-08-03-197Z-hd-predictable-ramp-hybrid-r2-bf7a49e7",
+  "stage": "hd-predictable-ramp",
+  "mode": "hybrid",
+  "startedAt": "2026-09-23T21:08:16.617Z",
+  "orchestrationStartedAt": "2026-09-23T21:08:03.197Z",
+  "workloadStartedAt": "2026-09-23T21:08:16.617Z",
+  "measurementStartedAt": "2026-09-23T21:08:46.617Z",
+  "finishedAt": "2026-09-23T21:19:06.370Z",
+  "injectionTiming": {
+    "status": "VALID",
+    "invalidReason": null,
+    "workloadStartedAt": "2026-09-23T21:08:16.617Z",
+    "plannedInjectionDurationSeconds": 630,
+    "actualInjectionDurationSeconds": 634.798,
+    "expectedIncidents": 330,
+    "dispatchedIncidents": 330,
+    "expectedJobs": 16500,
+    "submittedJobs": 16500,
+    "effectiveSubmissionJobsPerSecond": 25.993,
+    "meanScheduleLagMs": 7.755,
+    "p95ScheduleLagMs": 15,
+    "maxScheduleLagMs": 23,
+    "guard": {
+      "maxDispatchStartLagIntervals": 1,
+      "sustainedStartLagIntervals": 0.5,
+      "sustainedStartLagIncidents": 3
+    }
+  },
+  "results": {
+    "expectedJobs": 16500,
+    "resultsProduced": 16500,
+    "duplicateResults": 0,
+    "queueRemaining": 0,
+    "dlqDepth": 0,
+    "jobsAccountedFor": 16500,
+    "lostOrUnaccounted": 0,
+    "throughputJobsPerSecond": 25.42,
+    "drainTimeSeconds": 13.93,
+    "taskSeconds": 1170.271,
+    "completedFromLogs": 16500,
+    "processingLatencyP95Ms": 53,
+    "processingLatencySamples": 16500,
+    "errorCount": 0,
+    "duplicateJobsSkipped": 0,
+    "workerReadyEvents": [
+      {
+        "timestamp": "2026-09-23T21:16:11.785Z",
+        "ingestionTime": "2026-09-23T21:16:17.982Z",
+        "logStreamName": "route-impact/route-impact-worker/c86306c204af424c8f0e5db4993f5daa",
+        "message": "[WORKER_READY] taskId=ecs-c86306c204af424c8f0e5db4993f5daa source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T21:16:12.989Z",
+        "ingestionTime": "2026-09-23T21:16:15.385Z",
+        "logStreamName": "route-impact/route-impact-worker/29e04dfde9754e22bf4e5d413565042c",
+        "message": "[WORKER_READY] taskId=ecs-29e04dfde9754e22bf4e5d413565042c source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T21:16:13.364Z",
+        "ingestionTime": "2026-09-23T21:16:14.804Z",
+        "logStreamName": "route-impact/route-impact-worker/d9e09d1d3fb04aa1ab37aee18f6469d5",
+        "message": "[WORKER_READY] taskId=ecs-d9e09d1d3fb04aa1ab37aee18f6469d5 source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T21:16:33.507Z",
+        "ingestionTime": "2026-09-23T21:16:34.972Z",
+        "logStreamName": "route-impact/route-impact-worker/e3f15a40d9d945c893b011f4ad751b59",
+        "message": "[WORKER_READY] taskId=ecs-e3f15a40d9d945c893b011f4ad751b59 source=ecs-task-metadata"
+      }
+    ],
+    "processingLatencyP50Ms": 51,
+    "sampledRunTaskSeconds": 1296.24
+  },
+  "scaling": {
+    "activities": 1,
+    "scaleOutEvents": 0,
+    "scaleInEvents": 0
+  },
+  "arm": "hybrid",
+  "accounting": {
+    "resultsProduced": 16500,
+    "duplicateResults": 0,
+    "queueRemaining": 0,
+    "dlqDepth": 0,
+    "drainTimeSeconds": 13.93,
+    "drainTimedOut": false
+  },
+  "artifacts": {
+    "runDirectory": "C:\\Users\\lorenzodario\\Documents\\UNI\\UNI_T3\\CLoud\\Distinction\\HighDistinction\\artifacts\\hd-aws-runs\\2026-09-23T21-08-03-197Z-hd-predictable-ramp-hybrid-r2-bf7a49e7",
+    "samples": "C:\\Users\\lorenzodario\\Documents\\UNI\\UNI_T3\\CLoud\\Distinction\\HighDistinction\\artifacts\\hd-aws-runs\\2026-09-23T21-08-03-197Z-hd-predictable-ramp-hybrid-r2-bf7a49e7\\samples.jsonl"
+  },
+  "hdPredictorLogEvidence": {
+    "parsedEvents": 330,
+    "acceptedSignals": 330,
+    "uniqueAcceptedSignals": 330,
+    "acceptedJobs": 16500,
+    "scaleRequests": 1
+  },
+  "hdHistory": {
+    "source": "genuine historical CloudWatch GetMetricStatistics",
+    "peakBacklogPerTask": 44,
+    "peakOldestMessageAgeSeconds": 25,
+    "metricPoints": {
+      "AnalysisArrivalRate": 63,
+      "PredictedArrivalRate": 56,
+      "PredictiveRecommendedTasks": 63,
+      "PredictiveScaleRequest": 1,
+      "PredictionError": 48,
+      "RunningTaskCount": 63,
+      "AnalysisQueueVisible": 63,
+      "PredictorObservedBacklogPerTask": 63
+    }
+  },
+  "hdSignalFinal": {
+    "sit314-hd-transport-arrival.fifo": {
+      "visible": 0,
+      "inFlight": 0
+    },
+    "sit314-hd-transport-arrival-dlq.fifo": {
+      "visible": 0,
+      "inFlight": 0
+    }
+  },
+  "missingRequiredMetrics": [],
+  "validity": "PENDING_MANUAL_TIMELINE_REVIEW"
+}

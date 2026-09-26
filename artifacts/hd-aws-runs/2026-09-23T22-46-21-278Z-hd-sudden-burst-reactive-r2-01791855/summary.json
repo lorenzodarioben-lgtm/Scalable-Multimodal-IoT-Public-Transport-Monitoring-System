@@ -1,0 +1,127 @@
+{
+  "runId": "2026-09-23T22-46-21-278Z-hd-sudden-burst-reactive-r2-01791855",
+  "stage": "hd-sudden-burst",
+  "mode": "reactive",
+  "startedAt": "2026-09-23T22:46:36.264Z",
+  "orchestrationStartedAt": "2026-09-23T22:46:21.278Z",
+  "workloadStartedAt": "2026-09-23T22:46:36.264Z",
+  "measurementStartedAt": "2026-09-23T22:47:06.264Z",
+  "finishedAt": "2026-09-23T22:57:08.354Z",
+  "injectionTiming": {
+    "status": "VALID",
+    "invalidReason": null,
+    "workloadStartedAt": "2026-09-23T22:46:36.264Z",
+    "plannedInjectionDurationSeconds": 630,
+    "actualInjectionDurationSeconds": 625.943,
+    "expectedIncidents": 366,
+    "dispatchedIncidents": 366,
+    "expectedJobs": 18300,
+    "submittedJobs": 18300,
+    "effectiveSubmissionJobsPerSecond": 29.236,
+    "meanScheduleLagMs": 7.254,
+    "p95ScheduleLagMs": 16,
+    "maxScheduleLagMs": 62,
+    "guard": {
+      "maxDispatchStartLagIntervals": 1,
+      "sustainedStartLagIntervals": 0.5,
+      "sustainedStartLagIncidents": 3
+    }
+  },
+  "results": {
+    "expectedJobs": 18300,
+    "resultsProduced": 18300,
+    "duplicateResults": 0,
+    "queueRemaining": 0,
+    "dlqDepth": 0,
+    "jobsAccountedFor": 18300,
+    "lostOrUnaccounted": 0,
+    "throughputJobsPerSecond": 28.98,
+    "drainTimeSeconds": 0,
+    "taskSeconds": 1759.066,
+    "completedFromLogs": 18300,
+    "processingLatencyP95Ms": 53,
+    "processingLatencySamples": 18300,
+    "errorCount": 0,
+    "duplicateJobsSkipped": 0,
+    "workerReadyEvents": [
+      {
+        "timestamp": "2026-09-23T22:52:10.711Z",
+        "ingestionTime": "2026-09-23T22:52:13.008Z",
+        "logStreamName": "route-impact/route-impact-worker/ab6cbf9eb9974e899320c061dc9b9b49",
+        "message": "[WORKER_READY] taskId=ecs-ab6cbf9eb9974e899320c061dc9b9b49 source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T22:52:11.904Z",
+        "ingestionTime": "2026-09-23T22:52:13.499Z",
+        "logStreamName": "route-impact/route-impact-worker/f02c8f94c17e4208ae9a3a91c940f3e5",
+        "message": "[WORKER_READY] taskId=ecs-f02c8f94c17e4208ae9a3a91c940f3e5 source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T22:52:12.559Z",
+        "ingestionTime": "2026-09-23T22:52:14.114Z",
+        "logStreamName": "route-impact/route-impact-worker/db3f566427e749ee8c48cfa9c7273c53",
+        "message": "[WORKER_READY] taskId=ecs-db3f566427e749ee8c48cfa9c7273c53 source=ecs-task-metadata"
+      },
+      {
+        "timestamp": "2026-09-23T22:52:17.452Z",
+        "ingestionTime": "2026-09-23T22:52:19.027Z",
+        "logStreamName": "route-impact/route-impact-worker/473aaa0527de405391d0d1c547ad7366",
+        "message": "[WORKER_READY] taskId=ecs-473aaa0527de405391d0d1c547ad7366 source=ecs-task-metadata"
+      }
+    ],
+    "processingLatencyP50Ms": 51,
+    "sampledRunTaskSeconds": 1797.22
+  },
+  "scaling": {
+    "activities": 1,
+    "scaleOutEvents": 0,
+    "scaleInEvents": 0
+  },
+  "arm": "reactive",
+  "accounting": {
+    "resultsProduced": 18300,
+    "duplicateResults": 0,
+    "queueRemaining": 0,
+    "dlqDepth": 0,
+    "drainTimeSeconds": 0,
+    "drainTimedOut": false
+  },
+  "artifacts": {
+    "runDirectory": "C:\\Users\\lorenzodario\\Documents\\UNI\\UNI_T3\\CLoud\\Distinction\\HighDistinction\\artifacts\\hd-aws-runs\\2026-09-23T22-46-21-278Z-hd-sudden-burst-reactive-r2-01791855",
+    "samples": "C:\\Users\\lorenzodario\\Documents\\UNI\\UNI_T3\\CLoud\\Distinction\\HighDistinction\\artifacts\\hd-aws-runs\\2026-09-23T22-46-21-278Z-hd-sudden-burst-reactive-r2-01791855\\samples.jsonl"
+  },
+  "hdPredictorLogEvidence": {
+    "parsedEvents": 366,
+    "acceptedSignals": 366,
+    "uniqueAcceptedSignals": 366,
+    "acceptedJobs": 18300,
+    "scaleRequests": 0
+  },
+  "hdHistory": {
+    "source": "genuine historical CloudWatch GetMetricStatistics",
+    "peakBacklogPerTask": 932,
+    "peakOldestMessageAgeSeconds": 45,
+    "metricPoints": {
+      "AnalysisArrivalRate": 62,
+      "PredictedArrivalRate": 0,
+      "PredictiveRecommendedTasks": 0,
+      "PredictiveScaleRequest": 0,
+      "PredictionError": 0,
+      "RunningTaskCount": 62,
+      "AnalysisQueueVisible": 62,
+      "PredictorObservedBacklogPerTask": 62
+    }
+  },
+  "hdSignalFinal": {
+    "sit314-hd-transport-arrival.fifo": {
+      "visible": 0,
+      "inFlight": 0
+    },
+    "sit314-hd-transport-arrival-dlq.fifo": {
+      "visible": 0,
+      "inFlight": 0
+    }
+  },
+  "missingRequiredMetrics": [],
+  "validity": "PENDING_MANUAL_TIMELINE_REVIEW"
+}

@@ -1,0 +1,20 @@
+{
+  "status": "VALID",
+  "invalidReason": null,
+  "workloadStartedAt": "2026-09-26T08:30:43.988Z",
+  "plannedInjectionDurationSeconds": 630,
+  "actualInjectionDurationSeconds": 626.473,
+  "expectedIncidents": 366,
+  "dispatchedIncidents": 366,
+  "expectedJobs": 18300,
+  "submittedJobs": 18300,
+  "effectiveSubmissionJobsPerSecond": 29.211,
+  "meanScheduleLagMs": 9.044,
+  "p95ScheduleLagMs": 16,
+  "maxScheduleLagMs": 326,
+  "guard": {
+    "maxDispatchStartLagIntervals": 1,
+    "sustainedStartLagIntervals": 0.5,
+    "sustainedStartLagIncidents": 3
+  }
+}

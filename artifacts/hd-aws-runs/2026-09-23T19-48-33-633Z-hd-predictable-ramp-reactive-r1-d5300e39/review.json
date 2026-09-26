@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T19-48-33-633Z-hd-predictable-ramp-reactive-r1-d5300e39",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T20:10:53Z",
+  "basis": "Frozen ramp reactive r1: 330/330 incidents and 16500/16500 jobs submitted and completed; 630.133 s injection, 109 ms max dispatch-start lag below the unchanged timing guard; 16500 worker completion log entries, zero failures, duplicates, DLQ or unaccounted jobs; HD analysis and arrival queues/DLQs drained; 13 genuine historical HD BacklogPerTask and 13 oldest-age datapoints; reactive +4 scale activity, ECS RUNNING and exact WORKER_READY chronology reviewed. Original summary's sole task-seconds error was an append-order race in two valid samples; preserved original summary and hash-bound offline recovered summary give 600 measurement task-seconds without reinjection. No other required metric is missing."
+}

@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T22-26-25-510Z-hd-sudden-burst-hybrid-r1-99eb0c0a",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T22:43:34Z",
+  "basis": "Frozen sudden-burst hybrid r1 matches reactive r1 logical digest 369bca863e2cba7246578de0efa1cd3fb9b8ba7df253e7892d1008a556190623. All 366 incidents and 18300 jobs were submitted and completed at 29.213 jobs/s offered; maximum dispatch-start lag 79 ms passed the unchanged guard. 18300 worker completion log entries and 366 accepted predictor signals account for all analysis work; zero failures, duplicate results, analysis DLQ or unaccounted jobs. Genuine historical HD BPT and oldest-message-age contain 13 points each; peaks were BPT 112.5 and age 29 s, with sampled visible peak 460. One hybrid predictive request for five tasks at 22:30:31.797Z preceded four new WORKER_READY events from 22:30:55.586Z to 22:31:03.691Z; five tasks ran during arrivals. Analysis, arrival, notification and telemetry queues/DLQs drained naturally to 0/0, with notification DLQ zero. No missing required metric or methodology change."
+}

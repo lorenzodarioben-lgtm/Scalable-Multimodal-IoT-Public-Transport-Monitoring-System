@@ -1,0 +1,6 @@
+{
+  "logGroupName": "/ecs/sit314-hd-transport-route-impact",
+  "query": "FilterLogEvents retained for [WORKER_READY], [ANALYSIS], [DUPLICATE_SKIPPED], and [PROCESSING-FAILED]",
+  "startedAt": "2026-09-23T22:46:36.264Z",
+  "finishedAt": "2026-09-23T22:57:08.354Z"
+}

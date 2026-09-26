@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T21-47-13-528Z-hd-predictable-ramp-hybrid-r3-a59c12e3",
+  "status": "VALID",
+  "reviewedAt": "2026-09-23T22:03:06Z",
+  "basis": "Frozen ramp hybrid r3 matches reactive r3 logical digest 059a7b7036ea532e1bb39dec1c952edd28cc755a07608317b8a95d5ab3067d32. All 330 incidents and 16500 jobs were submitted and completed at 26.140 jobs/s offered; maximum dispatch-start lag 36 ms passed the unchanged guard. 16500 completion log entries and 330 accepted predictor signals account for all work; zero failures, duplicate results, DLQ or unaccounted jobs. Genuine historical HD BPT and oldest-message-age contain 13 points each; peaks were BPT 45 and age 18 s, with sampled visible peak 44. One predictive request for three tasks at 21:54:54.611Z preceded two new WORKER_READY events at 21:55:15.597Z and 21:55:17.865Z. Peak sampled running count was three during arrivals. All eight HD queues/DLQs drained to 0/0; no missing required metric or methodology change."
+}

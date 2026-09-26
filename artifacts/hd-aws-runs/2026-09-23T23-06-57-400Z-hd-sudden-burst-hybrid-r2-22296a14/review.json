@@ -1,0 +1,6 @@
+{
+  "runId": "2026-09-23T23-06-57-400Z-hd-sudden-burst-hybrid-r2-22296a14",
+  "status": "INVALID",
+  "reviewedAt": "2026-09-23T23:17:50Z",
+  "basis": "Tooling/network interruption, not formal evidence: SQS DNS resolution failed with getaddrinfo ENOTFOUND sqs.us-east-1.amazonaws.com during the scheduled burst. The unchanged timing file records FAILED after 227.705 s, with only 60/366 incidents and 3000/18300 jobs submitted; the runner exited nonzero before summary and historical CloudWatch collection. Original manifest, dispatches, samples, timing, and logs are preserved. Fresh read-only AWS access subsequently succeeded, all eight HD queues/DLQs were 0/0, fast alarm OK, and this run's predictor state had no pending scale request. Exclude this attempt from every formal aggregate; only a fresh reviewed replacement can fill hybrid r2."
+}
