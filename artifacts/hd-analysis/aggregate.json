@@ -1,0 +1,1248 @@
+{
+  "classification": "REVIEWED AWS HD EVIDENCE",
+  "groups": {
+    "PREDICTABLE_RAMP": {
+      "reactive": {
+        "runIds": [
+          "2026-09-23T19-48-33-633Z-hd-predictable-ramp-reactive-r1-d5300e39",
+          "2026-09-23T20-37-37-397Z-hd-predictable-ramp-reactive-r2-55b391c9",
+          "2026-09-23T21-28-47-321Z-hd-predictable-ramp-reactive-r3-29608c9b"
+        ],
+        "metrics": {
+          "offeredJobsPerSecond": {
+            "raw": [
+              26.185,
+              26.189,
+              26.157
+            ],
+            "n": 3,
+            "mean": 26.177,
+            "median": 26.185,
+            "sampleSd": 0.017,
+            "min": 26.157,
+            "max": 26.189
+          },
+          "completedJobs": {
+            "raw": [
+              16500,
+              16500,
+              16500
+            ],
+            "n": 3,
+            "mean": 16500,
+            "median": 16500,
+            "sampleSd": 0,
+            "min": 16500,
+            "max": 16500
+          },
+          "scaleRequestLatencySeconds": {
+            "raw": [
+              88.749,
+              86.589,
+              76.312
+            ],
+            "n": 3,
+            "mean": 83.883,
+            "median": 86.589,
+            "sampleSd": 6.645,
+            "min": 76.312,
+            "max": 88.749
+          },
+          "proactiveLeadSeconds": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "requestToFirstRunningSeconds": {
+            "raw": [
+              30.041,
+              21.704,
+              20.06
+            ],
+            "n": 3,
+            "mean": 23.935,
+            "median": 21.704,
+            "sampleSd": 5.351,
+            "min": 20.06,
+            "max": 30.041
+          },
+          "requestToFirstReadySeconds": {
+            "raw": [
+              32.434,
+              24.097,
+              22.778
+            ],
+            "n": 3,
+            "mean": 26.436,
+            "median": 24.097,
+            "sampleSd": 5.236,
+            "min": 22.778,
+            "max": 32.434
+          },
+          "peakVisibleBacklog": {
+            "raw": [
+              828,
+              1001,
+              910
+            ],
+            "n": 3,
+            "mean": 913,
+            "median": 910,
+            "sampleSd": 86.539,
+            "min": 828,
+            "max": 1001
+          },
+          "peakBacklogPerTask": {
+            "raw": [
+              728,
+              911,
+              750
+            ],
+            "n": 3,
+            "mean": 796.333,
+            "median": 750,
+            "sampleSd": 99.912,
+            "min": 728,
+            "max": 911
+          },
+          "peakOldestMessageAgeSeconds": {
+            "raw": [
+              29,
+              32,
+              39
+            ],
+            "n": 3,
+            "mean": 33.333,
+            "median": 32,
+            "sampleSd": 5.132,
+            "min": 29,
+            "max": 39
+          },
+          "completionThroughputJobsPerSecond": {
+            "raw": [
+              25.59,
+              25.57,
+              26.11
+            ],
+            "n": 3,
+            "mean": 25.757,
+            "median": 25.59,
+            "sampleSd": 0.306,
+            "min": 25.57,
+            "max": 26.11
+          },
+          "drainSeconds": {
+            "raw": [
+              12.67,
+              12.34,
+              0
+            ],
+            "n": 3,
+            "mean": 8.337,
+            "median": 12.34,
+            "sampleSd": 7.222,
+            "min": 0,
+            "max": 12.67
+          },
+          "processingP50Ms": {
+            "raw": [
+              50,
+              51,
+              51
+            ],
+            "n": 3,
+            "mean": 50.667,
+            "median": 51,
+            "sampleSd": 0.577,
+            "min": 50,
+            "max": 51
+          },
+          "processingP95Ms": {
+            "raw": [
+              52,
+              53,
+              52
+            ],
+            "n": 3,
+            "mean": 52.333,
+            "median": 52,
+            "sampleSd": 0.577,
+            "min": 52,
+            "max": 53
+          },
+          "peakRunningTasks": {
+            "raw": [
+              4,
+              5,
+              5
+            ],
+            "n": 3,
+            "mean": 4.667,
+            "median": 5,
+            "sampleSd": 0.577,
+            "min": 4,
+            "max": 5
+          },
+          "taskSeconds": {
+            "raw": [
+              600,
+              630.692,
+              671.164
+            ],
+            "n": 3,
+            "mean": 633.952,
+            "median": 630.692,
+            "sampleSd": 35.694,
+            "min": 600,
+            "max": 671.164
+          },
+          "predictionMaeJobsPerSecond": {
+            "raw": [
+              null,
+              null,
+              null
+            ],
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "sampleSd": null,
+            "min": null,
+            "max": null
+          },
+          "predictionBiasJobsPerSecond": {
+            "raw": [
+              null,
+              null,
+              null
+            ],
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "sampleSd": null,
+            "min": null,
+            "max": null
+          },
+          "falseProactiveScaleOuts": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "errors": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicates": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicateJobsSkipped": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dlq": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "unaccountedJobs": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          }
+        }
+      },
+      "hybrid": {
+        "runIds": [
+          "2026-09-23T20-18-35-936Z-hd-predictable-ramp-hybrid-r1-cc19b00e",
+          "2026-09-23T21-08-03-197Z-hd-predictable-ramp-hybrid-r2-bf7a49e7",
+          "2026-09-23T21-47-13-528Z-hd-predictable-ramp-hybrid-r3-a59c12e3"
+        ],
+        "metrics": {
+          "offeredJobsPerSecond": {
+            "raw": [
+              26.032,
+              25.993,
+              26.14
+            ],
+            "n": 3,
+            "mean": 26.055,
+            "median": 26.032,
+            "sampleSd": 0.076,
+            "min": 25.993,
+            "max": 26.14
+          },
+          "completedJobs": {
+            "raw": [
+              16500,
+              16500,
+              16500
+            ],
+            "n": 3,
+            "mean": 16500,
+            "median": 16500,
+            "sampleSd": 0,
+            "min": 16500,
+            "max": 16500
+          },
+          "scaleRequestLatencySeconds": {
+            "raw": [
+              -45.872,
+              -76.3,
+              -61.604
+            ],
+            "n": 3,
+            "mean": -61.259,
+            "median": -61.604,
+            "sampleSd": 15.217,
+            "min": -76.3,
+            "max": -45.872
+          },
+          "proactiveLeadSeconds": {
+            "raw": [
+              45.872,
+              76.3,
+              61.604
+            ],
+            "n": 3,
+            "mean": 61.259,
+            "median": 61.604,
+            "sampleSd": 15.217,
+            "min": 45.872,
+            "max": 76.3
+          },
+          "requestToFirstRunningSeconds": {
+            "raw": [
+              24.159,
+              38.996,
+              18.404
+            ],
+            "n": 3,
+            "mean": 27.186,
+            "median": 24.159,
+            "sampleSd": 10.625,
+            "min": 18.404,
+            "max": 38.996
+          },
+          "requestToFirstReadySeconds": {
+            "raw": [
+              26.641,
+              41.468,
+              20.986
+            ],
+            "n": 3,
+            "mean": 29.698,
+            "median": 26.641,
+            "sampleSd": 10.578,
+            "min": 20.986,
+            "max": 41.468
+          },
+          "peakVisibleBacklog": {
+            "raw": [
+              63,
+              48,
+              44
+            ],
+            "n": 3,
+            "mean": 51.667,
+            "median": 48,
+            "sampleSd": 10.017,
+            "min": 44,
+            "max": 63
+          },
+          "peakBacklogPerTask": {
+            "raw": [
+              40,
+              44,
+              45
+            ],
+            "n": 3,
+            "mean": 43,
+            "median": 44,
+            "sampleSd": 2.646,
+            "min": 40,
+            "max": 45
+          },
+          "peakOldestMessageAgeSeconds": {
+            "raw": [
+              17,
+              25,
+              18
+            ],
+            "n": 3,
+            "mean": 20,
+            "median": 18,
+            "sampleSd": 4.359,
+            "min": 17,
+            "max": 25
+          },
+          "completionThroughputJobsPerSecond": {
+            "raw": [
+              26.01,
+              25.42,
+              25.59
+            ],
+            "n": 3,
+            "mean": 25.673,
+            "median": 25.59,
+            "sampleSd": 0.304,
+            "min": 25.42,
+            "max": 26.01
+          },
+          "drainSeconds": {
+            "raw": [
+              0,
+              13.93,
+              12.43
+            ],
+            "n": 3,
+            "mean": 8.787,
+            "median": 12.43,
+            "sampleSd": 7.646,
+            "min": 0,
+            "max": 13.93
+          },
+          "processingP50Ms": {
+            "raw": [
+              51,
+              51,
+              50
+            ],
+            "n": 3,
+            "mean": 50.667,
+            "median": 51,
+            "sampleSd": 0.577,
+            "min": 50,
+            "max": 51
+          },
+          "processingP95Ms": {
+            "raw": [
+              54,
+              53,
+              52
+            ],
+            "n": 3,
+            "mean": 53,
+            "median": 53,
+            "sampleSd": 1,
+            "min": 52,
+            "max": 54
+          },
+          "peakRunningTasks": {
+            "raw": [
+              5,
+              5,
+              3
+            ],
+            "n": 3,
+            "mean": 4.333,
+            "median": 5,
+            "sampleSd": 1.155,
+            "min": 3,
+            "max": 5
+          },
+          "taskSeconds": {
+            "raw": [
+              1139.196,
+              1170.271,
+              857.978
+            ],
+            "n": 3,
+            "mean": 1055.815,
+            "median": 1139.196,
+            "sampleSd": 172.035,
+            "min": 857.978,
+            "max": 1170.271
+          },
+          "predictionMaeJobsPerSecond": {
+            "raw": [
+              8.816,
+              8.914,
+              8.459
+            ],
+            "n": 3,
+            "mean": 8.73,
+            "median": 8.816,
+            "sampleSd": 0.239,
+            "min": 8.459,
+            "max": 8.914
+          },
+          "predictionBiasJobsPerSecond": {
+            "raw": [
+              -1.157,
+              -1.285,
+              -2.045
+            ],
+            "n": 3,
+            "mean": -1.496,
+            "median": -1.285,
+            "sampleSd": 0.48,
+            "min": -2.045,
+            "max": -1.157
+          },
+          "falseProactiveScaleOuts": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "errors": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicates": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicateJobsSkipped": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dlq": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "unaccountedJobs": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          }
+        }
+      }
+    },
+    "SUDDEN_BURST": {
+      "reactive": {
+        "runIds": [
+          "2026-09-23T22-06-09-543Z-hd-sudden-burst-reactive-r1-8f542f3d",
+          "2026-09-23T22-46-21-278Z-hd-sudden-burst-reactive-r2-01791855",
+          "2026-09-26T08-10-26-367Z-hd-sudden-burst-reactive-r3-21863e0d"
+        ],
+        "metrics": {
+          "offeredJobsPerSecond": {
+            "raw": [
+              29.035,
+              29.236,
+              29.238
+            ],
+            "n": 3,
+            "mean": 29.17,
+            "median": 29.236,
+            "sampleSd": 0.117,
+            "min": 29.035,
+            "max": 29.238
+          },
+          "completedJobs": {
+            "raw": [
+              18300,
+              18300,
+              18300
+            ],
+            "n": 3,
+            "mean": 18300,
+            "median": 18300,
+            "sampleSd": 0,
+            "min": 18300,
+            "max": 18300
+          },
+          "scaleRequestLatencySeconds": {
+            "raw": [
+              110.642,
+              99.303,
+              92.686
+            ],
+            "n": 3,
+            "mean": 100.877,
+            "median": 99.303,
+            "sampleSd": 9.081,
+            "min": 92.686,
+            "max": 110.642
+          },
+          "proactiveLeadSeconds": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "requestToFirstRunningSeconds": {
+            "raw": [
+              21.042,
+              22.596,
+              26.873
+            ],
+            "n": 3,
+            "mean": 23.504,
+            "median": 22.596,
+            "sampleSd": 3.02,
+            "min": 21.042,
+            "max": 26.873
+          },
+          "requestToFirstReadySeconds": {
+            "raw": [
+              23.528,
+              25.144,
+              29.326
+            ],
+            "n": 3,
+            "mean": 25.999,
+            "median": 25.144,
+            "sampleSd": 2.992,
+            "min": 23.528,
+            "max": 29.326
+          },
+          "peakVisibleBacklog": {
+            "raw": [
+              790,
+              1142,
+              706
+            ],
+            "n": 3,
+            "mean": 879.333,
+            "median": 790,
+            "sampleSd": 231.321,
+            "min": 706,
+            "max": 1142
+          },
+          "peakBacklogPerTask": {
+            "raw": [
+              691,
+              932,
+              676
+            ],
+            "n": 3,
+            "mean": 766.333,
+            "median": 691,
+            "sampleSd": 143.667,
+            "min": 676,
+            "max": 932
+          },
+          "peakOldestMessageAgeSeconds": {
+            "raw": [
+              30,
+              45,
+              31
+            ],
+            "n": 3,
+            "mean": 35.333,
+            "median": 31,
+            "sampleSd": 8.386,
+            "min": 30,
+            "max": 45
+          },
+          "completionThroughputJobsPerSecond": {
+            "raw": [
+              28.41,
+              28.98,
+              28.97
+            ],
+            "n": 3,
+            "mean": 28.787,
+            "median": 28.97,
+            "sampleSd": 0.326,
+            "min": 28.41,
+            "max": 28.98
+          },
+          "drainSeconds": {
+            "raw": [
+              12.44,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 4.147,
+            "median": 0,
+            "sampleSd": 7.182,
+            "min": 0,
+            "max": 12.44
+          },
+          "processingP50Ms": {
+            "raw": [
+              50,
+              51,
+              51
+            ],
+            "n": 3,
+            "mean": 50.667,
+            "median": 51,
+            "sampleSd": 0.577,
+            "min": 50,
+            "max": 51
+          },
+          "processingP95Ms": {
+            "raw": [
+              52,
+              53,
+              52
+            ],
+            "n": 3,
+            "mean": 52.333,
+            "median": 52,
+            "sampleSd": 0.577,
+            "min": 52,
+            "max": 53
+          },
+          "peakRunningTasks": {
+            "raw": [
+              5,
+              5,
+              5
+            ],
+            "n": 3,
+            "mean": 5,
+            "median": 5,
+            "sampleSd": 0,
+            "min": 5,
+            "max": 5
+          },
+          "taskSeconds": {
+            "raw": [
+              1729.254,
+              1759.066,
+              1791.592
+            ],
+            "n": 3,
+            "mean": 1759.971,
+            "median": 1759.066,
+            "sampleSd": 31.179,
+            "min": 1729.254,
+            "max": 1791.592
+          },
+          "predictionMaeJobsPerSecond": {
+            "raw": [
+              null,
+              null,
+              null
+            ],
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "sampleSd": null,
+            "min": null,
+            "max": null
+          },
+          "predictionBiasJobsPerSecond": {
+            "raw": [
+              null,
+              null,
+              null
+            ],
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "sampleSd": null,
+            "min": null,
+            "max": null
+          },
+          "falseProactiveScaleOuts": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "errors": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicates": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicateJobsSkipped": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dlq": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "unaccountedJobs": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          }
+        }
+      },
+      "hybrid": {
+        "runIds": [
+          "2026-09-23T22-26-25-510Z-hd-sudden-burst-hybrid-r1-99eb0c0a",
+          "2026-09-26T07-50-23-909Z-hd-sudden-burst-hybrid-r2-a07532a9",
+          "2026-09-26T08-30-33-251Z-hd-sudden-burst-hybrid-r3-9ee6f022"
+        ],
+        "metrics": {
+          "offeredJobsPerSecond": {
+            "raw": [
+              29.213,
+              29.233,
+              29.211
+            ],
+            "n": 3,
+            "mean": 29.219,
+            "median": 29.213,
+            "sampleSd": 0.012,
+            "min": 29.211,
+            "max": 29.233
+          },
+          "completedJobs": {
+            "raw": [
+              18300,
+              18300,
+              18300
+            ],
+            "n": 3,
+            "mean": 18300,
+            "median": 18300,
+            "sampleSd": 0,
+            "min": 18300,
+            "max": 18300
+          },
+          "scaleRequestLatencySeconds": {
+            "raw": [
+              23.313,
+              24.636,
+              23.336
+            ],
+            "n": 3,
+            "mean": 23.762,
+            "median": 23.336,
+            "sampleSd": 0.757,
+            "min": 23.313,
+            "max": 24.636
+          },
+          "proactiveLeadSeconds": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "requestToFirstRunningSeconds": {
+            "raw": [
+              21.3,
+              24.578,
+              23.58
+            ],
+            "n": 3,
+            "mean": 23.153,
+            "median": 23.58,
+            "sampleSd": 1.68,
+            "min": 21.3,
+            "max": 24.578
+          },
+          "requestToFirstReadySeconds": {
+            "raw": [
+              23.789,
+              27.028,
+              27.328
+            ],
+            "n": 3,
+            "mean": 26.048,
+            "median": 27.028,
+            "sampleSd": 1.962,
+            "min": 23.789,
+            "max": 27.328
+          },
+          "peakVisibleBacklog": {
+            "raw": [
+              460,
+              352,
+              484
+            ],
+            "n": 3,
+            "mean": 432,
+            "median": 460,
+            "sampleSd": 70.314,
+            "min": 352,
+            "max": 484
+          },
+          "peakBacklogPerTask": {
+            "raw": [
+              112.5,
+              262,
+              294
+            ],
+            "n": 3,
+            "mean": 222.833,
+            "median": 262,
+            "sampleSd": 96.882,
+            "min": 112.5,
+            "max": 294
+          },
+          "peakOldestMessageAgeSeconds": {
+            "raw": [
+              29,
+              16,
+              25
+            ],
+            "n": 3,
+            "mean": 23.333,
+            "median": 25,
+            "sampleSd": 6.658,
+            "min": 16,
+            "max": 29
+          },
+          "completionThroughputJobsPerSecond": {
+            "raw": [
+              28.97,
+              28.41,
+              28.41
+            ],
+            "n": 3,
+            "mean": 28.597,
+            "median": 28.41,
+            "sampleSd": 0.323,
+            "min": 28.41,
+            "max": 28.97
+          },
+          "drainSeconds": {
+            "raw": [
+              0,
+              12.64,
+              12.37
+            ],
+            "n": 3,
+            "mean": 8.337,
+            "median": 12.37,
+            "sampleSd": 7.221,
+            "min": 0,
+            "max": 12.64
+          },
+          "processingP50Ms": {
+            "raw": [
+              51,
+              51,
+              51
+            ],
+            "n": 3,
+            "mean": 51,
+            "median": 51,
+            "sampleSd": 0,
+            "min": 51,
+            "max": 51
+          },
+          "processingP95Ms": {
+            "raw": [
+              53,
+              53,
+              54
+            ],
+            "n": 3,
+            "mean": 53.333,
+            "median": 53,
+            "sampleSd": 0.577,
+            "min": 53,
+            "max": 54
+          },
+          "peakRunningTasks": {
+            "raw": [
+              5,
+              5,
+              5
+            ],
+            "n": 3,
+            "mean": 5,
+            "median": 5,
+            "sampleSd": 0,
+            "min": 5,
+            "max": 5
+          },
+          "taskSeconds": {
+            "raw": [
+              2071.156,
+              2062.576,
+              2069.368
+            ],
+            "n": 3,
+            "mean": 2067.7,
+            "median": 2069.368,
+            "sampleSd": 4.527,
+            "min": 2062.576,
+            "max": 2071.156
+          },
+          "predictionMaeJobsPerSecond": {
+            "raw": [
+              24.409,
+              21.734,
+              21.266
+            ],
+            "n": 3,
+            "mean": 22.47,
+            "median": 21.734,
+            "sampleSd": 1.696,
+            "min": 21.266,
+            "max": 24.409
+          },
+          "predictionBiasJobsPerSecond": {
+            "raw": [
+              6.387,
+              6.306,
+              6.117
+            ],
+            "n": 3,
+            "mean": 6.27,
+            "median": 6.306,
+            "sampleSd": 0.139,
+            "min": 6.117,
+            "max": 6.387
+          },
+          "falseProactiveScaleOuts": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "errors": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicates": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "duplicateJobsSkipped": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "dlq": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          },
+          "unaccountedJobs": {
+            "raw": [
+              0,
+              0,
+              0
+            ],
+            "n": 3,
+            "mean": 0,
+            "median": 0,
+            "sampleSd": 0,
+            "min": 0,
+            "max": 0
+          }
+        }
+      }
+    }
+  },
+  "excludedAttempts": [
+    {
+      "runId": "2026-09-23T23-06-57-400Z-hd-sudden-burst-hybrid-r2-22296a14",
+      "validity": "INCOMPLETE_ARTIFACT",
+      "reviewStatus": "INVALID"
+    }
+  ]
+}
