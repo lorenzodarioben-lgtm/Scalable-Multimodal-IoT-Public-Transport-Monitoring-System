@@ -1,0 +1,13 @@
+{
+  "runId": "hd-predictive-smoke-e56d7a2c-9b8e-4853-a76b-4b6326dc76c6",
+  "classification": "LIVE HD SMOKE ONLY; NOT FORMAL EXPERIMENT EVIDENCE",
+  "prefix": "sit314-hd-transport",
+  "region": "us-east-1",
+  "mode": "hybrid",
+  "startedAt": "2026-09-23T18:24:38.943Z",
+  "expectedJobs": 1150,
+  "incidentCount": 23,
+  "signalCount": 11,
+  "duplicateDeliveryCount": 2,
+  "finishedAt": "2026-09-23T18:32:36.653Z"
+}

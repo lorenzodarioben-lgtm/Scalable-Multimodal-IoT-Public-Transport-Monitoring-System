@@ -1,0 +1,378 @@
+{
+  "capturedAt": "2026-09-23T17:40:02.076Z",
+  "classification": "HD PARTIAL DEPLOYMENT; NO SMOKE OR FORMAL RUN",
+  "region": "us-east-1",
+  "status": "BLOCKED_ECR_IMAGE_PUSH",
+  "reason": "Two Docker pushes stalled on the final layer; no tagged HD image digest was available. ECS, scaling, predictor Lambda and smoke were not started.",
+  "checks": {
+    "identity": {
+      "UserId": "AROAVNHAL3RGJEGNS7KIM:user4880853=s224658462@deakin.edu.au",
+      "Account": "371985210444",
+      "Arn": "arn:aws:sts::371985210444:assumed-role/voclabs/user4880853=s224658462@deakin.edu.au"
+    },
+    "stacks": [
+      {
+        "name": "sit314-hd-transport-hd-signals",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "ArrivalSignalDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-arrival-dlq.fifo"
+          },
+          {
+            "OutputKey": "PredictorStateTableName",
+            "OutputValue": "sit314-hd-transport-predictor-state",
+            "ExportName": "sit314-hd-transport-hd-signals-PredictorStateTableName"
+          },
+          {
+            "OutputKey": "ArrivalSignalQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-arrival.fifo",
+            "ExportName": "sit314-hd-transport-hd-signals-ArrivalSignalQueueUrl"
+          },
+          {
+            "OutputKey": "ArrivalSignalQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-hd-transport-arrival.fifo",
+            "ExportName": "sit314-hd-transport-hd-signals-ArrivalSignalQueueArn"
+          },
+          {
+            "OutputKey": "PredictorStateTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-predictor-state",
+            "ExportName": "sit314-hd-transport-hd-signals-PredictorStateTableArn"
+          }
+        ]
+      },
+      {
+        "name": "sit314-hd-transport-hd-code",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "CodeBucketName",
+            "OutputValue": "sit314-hd-transport-371985210444-us-east-1-code"
+          }
+        ]
+      },
+      {
+        "name": "sit314-hd-transport-tables",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "AnalysisResultsTableName",
+            "OutputValue": "sit314-hd-transport-analysis-results",
+            "ExportName": "sit314-hd-transport-tables-AnalysisResultsTable"
+          },
+          {
+            "OutputKey": "AnalysisResultsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-analysis-results",
+            "ExportName": "sit314-hd-transport-tables-AnalysisResultsTableArn"
+          },
+          {
+            "OutputKey": "NotificationsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-notifications",
+            "ExportName": "sit314-hd-transport-tables-NotificationsTableArn"
+          },
+          {
+            "OutputKey": "ProcessedEventsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-processed-events",
+            "ExportName": "sit314-hd-transport-tables-ProcessedEventsTableArn"
+          },
+          {
+            "OutputKey": "CurrentStateTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-current-state",
+            "ExportName": "sit314-hd-transport-tables-CurrentStateTableArn"
+          },
+          {
+            "OutputKey": "CurrentStateTableName",
+            "OutputValue": "sit314-hd-transport-current-state",
+            "ExportName": "sit314-hd-transport-tables-CurrentStateTable"
+          },
+          {
+            "OutputKey": "NotificationsTableName",
+            "OutputValue": "sit314-hd-transport-notifications",
+            "ExportName": "sit314-hd-transport-tables-NotificationsTable"
+          },
+          {
+            "OutputKey": "ProcessedEventsTableName",
+            "OutputValue": "sit314-hd-transport-processed-events",
+            "ExportName": "sit314-hd-transport-tables-ProcessedEventsTable"
+          }
+        ]
+      },
+      {
+        "name": "sit314-hd-transport-queues",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "AnalysisDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-analysis-dlq"
+          },
+          {
+            "OutputKey": "AnalysisQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-analysis",
+            "ExportName": "sit314-hd-transport-queues-AnalysisQueueUrl"
+          },
+          {
+            "OutputKey": "AnalysisQueueName",
+            "OutputValue": "sit314-hd-transport-analysis",
+            "ExportName": "sit314-hd-transport-queues-AnalysisQueueName"
+          },
+          {
+            "OutputKey": "AnalysisQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-hd-transport-analysis",
+            "ExportName": "sit314-hd-transport-queues-AnalysisQueueArn"
+          },
+          {
+            "OutputKey": "NotificationsQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-notifications",
+            "ExportName": "sit314-hd-transport-queues-NotificationsQueueUrl"
+          },
+          {
+            "OutputKey": "TelemetryQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-telemetry",
+            "ExportName": "sit314-hd-transport-queues-TelemetryQueueUrl"
+          },
+          {
+            "OutputKey": "NotificationsQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-hd-transport-notifications",
+            "ExportName": "sit314-hd-transport-queues-NotificationsQueueArn"
+          },
+          {
+            "OutputKey": "TelemetryQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-hd-transport-telemetry",
+            "ExportName": "sit314-hd-transport-queues-TelemetryQueueArn"
+          },
+          {
+            "OutputKey": "TelemetryDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-telemetry-dlq"
+          },
+          {
+            "OutputKey": "NotificationsDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-hd-transport-notifications-dlq"
+          }
+        ]
+      },
+      {
+        "name": "sit314-transport-scaling",
+        "status": "UPDATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "MaxTasks",
+            "OutputValue": "5"
+          },
+          {
+            "OutputKey": "TargetValue",
+            "OutputValue": "75"
+          },
+          {
+            "OutputKey": "ScalingMode",
+            "OutputValue": "BacklogPerTask"
+          },
+          {
+            "OutputKey": "MinTasks",
+            "OutputValue": "1"
+          },
+          {
+            "OutputKey": "BacklogMetricFunctionName",
+            "OutputValue": "sit314-transport-backlog-metric"
+          },
+          {
+            "OutputKey": "ScalableTargetId",
+            "OutputValue": "service/sit314-transport-cluster/sit314-transport-route-impact|ecs:service:DesiredCount|ecs"
+          }
+        ]
+      },
+      {
+        "name": "sit314-transport-ecs",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "RouteImpactServiceName",
+            "OutputValue": "sit314-transport-route-impact",
+            "ExportName": "sit314-transport-ecs-RouteImpactServiceName"
+          },
+          {
+            "OutputKey": "TaskRoleArnUsed",
+            "OutputValue": "arn:aws:iam::371985210444:role/LabRole"
+          },
+          {
+            "OutputKey": "ClusterName",
+            "OutputValue": "sit314-transport-cluster",
+            "ExportName": "sit314-transport-ecs-ClusterName"
+          },
+          {
+            "OutputKey": "RouteImpactScalableId",
+            "OutputValue": "service/sit314-transport-cluster/sit314-transport-route-impact",
+            "Description": "Resource id used by Application Auto Scaling in scaling.yaml.",
+            "ExportName": "sit314-transport-ecs-RouteImpactScalableId"
+          },
+          {
+            "OutputKey": "WorkerSecurityGroupId",
+            "OutputValue": "sg-06a00c214dc8dfbaf"
+          },
+          {
+            "OutputKey": "ExecutionRoleArnUsed",
+            "OutputValue": "arn:aws:iam::371985210444:role/LabRole"
+          }
+        ]
+      },
+      {
+        "name": "sit314-transport-iot-rule",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "RuleRoleArn",
+            "OutputValue": "arn:aws:iam::371985210444:role/LabRole",
+            "Description": "Role the IoT rule assumes to write to SQS."
+          },
+          {
+            "OutputKey": "RuleName",
+            "OutputValue": "sit314_transport_normalized_to_telemetry"
+          }
+        ]
+      },
+      {
+        "name": "sit314-transport-tables",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "AnalysisResultsTableName",
+            "OutputValue": "sit314-transport-analysis-results",
+            "ExportName": "sit314-transport-tables-AnalysisResultsTable"
+          },
+          {
+            "OutputKey": "AnalysisResultsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-transport-analysis-results",
+            "ExportName": "sit314-transport-tables-AnalysisResultsTableArn"
+          },
+          {
+            "OutputKey": "NotificationsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-transport-notifications",
+            "ExportName": "sit314-transport-tables-NotificationsTableArn"
+          },
+          {
+            "OutputKey": "ProcessedEventsTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-transport-processed-events",
+            "ExportName": "sit314-transport-tables-ProcessedEventsTableArn"
+          },
+          {
+            "OutputKey": "CurrentStateTableArn",
+            "OutputValue": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-transport-current-state",
+            "ExportName": "sit314-transport-tables-CurrentStateTableArn"
+          },
+          {
+            "OutputKey": "CurrentStateTableName",
+            "OutputValue": "sit314-transport-current-state",
+            "ExportName": "sit314-transport-tables-CurrentStateTable"
+          },
+          {
+            "OutputKey": "NotificationsTableName",
+            "OutputValue": "sit314-transport-notifications",
+            "ExportName": "sit314-transport-tables-NotificationsTable"
+          },
+          {
+            "OutputKey": "ProcessedEventsTableName",
+            "OutputValue": "sit314-transport-processed-events",
+            "ExportName": "sit314-transport-tables-ProcessedEventsTable"
+          }
+        ]
+      },
+      {
+        "name": "sit314-transport-queues",
+        "status": "CREATE_COMPLETE",
+        "outputs": [
+          {
+            "OutputKey": "AnalysisDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-analysis-dlq"
+          },
+          {
+            "OutputKey": "AnalysisQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-analysis",
+            "ExportName": "sit314-transport-queues-AnalysisQueueUrl"
+          },
+          {
+            "OutputKey": "AnalysisQueueName",
+            "OutputValue": "sit314-transport-analysis",
+            "ExportName": "sit314-transport-queues-AnalysisQueueName"
+          },
+          {
+            "OutputKey": "AnalysisQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-transport-analysis",
+            "ExportName": "sit314-transport-queues-AnalysisQueueArn"
+          },
+          {
+            "OutputKey": "NotificationsQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-notifications",
+            "ExportName": "sit314-transport-queues-NotificationsQueueUrl"
+          },
+          {
+            "OutputKey": "TelemetryQueueUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-telemetry",
+            "ExportName": "sit314-transport-queues-TelemetryQueueUrl"
+          },
+          {
+            "OutputKey": "NotificationsQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-transport-notifications",
+            "ExportName": "sit314-transport-queues-NotificationsQueueArn"
+          },
+          {
+            "OutputKey": "TelemetryQueueArn",
+            "OutputValue": "arn:aws:sqs:us-east-1:371985210444:sit314-transport-telemetry",
+            "ExportName": "sit314-transport-queues-TelemetryQueueArn"
+          },
+          {
+            "OutputKey": "TelemetryDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-telemetry-dlq"
+          },
+          {
+            "OutputKey": "NotificationsDlqUrl",
+            "OutputValue": "https://sqs.us-east-1.amazonaws.com/371985210444/sit314-transport-notifications-dlq"
+          }
+        ]
+      }
+    ],
+    "D_service": {
+      "desired": 1,
+      "running": 1,
+      "pending": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-transport-route-impact:1",
+      "status": "ACTIVE"
+    },
+    "D_target": {
+      "min": 1,
+      "max": 5,
+      "resource": "service/sit314-transport-cluster/sit314-transport-route-impact"
+    },
+    "D_policies": [
+      { "name": "sit314-transport-fast-backlog-scale-out", "type": "StepScaling", "target": null, "step": 4 },
+      { "name": "sit314-transport-backlog-per-task", "type": "TargetTrackingScaling", "target": 75, "step": null }
+    ],
+    "D_analysis": {
+      "Attributes": {
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0"
+      }
+    },
+    "D_dlq": {
+      "Attributes": {
+        "ApproximateNumberOfMessages": "0",
+        "ApproximateNumberOfMessagesNotVisible": "0"
+      }
+    },
+    "HD_ecr_tagged": [],
+    "HD_queues_after_stop": {
+      "analysis": { "visible": 0, "inFlight": 0 },
+      "analysisDlq": { "visible": 0, "inFlight": 0 },
+      "arrivalFifo": { "visible": 0, "inFlight": 0 },
+      "arrivalDlqFifo": { "visible": 0, "inFlight": 0 }
+    },
+    "HD_code_object": {
+      "ContentLength": 10330,
+      "ETag": "\"e884e54f090115a567d8ccc5e0cdad20\"",
+      "LastModified": "2026-09-23T17:20:47+00:00"
+    },
+    "HD_state_table": {
+      "Name": "sit314-hd-transport-predictor-state",
+      "Status": "ACTIVE",
+      "Arn": "arn:aws:dynamodb:us-east-1:371985210444:table/sit314-hd-transport-predictor-state"
+    }
+  }
+}

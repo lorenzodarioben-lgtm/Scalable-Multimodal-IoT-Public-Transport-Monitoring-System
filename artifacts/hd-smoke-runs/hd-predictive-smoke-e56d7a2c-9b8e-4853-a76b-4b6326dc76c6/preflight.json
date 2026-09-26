@@ -1,0 +1,70 @@
+{
+  "preflight": {
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "signals": {
+      "sit314-hd-transport-arrival.fifo": {
+        "visible": 0,
+        "inFlight": 0
+      },
+      "sit314-hd-transport-arrival-dlq.fifo": {
+        "visible": 0,
+        "inFlight": 0
+      }
+    },
+    "scaling": {
+      "minTasks": 1,
+      "maxTasks": 5,
+      "targetBacklogPerTask": 75,
+      "fastStepIncrease": 4,
+      "alarmState": "OK",
+      "controllerMode": "hybrid"
+    },
+    "recentBpt": [
+      {
+        "timestamp": "2026-09-23T18:21:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T18:22:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      },
+      {
+        "timestamp": "2026-09-23T18:23:00.000Z",
+        "value": 0,
+        "unit": "Count"
+      }
+    ],
+    "workers": {
+      "workers": [
+        {
+          "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+          "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+          "logStreamName": "route-impact/route-impact-worker/9c856cde514c48d29e98c3b72be549b8",
+          "timestamp": "2026-09-23T18:11:09.191Z",
+          "message": "[WORKER_READY] taskId=ecs-9c856cde514c48d29e98c3b72be549b8 source=ecs-task-metadata"
+        }
+      ]
+    }
+  },
+  "processingCost": {
+    "processingDelayMs": 50,
+    "processingCpuIterations": 0,
+    "source": "ECS task definition",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+    "workerImage": "371985210444.dkr.ecr.us-east-1.amazonaws.com/sit314-hd-transport-route-impact-worker:hd-local",
+    "taskCpu": "256",
+    "taskMemory": "512"
+  }
+}

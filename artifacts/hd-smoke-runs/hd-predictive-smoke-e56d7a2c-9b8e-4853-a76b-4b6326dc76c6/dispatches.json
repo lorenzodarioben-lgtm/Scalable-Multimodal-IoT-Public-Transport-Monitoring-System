@@ -1,0 +1,135 @@
+[
+  {
+    "index": 0,
+    "startedAt": "2026-09-23T18:24:52.903Z",
+    "completedAt": "2026-09-23T18:24:54.777Z",
+    "scheduledOffsetMs": 0,
+    "jobs": 50,
+    "signalId": "smoke-signal-0",
+    "sourceEventIds": [
+      "event-8fa2220c48f58bb1301a49c7"
+    ]
+  },
+  {
+    "index": 1,
+    "startedAt": "2026-09-23T18:25:03.399Z",
+    "completedAt": "2026-09-23T18:25:04.779Z",
+    "scheduledOffsetMs": 10500,
+    "jobs": 50,
+    "signalId": "smoke-signal-1",
+    "sourceEventIds": [
+      "event-e4e5edc50f6114be4ba9b941"
+    ]
+  },
+  {
+    "index": 2,
+    "startedAt": "2026-09-23T18:25:13.902Z",
+    "completedAt": "2026-09-23T18:25:14.642Z",
+    "scheduledOffsetMs": 21000,
+    "jobs": 50,
+    "signalId": "smoke-signal-2",
+    "sourceEventIds": [
+      "event-70eaa64a965102fb1e621e5d"
+    ]
+  },
+  {
+    "index": 3,
+    "startedAt": "2026-09-23T18:25:24.402Z",
+    "completedAt": "2026-09-23T18:25:27.560Z",
+    "scheduledOffsetMs": 31500,
+    "jobs": 50,
+    "signalId": "smoke-signal-3",
+    "sourceEventIds": [
+      "event-56327e89fedda9326a508c6d"
+    ]
+  },
+  {
+    "index": 4,
+    "startedAt": "2026-09-23T18:25:34.903Z",
+    "completedAt": "2026-09-23T18:25:38.994Z",
+    "scheduledOffsetMs": 42000,
+    "jobs": 50,
+    "signalId": "smoke-signal-4",
+    "sourceEventIds": [
+      "event-3282d80706c470e33e27ecaa"
+    ]
+  },
+  {
+    "index": 5,
+    "startedAt": "2026-09-23T18:25:45.404Z",
+    "completedAt": "2026-09-23T18:25:46.678Z",
+    "scheduledOffsetMs": 52500,
+    "jobs": 50,
+    "signalId": "smoke-signal-5",
+    "sourceEventIds": [
+      "event-9db85785827751f50e45427b"
+    ]
+  },
+  {
+    "index": 6,
+    "startedAt": "2026-09-23T18:25:55.906Z",
+    "completedAt": "2026-09-23T18:26:00.669Z",
+    "scheduledOffsetMs": 63000,
+    "jobs": 50,
+    "signalId": "smoke-signal-6",
+    "sourceEventIds": [
+      "event-14fdb47dc87c9bffd080b11a"
+    ]
+  },
+  {
+    "index": 7,
+    "startedAt": "2026-09-23T18:26:06.400Z",
+    "completedAt": "2026-09-23T18:26:09.436Z",
+    "scheduledOffsetMs": 73500,
+    "jobs": 250,
+    "signalId": "smoke-signal-7",
+    "sourceEventIds": [
+      "event-c135c729248042fa1ba1cf48",
+      "event-ec4222bb07d326f0148ae883",
+      "event-c629ecd5c8da5eb31077c9b6",
+      "event-e11ea7d1852d229f55e2a095",
+      "event-4cd1070eb8a79b2e9cf771e0"
+    ]
+  },
+  {
+    "index": 8,
+    "startedAt": "2026-09-23T18:26:16.906Z",
+    "completedAt": "2026-09-23T18:26:33.455Z",
+    "scheduledOffsetMs": 84000,
+    "jobs": 250,
+    "signalId": "smoke-signal-8",
+    "sourceEventIds": [
+      "event-e1568481de6be762cdc4ff99",
+      "event-d330c28918bf1d42364ee41b",
+      "event-92ff3c3b00f4af383a374fbb",
+      "event-f8c5f8d5bf76107b22445526",
+      "event-b8c1623400bb2886a8433ddb"
+    ]
+  },
+  {
+    "index": 9,
+    "startedAt": "2026-09-23T18:26:35.545Z",
+    "completedAt": "2026-09-23T18:26:38.934Z",
+    "scheduledOffsetMs": 94500,
+    "jobs": 250,
+    "signalId": "smoke-signal-9",
+    "sourceEventIds": [
+      "event-5f5a6242a4d5f8e0984ee87a",
+      "event-eabf39c9dd643ace128f1f24",
+      "event-ee31d21c54d1fb8a75d7948c",
+      "event-a81e0ae891b2abdca244d640",
+      "event-ebb822f72c2805506cf88ce2"
+    ]
+  },
+  {
+    "index": 10,
+    "startedAt": "2026-09-23T18:26:40.143Z",
+    "completedAt": "2026-09-23T18:26:43.225Z",
+    "scheduledOffsetMs": 105000,
+    "jobs": 50,
+    "signalId": "smoke-signal-10",
+    "sourceEventIds": [
+      "event-233a13dd65e92d07fe68fc88"
+    ]
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "classification": "LIVE HD SMOKE ONLY; NOT FORMAL EXPERIMENT EVIDENCE",
+  "runId": "hd-predictive-smoke-e56d7a2c-9b8e-4853-a76b-4b6326dc76c6",
+  "expectedJobs": 1150,
+  "completedJobs": 1150,
+  "newTaskIds": [
+    "5ce482fe567048d481cd41c09f4b973c"
+  ],
+  "workerReadyEvents": [
+    {
+      "timestamp": "2026-09-23T18:26:59.089Z",
+      "logStreamName": "route-impact/route-impact-worker/5ce482fe567048d481cd41c09f4b973c",
+      "message": "[WORKER_READY] taskId=ecs-5ce482fe567048d481cd41c09f4b973c source=ecs-task-metadata"
+    }
+  ],
+  "scaleRequests": [
+    {
+      "timestamp": "2026-09-23T18:26:34.047Z",
+      "result": {
+        "duplicate": false,
+        "acceptedJobs": 250,
+        "emittedMetricCount": 12,
+        "metricError": null,
+        "scaleRequested": true,
+        "target": 2,
+        "requestedAtMs": 1790187994032,
+        "decisionAtMs": 1790187984462,
+        "stateVersion": 10
+      }
+    }
+  ],
+  "checks": {
+    "acceptedSignals": true,
+    "duplicateDeliveriesSuppressed": true,
+    "stateRetainedElevenIds": true,
+    "sensibleArrivalRate": true,
+    "forecastPublished": true,
+    "recommendationPublished": true,
+    "scaleRequestPublished": true,
+    "onePredictiveRequest": true,
+    "noPredictiveScaleIn": true,
+    "newEcsTaskRunning": true,
+    "newWorkerReady": true,
+    "jobsReconciled": true,
+    "noWorkerErrors": true,
+    "signalQueuesClean": true,
+    "reactivePoliciesRetained": true,
+    "separateMetricNamespace": true
+  },
+  "passed": true,
+  "review": {
+    "kind": "post-hoc log-parser correction; same smoke artifact; no workload rerun",
+    "parsedPredictorEvents": 13,
+    "originalPassed": false
+  }
+}

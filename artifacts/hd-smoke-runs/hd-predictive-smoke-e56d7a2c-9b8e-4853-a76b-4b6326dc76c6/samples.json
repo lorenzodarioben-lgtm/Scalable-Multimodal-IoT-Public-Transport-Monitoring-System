@@ -1,0 +1,1367 @@
+[
+  {
+    "timestamp": "2026-09-23T18:24:55.428Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:25:06.659Z",
+    "queue": {
+      "visibleMessages": 6,
+      "inFlightMessages": 4,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:25:16.695Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:25:29.009Z",
+    "queue": {
+      "visibleMessages": 24,
+      "inFlightMessages": 3,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:25:40.746Z",
+    "queue": {
+      "visibleMessages": 4,
+      "inFlightMessages": 2,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:25:48.124Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:05.161Z",
+    "queue": {
+      "visibleMessages": 4,
+      "inFlightMessages": 2,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:12.079Z",
+    "queue": {
+      "visibleMessages": 9,
+      "inFlightMessages": 5,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:34.943Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:39.393Z",
+    "queue": {
+      "visibleMessages": 145,
+      "inFlightMessages": 6,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": null,
+        "lastStatus": "PROVISIONING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:43.967Z",
+    "queue": {
+      "visibleMessages": 118,
+      "inFlightMessages": 3,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 1,
+      "pendingCount": 1,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": null,
+        "lastStatus": "PROVISIONING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:26:44.970Z",
+    "queue": {
+      "visibleMessages": 46,
+      "inFlightMessages": 6,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 1,
+      "pendingCount": 1,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": null,
+        "lastStatus": "PROVISIONING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:01.430Z",
+    "queue": {
+      "visibleMessages": 118,
+      "inFlightMessages": 3,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 1,
+      "pendingCount": 1,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:10.954Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:19.598Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:28.136Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:37.237Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:46.553Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:27:55.650Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:05.549Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:14.999Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:24.484Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:33.078Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:43.953Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 2,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:28:53.005Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 2,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/5ce482fe567048d481cd41c09f4b973c",
+        "taskId": "ecs-5ce482fe567048d481cd41c09f4b973c",
+        "startedAt": "2026-09-23T18:26:56.602Z",
+        "lastStatus": "RUNNING"
+      },
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:02.262Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:12.786Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:20.975Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:34.308Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:42.703Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:29:51.887Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:00.768Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:10.652Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:21.244Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:31.242Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:40.989Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:30:51.728Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:00.394Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:09.578Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:19.945Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:29.052Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:38.978Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:49.576Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:31:59.368Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:32:11.332Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:32:20.044Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-09-23T18:32:29.604Z",
+    "queue": {
+      "visibleMessages": 0,
+      "inFlightMessages": 0,
+      "oldestMessageAgeSeconds": null
+    },
+    "service": {
+      "desiredCount": 1,
+      "runningCount": 1,
+      "pendingCount": 0,
+      "taskDefinition": "arn:aws:ecs:us-east-1:371985210444:task-definition/sit314-hd-transport-route-impact:1",
+      "scaling": {
+        "minCapacity": 1,
+        "maxCapacity": 5,
+        "policyCount": 2
+      }
+    },
+    "tasks": [
+      {
+        "taskArn": "arn:aws:ecs:us-east-1:371985210444:task/sit314-hd-transport-cluster/9c856cde514c48d29e98c3b72be549b8",
+        "taskId": "ecs-9c856cde514c48d29e98c3b72be549b8",
+        "startedAt": "2026-09-23T18:11:06.195Z",
+        "lastStatus": "RUNNING"
+      }
+    ]
+  }
+]
