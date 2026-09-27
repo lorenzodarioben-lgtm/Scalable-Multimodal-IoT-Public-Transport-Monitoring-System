@@ -37,7 +37,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Submission documents and generated handoff packages are kept outside this GitHub snapshot.
+# Keep submission documents and generated handoff packages out of the repository.
 *.pdf
 *.docx
 *.zip
