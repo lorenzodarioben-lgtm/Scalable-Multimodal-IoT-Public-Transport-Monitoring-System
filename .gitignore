@@ -21,7 +21,7 @@ credentials.*
 aws-credentials*
 
 # ---- generated experiment artifacts (can be large) ----
-artifacts/
+# Curated and raw experiment evidence is intentionally included.
 !experiments/hd/artifacts/
 !experiments/hd/artifacts/local-parameter-study.json
 !experiments/hd/artifacts/local-parameter-study.csv
@@ -36,3 +36,11 @@ node-red/data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Submission documents and generated handoff packages are kept outside this GitHub snapshot.
+*.pdf
+*.docx
+*.zip
+Tasks/
+report_handoff/
+docs/hd-final-report/

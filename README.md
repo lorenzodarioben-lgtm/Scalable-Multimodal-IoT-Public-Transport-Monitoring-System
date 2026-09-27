@@ -1,5 +1,7 @@
 # Scalable Multimodal IoT Public Transport Monitoring System
 
+> **Repository snapshot:** The inherited README below describes the earlier Distinction baseline. The completed High Distinction predictive-scaling study has 12 valid AWS runs; see [HD formal progress](HD_FORMAL_PROGRESS.md), [HD report draft](docs/HD_REPORT_DRAFT.md), and [final data](docs/hd-final-data/). Saved run artifacts are included. See [GitHub preparation notes](GITHUB_PREP_NOTES.md) for the export scope.
+
 SIT314 Distinction Project — Lorenzo Dario Ben
 
 A simulated public transport authority monitors buses, trams, trains and passenger
