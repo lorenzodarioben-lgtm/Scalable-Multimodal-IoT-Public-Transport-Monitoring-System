@@ -77,7 +77,7 @@ export function replayDTrace({ runDirectory = defaultDRun,
     inputLimitations: [
       'Dispatch completion is the last observed batch completion, not a per-job SQS acceptance timestamp.',
       'SQS/ECS samples are about ten seconds apart; hold-last replay does not recover state between samples.',
-      'Sampled visible/running ratio is only a controller input approximation and is NOT historical CloudWatch BacklogPerTask.',
+      'Sampled visible/running ratio is an inferred controller input, not historical CloudWatch BacklogPerTask.',
       'Original D capacity is replayed as observed. Proposed HD requests are not applied, so this cannot predict counterfactual backlog or savings.',
     ],
     dispatchedIncidents: bySequence.size,

@@ -58,4 +58,4 @@ All three valid repeats are shown; invalid/aborted attempts remain in the artifa
 | dlq | 0, 0, 0 | 0 ± 0 | 0, 0, 0 | 0 ± 0 | NA |
 | unaccountedJobs | 0, 0, 0 | 0 ± 0 | 0, 0, 0 | 0 ± 0 | NA |
 
-Task-seconds approximate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.
+Task-seconds indicate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.

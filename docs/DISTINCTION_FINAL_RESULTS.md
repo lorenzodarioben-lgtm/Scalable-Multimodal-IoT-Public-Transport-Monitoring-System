@@ -24,7 +24,7 @@ The original record classified these runs as `VALID`:
 
 The earlier post-improvement artifact `2026-09-22T09-32-25-897Z-incident-stage-1-autoscale-r1` is explicitly excluded: its timing guard stopped injection at 3,150 of 31,500 jobs after a 1,109 ms dispatch-start lag. Its `TIMING-INVALID` status makes it diagnostic material only. Calibration artifacts are likewise not formal or final-improvement evidence.
 
-`BacklogPerTask` (BPT) below is genuine historical CloudWatch evidence, never reconstructed from SQS depth: namespace `SIT314/Transport`, metric `BacklogPerTask`, dimension `ServiceName=sit314-transport-route-impact`, one-minute `Maximum` statistic. Oldest-message-age peaks are historical `AWS/SQS` `ApproximateAgeOfOldestMessage` one-minute maxima for `sit314-transport-analysis`. Visible backlog and task counts are from each run's samples. Standard deviation is sample SD (`n - 1`) across the three valid formal repeats.
+`BacklogPerTask` (BPT) below comes directly from historical CloudWatch data, not a calculation from SQS depth: namespace `SIT314/Transport`, metric `BacklogPerTask`, dimension `ServiceName=sit314-transport-route-impact`, one-minute `Maximum` statistic. Oldest-message-age peaks are historical `AWS/SQS` `ApproximateAgeOfOldestMessage` one-minute maxima for `sit314-transport-analysis`. Visible backlog and task counts are from each run's samples. Standard deviation is sample SD (`n - 1`) across the three valid formal repeats.
 
 ## Frozen formal workload
 
@@ -33,7 +33,7 @@ The earlier post-improvement artifact `2026-09-22T09-32-25-897Z-incident-stage-1
 | Warm-up / measurement / scheduled arrivals | 30 s / 600 s / 630 s |
 | Cadence and incidents | 1 second; 630 incidents |
 | Jobs | 50 per incident; 31,500 per run |
-| Offered intensity | Approximately 50 jobs/s |
+| Offered intensity | About 50 jobs/s |
 | Worker cost | `WorkerProcessingDelayMs = 50`; `WorkerCpuIterations = 0` |
 | Fixed arm | Exactly 1 ECS task |
 | Autoscale arm | 1–5 ECS tasks |
@@ -116,7 +116,7 @@ The evidence identifies **autoscaling response latency** as the first demonstrat
 
 - Fixed capacity developed sustained pressure (mean BPT 3,678.667 against target 75), yet all jobs completed with zero faults. This is load-induced queueing, not worker failure.
 - Autoscale reached five running tasks in every repeat and materially reduced backlog, BPT, and message age while retaining 52 ms p95. Worker processing latency was not the first limiting factor at this workload.
-- Baseline target tracking took roughly 3.5–4 minutes from pressure developing to the scale-out request (about 230.6 s over the baseline runs). Fargate start-up then added approximately 20–46 s before added tasks emitted `WORKER_READY`.
+- Baseline target tracking took roughly 3.5–4 minutes from pressure developing to the scale-out request (about 230.6 s over the baseline runs). Fargate start-up then added 20–46 s before added tasks emitted `WORKER_READY`.
 
 The first demonstrated delay was the sequence of one-minute custom-metric publication, target-tracking evaluation, and Fargate task start-up. It allowed a substantial queue to build before added capacity was usable; it was not a reliability regression.
 
@@ -149,7 +149,7 @@ The valid replacement retest submitted and completed 31,500/31,500 jobs at 49.90
 
 The first genuine above-target BPT minute was `2026-09-22T10:51:00Z`. The fast alarm entered `ALARM` at `10:52:02.284Z`; its step-scaling request was recorded at `10:52:02.512Z`. The four added workers emitted `WORKER_READY` between `10:52:34.902Z` and `10:52:42.559Z`, while arrivals continued until `11:01:56.900Z`. Added capacity was therefore operational while meaningful work was still arriving.
 
-The improvement succeeded at its primary purpose: it materially reduced scale-out response delay and queue pressure without harming correctness. It did **not** improve every metric. The explicit trade-offs are approximately 2% lower completion throughput, an 11.784 s post-arrival drain, a 1 ms p95 increase, and temporary additional compute cost from reaching five tasks earlier.
+The improvement succeeded at its primary purpose: it materially reduced scale-out response delay and queue pressure without harming correctness. It did **not** improve every metric. The explicit trade-offs are about 2% lower completion throughput, an 11.784 s post-arrival drain, a 1 ms p95 increase, and temporary additional compute cost from reaching five tasks earlier.
 
 ## Reliability conclusion
 

@@ -120,7 +120,7 @@ the separate HD environment. Genuine reactive `BacklogPerTask` uses only the
 The application signal hook is best-effort after business job publication:
 an unavailable signal queue can omit a predictor observation without losing
 analysis jobs. A validity gate must inspect this log and the signal DLQ.
-SQS approximate depth and a direct ECS desired-count request can race with
+The SQS queue-depth estimate and a direct ECS desired-count request can race with
 the independent target-tracking controller. The first cloud smoke test must
 verify permissions, signal throughput, metric publication and that predictive
 capacity persists long enough to become `WORKER_READY`.

@@ -92,7 +92,7 @@ export async function processAnalysisArrival({
   if (!Number.isInteger(desiredTasks) || desiredTasks < 1 || desiredTasks > 5
     || !Number.isInteger(runningTasks) || runningTasks < 0 || runningTasks > 5
     || !Number.isFinite(visibleBacklog) || visibleBacklog < 0) {
-    throw new Error('invalid service or queue snapshot');
+    throw new Error('invalid service or queue reading');
   }
   const bpt = visibleBacklog / Math.max(1, runningTasks);
   const predictor = mode === 'hybrid' ? new HybridPredictiveController({

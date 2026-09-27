@@ -68,7 +68,7 @@ test('capacity modes are exactly fixed one or autoscale one-to-five', () => {
   assert.deepEqual(capacityForMode('autoscale'), { minCapacity: 1, maxCapacity: 5, desiredCount: 1 });
 });
 
-test('AWS SQS snapshots never request the CloudWatch-only oldest-age metric as an attribute', () => {
+test('AWS SQS queue reads never request the CloudWatch-only oldest-age metric as an attribute', () => {
   for (const source of [controlPlaneSource, sqsQueueSource, scalingTemplate]) {
     assert.doesNotMatch(source, /AttributeNames\s*:\s*\[[^\]]*ApproximateAgeOfOldestMessage/s);
   }

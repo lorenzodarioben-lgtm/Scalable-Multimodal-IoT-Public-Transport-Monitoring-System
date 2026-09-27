@@ -80,7 +80,7 @@ latency for treatment.
   second class explicitly tests that limit.
 - One measured fixed-worker throughput is a provisional control parameter, so
   sensitivity analysis is required before final claims.
-- CloudWatch/SQS observations are approximate and may be delayed. Preserve
+- CloudWatch/SQS observations have limited precision and may be delayed. Preserve
   timestamps, raw samples, genuine CloudWatch data, scaling activities, and
   worker-ready events rather than inferring missing points.
 - Predictor benefits may exchange queue delay for capacity-time. Task-seconds

@@ -89,7 +89,7 @@ export function analyseDirectory(inputDir, outputDir, { preview = false, mock = 
     `# ${aggregate.classification}`, '',
     'All three valid repeats are shown; invalid/aborted attempts remain in the artifact directory and are listed in aggregate.json. Mean changes are descriptive, not significance claims. Positive changes are increases.', '',
     table(aggregate, 'PREDICTABLE_RAMP'), '', table(aggregate, 'SUDDEN_BURST'), '',
-    'Task-seconds approximate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.',
+    'Task-seconds indicate relative worker use, not complete AWS billing. CloudWatch backlog values are genuine historical datapoints.',
   ].join('\n'));
   for (const run of eligible) writeRunCharts(run, path.join(outputDir, 'charts', run.runId), { mock });
   for (const workloadClass of ['PREDICTABLE_RAMP', 'SUDDEN_BURST']) {

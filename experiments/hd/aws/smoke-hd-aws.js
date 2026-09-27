@@ -123,7 +123,7 @@ function reprocessExistingSmoke(runDirectory) {
     state: read('predictor-state.json'), accounting: read('accounting.json'),
     samples: read('samples.json'), workerLogs: read('worker-logs.json'),
     predictorLogs: read('predictor-logs.json'), history: read('cloudwatch-history.json'),
-    // The original live gate recorded this attestation, but not a separate final signal snapshot.
+    // The original live gate recorded this attestation, but not a separate final signal queue reading.
     signalQueuesClean: original.checks?.signalQueuesClean });
   summary.reprocessing = { kind: 'automatic re-evaluation of preserved smoke evidence; no workload rerun',
     signalQueuesCleanSource: 'original live summary attestation',

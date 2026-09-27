@@ -172,7 +172,7 @@ export async function runAwsExperiment({
     return sample;
   };
 
-  // This snapshot is deliberately outside the workload clock. It records the
+  // This sample is deliberately outside the workload clock. It records the
   // post-preflight state without shortening the configured warm-up interval.
   await takeSample('preflight-ready');
 

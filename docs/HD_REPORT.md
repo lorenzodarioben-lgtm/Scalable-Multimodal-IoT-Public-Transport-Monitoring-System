@@ -80,11 +80,11 @@ supports a quicker **post-onset** response, not burst anticipation.
 ## 6. Limits and conclusion
 
 This is a synthetic two-shape workload, one Academy region, a 1–5 task range
-and three repeats per arm. Approximate SQS counters, CloudWatch publication
+and three repeats per arm. SQS queue-depth estimates, CloudWatch publication
 cadence and Fargate startup variation limit timestamp precision. The local
 parameter grid may favor the designed ramp; its configuration was fixed before
 the AWS runs. Means and percentage changes are descriptive, not statistical
-significance claims. Worker task-seconds approximate relative capacity use,
+significance claims. Worker task-seconds indicate relative capacity use,
 not complete AWS billing. The [threats table](HD_THREATS_TO_VALIDITY.md)
 explains the controls and remaining limits.
 

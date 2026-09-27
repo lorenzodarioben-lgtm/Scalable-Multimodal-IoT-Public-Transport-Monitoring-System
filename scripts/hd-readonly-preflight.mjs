@@ -1,4 +1,4 @@
-/** Read-only recovery snapshot. No AWS mutating commands are imported or called. */
+/** Read-only HD resource check. No AWS mutating commands are imported or called. */
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import { SQSClient, GetQueueUrlCommand, GetQueueAttributesCommand } from '@aws-sdk/client-sqs';
 import { ECSClient, DescribeServicesCommand, ListTasksCommand, DescribeTasksCommand,

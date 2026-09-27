@@ -156,7 +156,7 @@ class SqsQueue {
       approximateNumberOfMessages: Number(a.ApproximateNumberOfMessages ?? 0),
       approximateNumberOfMessagesNotVisible: Number(a.ApproximateNumberOfMessagesNotVisible ?? 0),
       // ApproximateAgeOfOldestMessage is available from AWS/SQS CloudWatch,
-      // not the SQS GetQueueAttributes API used for queue depth snapshots.
+      // not the SQS GetQueueAttributes API used for queue depth readings.
       approximateAgeOfOldestMessageSeconds: null,
     };
   }

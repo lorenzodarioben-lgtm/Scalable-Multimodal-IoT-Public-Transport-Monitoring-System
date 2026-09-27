@@ -22,8 +22,8 @@
     "meanPeakOldestAgeSeconds": 38.333,
     "meanDrainSeconds": 0,
     "peakRunningTasks": [5, 5, 5],
-    "approximateRequestDelaySeconds": 230.6,
-    "requestDelayQualification": "Approximate mean from narrative in final D results; not individual raw repeat delays. Historical comparison only, not the HD reactive controller."
+    "estimatedRequestDelaySeconds": 230.6,
+    "requestDelayQualification": "Estimated mean from narrative in final D results; not individual raw repeat delays. Historical comparison only, not the HD reactive controller."
   },
   "finalFastReactiveBaselineSingleRetest": {
     "firstAboveTargetBptMinute": "2026-09-22T10:51:00Z",

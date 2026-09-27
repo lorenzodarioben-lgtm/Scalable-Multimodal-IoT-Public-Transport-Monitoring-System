@@ -214,10 +214,10 @@ export class LocalQueue {
     // consumers all scan from the head of the queue, race for the same few
     // files, and N-1 of them lose every race - which made adding workers
     // REDUCE throughput. Two adjustments fix it while keeping delivery
-    // approximately FIFO:
+    // best-effort FIFO:
     //   1. only consider a bounded window at the head of the queue, so the
     //      per-poll cost does not grow with a backlog of thousands, and
-    //      SQS itself only guarantees approximate ordering anyway;
+    //      standard SQS itself provides best-effort ordering;
     //   2. start each consumer at a random offset inside that window, so
     //      concurrent consumers mostly claim different messages.
     const windowSize = Math.max(maxMessages * 8, 64);

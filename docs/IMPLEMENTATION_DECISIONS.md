@@ -89,7 +89,7 @@ window.
 **Why.** Real SQS hands each consumer a different set of messages; a shared
 directory does not. With a naive scan, N consumers all start at the head of the
 queue, race for the same few files, and N-1 lose every race. Delivery stays
-approximately FIFO, which is all SQS guarantees anyway.
+best-effort FIFO, consistent with the ordering guarantees of standard SQS queues.
 
 **Also.** Reaping expired in-flight messages is throttled to at most once per
 half-visibility-timeout per consumer, because it reads every in-flight record

@@ -321,7 +321,7 @@ a dispatch starts a whole interval behind schedule, or if three consecutive
 dispatches start at least half an interval late. Completion lag is retained as
 evidence but does not reject a cold first request that can recover on schedule.
 Do not start the full calibration
-unless this artifact is `VALID`, has no guard event, and is approximately 50 jobs/s.
+unless this artifact is `VALID`, has no guard event, and is near 50 jobs/s.
 
 **CALIBRATION ONLY — NOT FORMAL EVIDENCE.** After a passing injector check, run
 the fixed arm of the full 1-second candidate:
@@ -333,7 +333,7 @@ npm run experiment:aws -- --config experiments/calibration/aws-stage-1-capacity.
 This is a 30 s warm-up plus 150 s measurement: 180 incidents every second and
 50 analysis jobs per incident (**9,000 jobs**). The fixed pass is exactly one
 task; it keeps the worker at 50 ms delay and zero CPU-burn iterations. It must
-both be `VALID` and actually deliver approximately 50 jobs/s before its queue
+both be `VALID` and actually deliver near 50 jobs/s before its queue
 metrics can be interpreted as capacity evidence.
 
 Inspect the raw artifacts, CloudWatch `BacklogPerTask` periods, real Application

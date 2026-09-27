@@ -20,7 +20,7 @@ function queueAttributes(out = {}) {
     inFlightMessages: Number(attributes.ApproximateNumberOfMessagesNotVisible ?? 0),
     // ApproximateAgeOfOldestMessage is an AWS/SQS CloudWatch metric, not an
     // SQS GetQueueAttributes attribute. Preserve an honest unknown value here
-    // rather than making the control plane's queue snapshot API call fail.
+    // rather than making the control plane's queue read fail.
     oldestMessageAgeSeconds: null,
   };
 }

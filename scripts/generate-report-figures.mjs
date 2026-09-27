@@ -28,7 +28,7 @@ const events = [
 ];
 let t = `<text x="36" y="66" class="sub">Representative r2 timelines are normalized to each run\'s workload start; request and first-ready times are from raw scaling/log evidence.</text><line x1="90" y1="190" x2="850" y2="190" class="axis"/><text x="90" y="215" class="lab">0 s</text><text x="450" y="215" class="lab">300 s</text><text x="830" y="215" class="lab">630 s</text>`;
 events.forEach(([name, sec, color], i) => { const x = 90 + sec / 630 * 760; const y = 90 + i * 25; t += `<line x1="${x}" y1="${y}" x2="${x}" y2="190" stroke="${color}" stroke-width="3"/><circle cx="${x}" cy="190" r="5" fill="${color}"/><text x="${x + 6}" y="${y + 4}" class="lab" fill="${color}">${esc(name)} (${sec.toFixed(1)} s)</text>`; });
-t += `<text x="90" y="260" class="lab">Interpretation: hybrid r2 requested earlier than reactive r2; the first-ready events followed the requests by approximately 41.5 s and 24.1 s respectively.</text>`;
+t += `<text x="90" y="260" class="lab">Interpretation: hybrid r2 requested earlier than reactive r2; the first-ready events followed the requests by about 41.5 s and 24.1 s respectively.</text>`;
 fs.writeFileSync(`${out}/figure-d-ramp-r2-timeline.svg`, svg(900, 330, t, 'Figure D. Representative predictable-ramp r2 scaling timeline', 'No smoothing; event times are preserved observations.'));
 
 const burst = `<text x="690" y="28" class="lab" fill="#2874a6">■ Reactive r1</text><text x="790" y="28" class="lab" fill="#d35400">■ Hybrid r1</text>`;
