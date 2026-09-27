@@ -2,21 +2,27 @@
 
 ## Status and evidence boundary
 
-This is the source-of-truth record for the completed Distinction scalability experiment. The formal workload was frozen in commit `fea9c93`; it was run three times at fixed capacity and three times with Application Auto Scaling. Commit `7e3321e` was then validly retested once with the same workload.
+This is the final recorded summary of the Distinction scalability experiment.
+The formal workload was frozen in commit `fea9c93`; it was run three times at
+fixed capacity and three times with Application Auto Scaling. Commit `7e3321e`
+was then validly retested once with the same workload. The original Distinction
+`artifacts/aws-runs/` directories are **not included in this public repository**;
+the run IDs below are retained as provenance, but their raw summaries cannot be
+opened here. The HD study has its own committed raw run evidence.
 
-Only these completed `VALID` artifacts are final evidence:
+The original record classified these runs as `VALID`:
 
 | Arm | Repeat | Run artifact |
 | --- | --- | --- |
-| Fixed | r1 | [`2026-09-22T04-08-14-508Z-incident-stage-1-fixed-r1`](../artifacts/aws-runs/2026-09-22T04-08-14-508Z-incident-stage-1-fixed-r1/summary.json) |
-| Fixed | r2 | [`2026-09-22T05-04-16-365Z-incident-stage-1-fixed-r2`](../artifacts/aws-runs/2026-09-22T05-04-16-365Z-incident-stage-1-fixed-r2/summary.json) |
-| Fixed | r3 | [`2026-09-22T08-00-13-078Z-incident-stage-1-fixed-r3`](../artifacts/aws-runs/2026-09-22T08-00-13-078Z-incident-stage-1-fixed-r3/summary.json) |
-| Autoscale | r1 | [`2026-09-22T04-26-29-694Z-incident-stage-1-autoscale-r1`](../artifacts/aws-runs/2026-09-22T04-26-29-694Z-incident-stage-1-autoscale-r1/summary.json) |
-| Autoscale | r2 | [`2026-09-22T05-22-47-142Z-incident-stage-1-autoscale-r2`](../artifacts/aws-runs/2026-09-22T05-22-47-142Z-incident-stage-1-autoscale-r2/summary.json) |
-| Autoscale | r3 | [`2026-09-22T08-20-10-918Z-incident-stage-1-autoscale-r3`](../artifacts/aws-runs/2026-09-22T08-20-10-918Z-incident-stage-1-autoscale-r3/summary.json) |
-| Improved autoscale | Valid replacement | [`2026-09-22T10-51-14-826Z-incident-stage-1-autoscale-r1`](../artifacts/aws-runs/2026-09-22T10-51-14-826Z-incident-stage-1-autoscale-r1/summary.json) |
+| Fixed | r1 | `2026-09-22T04-08-14-508Z-incident-stage-1-fixed-r1` |
+| Fixed | r2 | `2026-09-22T05-04-16-365Z-incident-stage-1-fixed-r2` |
+| Fixed | r3 | `2026-09-22T08-00-13-078Z-incident-stage-1-fixed-r3` |
+| Autoscale | r1 | `2026-09-22T04-26-29-694Z-incident-stage-1-autoscale-r1` |
+| Autoscale | r2 | `2026-09-22T05-22-47-142Z-incident-stage-1-autoscale-r2` |
+| Autoscale | r3 | `2026-09-22T08-20-10-918Z-incident-stage-1-autoscale-r3` |
+| Improved autoscale | Valid replacement | `2026-09-22T10-51-14-826Z-incident-stage-1-autoscale-r1` |
 
-The earlier post-improvement artifact [`2026-09-22T09-32-25-897Z-incident-stage-1-autoscale-r1`](../artifacts/aws-runs/2026-09-22T09-32-25-897Z-incident-stage-1-autoscale-r1/summary.json) is explicitly excluded: its timing guard stopped injection at 3,150 of 31,500 jobs after a 1,109 ms dispatch-start lag. Its `TIMING-INVALID` status makes it diagnostic material only. Calibration artifacts are likewise not formal or final-improvement evidence.
+The earlier post-improvement artifact `2026-09-22T09-32-25-897Z-incident-stage-1-autoscale-r1` is explicitly excluded: its timing guard stopped injection at 3,150 of 31,500 jobs after a 1,109 ms dispatch-start lag. Its `TIMING-INVALID` status makes it diagnostic material only. Calibration artifacts are likewise not formal or final-improvement evidence.
 
 `BacklogPerTask` (BPT) below is genuine historical CloudWatch evidence, never reconstructed from SQS depth: namespace `SIT314/Transport`, metric `BacklogPerTask`, dimension `ServiceName=sit314-transport-route-impact`, one-minute `Maximum` statistic. Oldest-message-age peaks are historical `AWS/SQS` `ApproximateAgeOfOldestMessage` one-minute maxima for `sit314-transport-analysis`. Visible backlog and task counts are from each run's samples. Standard deviation is sample SD (`n - 1`) across the three valid formal repeats.
 

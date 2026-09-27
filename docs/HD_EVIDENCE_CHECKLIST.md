@@ -1,6 +1,14 @@
-# Tomorrow's HD screenshot/evidence checklist
+# HD evidence inspection checklist
 
-Status: **planned; no HD AWS evidence collected yet.** Capture each image with timestamp, region, HD prefix and run ID when possible. Preserve unedited raw JSON alongside screenshots. The main report gets the few charts needed to understand the causal comparison; the appendix stores setup and audit evidence.
+The formal AWS study is complete. This checklist records what the experiment
+review checked and where a reader can inspect committed evidence: the
+[12-run log](experiments/HD_AWS_RUN_LOG.md), [raw run directories](../artifacts/hd-aws-runs/),
+[aggregate](../artifacts/hd-analysis/aggregate.json),
+[final data](hd-final-data/) and [figures](hd-final-figures/). The table's
+"placement" column describes the original report/appendix plan; screenshots
+and submission documents are not distributed here. Raw JSON and validity
+reviews remain the auditable source. Do not infer missing points or use local
+mock charts as cloud results.
 
 | Capture | Placement | Verification target |
 | --- | --- | --- |

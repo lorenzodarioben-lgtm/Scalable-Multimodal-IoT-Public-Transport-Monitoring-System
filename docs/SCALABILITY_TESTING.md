@@ -61,7 +61,7 @@ with the cost on and off. Every run records the value used in `config.json`.
 Each stage is intended to run for 10 minutes after a short warm-up, repeated
 three times with the same seed.
 
-## Formal AWS protocol (preconfigured; not yet executed)
+## Formal AWS protocol (historical method)
 
 The local runner remains useful for preliminary work. Formal cloud evidence uses
 the separate `npm run experiment:aws` path, which never starts `LocalAutoscaler`
@@ -252,8 +252,10 @@ Each run writes a timestamped directory under `artifacts/runs/`:
 **These are LOCAL results.** The queue and store are the file-backed local
 adapters and the "tasks" are worker processes managed by
 `scripts/local-autoscaler.js`, which implements the same control law as the AWS
-policy. They are not ECS measurements. AWS runs are blocked - see
-`docs/STATUS_4.2D.md`.
+policy. They are not ECS measurements. The later AWS comparisons are reported
+in [DISTINCTION_FINAL_RESULTS.md](DISTINCTION_FINAL_RESULTS.md) and
+[HD_REPORT.md](HD_REPORT.md). The earlier blocked state remains documented in
+the [historical status](STATUS_4.2D.md).
 
 Both runs: stage 1 workload, 50 jobs every 5 s (10 jobs/s arrival), 45 s
 injection after a 10 s warm-up, `WORKER_PROCESSING_CPU_ITERATIONS=15000000`

@@ -1,5 +1,9 @@
 # SIT314 6.4HD Research Plan — Hybrid Predictive-Reactive Autoscaling
 
+Historical pre-AWS research plan. The later matched AWS study is complete;
+see [HD_REPORT.md](HD_REPORT.md) for the observed results. Statements below
+about what had not yet been deployed describe the planning checkpoint.
+
 ## Status and separation from Distinction
 
 This document records **local-only HD design and implementation work**. It is

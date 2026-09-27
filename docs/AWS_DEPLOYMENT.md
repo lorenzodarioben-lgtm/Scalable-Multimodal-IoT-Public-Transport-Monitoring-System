@@ -1,16 +1,16 @@
 # AWS deployment
 
-> **Status: NOT DEPLOYED.** No AWS resource has been created. The AWS CLI is
-> installed and locally verified (`aws-cli/2.36.39`), but no credentials are
-> configured and no authenticated call has been made, so nothing in this document
-> has been executed. Everything below is written to be run as-is once access
-> exists. See `docs/STATUS_4.2D.md` for the blocker.
+> **Distinction deployment reference.** The baseline was later deployed and
+> evaluated on AWS; see [final Distinction results](DISTINCTION_FINAL_RESULTS.md)
+> and the [historical calibration record](experiments/DISTINCTION_AWS_CALIBRATION.md).
+> These commands require fresh credentials and current resource-state checks
+> before a new execution. They do not describe current account state.
 
 ## Prerequisites
 
 ```bash
 node --version    # >= 20
-aws --version     # aws-cli/2.36.39 - installed and verified
+aws --version     # AWS CLI v2 required for a new deployment
 docker --version  # daemon must be running for image builds
 npm run verify-env
 ```
@@ -63,9 +63,9 @@ each with the verification that must actually be read before moving on. AWS
 Academy credit is limited, so the goal is to spend as little live time as
 possible.
 
-Nothing in this runbook has been executed — the project has never contacted AWS.
-Treat each verification as a gate: if the output is not what the step says to
-expect, stop and diagnose rather than continuing.
+The Distinction deployment was executed for the recorded study. For any new
+deployment, treat each verification as a gate: if the output differs from the
+expected state, stop and diagnose before continuing.
 
 Set these once at the start of the session:
 
@@ -84,8 +84,9 @@ usually does not — fill it in and pass it to every `-Existing*RoleArn`.
 aws sts get-caller-identity
 ```
 
-Expect an Account, UserId and Arn. **Do not paste this output into the repository**
-— the account id must not be committed.
+Expect an Account, UserId and Arn. Do not paste live identity output, especially
+temporary role/session information, into configuration or documentation. Raw
+experiment records may retain account and resource identifiers for provenance.
 
 ### 2. Region verification
 
@@ -187,7 +188,7 @@ Expect a non-zero depth.
 
 ### 8. Docker build
 
-Docker Desktop must already be running — see the blocker note in `HANDOFF.md`.
+Docker Desktop must already be running before building an image.
 
 ```powershell
 docker info --format "{{.ServerVersion}}"
@@ -582,7 +583,7 @@ npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mo
 
 The runner injects jobs into the real analysis queue; ECS is the only consumer.
 It stores the machine-readable evidence locally and uses the service, SQS,
-DynamoDB, Application Auto Scaling and CloudWatch Logs APIs only after the user
+DynamoDB, Application Auto Scaling and CloudWatch Logs APIs only after the operator
 has supplied temporary credentials. Do not use `npm run experiment` for a formal
 AWS comparison: that is the local harness and starts local workers.
 

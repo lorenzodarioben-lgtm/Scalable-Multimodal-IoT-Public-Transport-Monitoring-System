@@ -1,6 +1,9 @@
 # HD threats to validity and mitigation
 
-This is a planned research-informed engineering comparison, not a general proof that prediction improves IoT autoscaling. No HD AWS run existed when this document was written.
+This threat register was written before the completed AWS comparison. It
+remains applicable to the [final report](HD_REPORT.md): the results are a
+bounded engineering comparison, not a general proof that prediction improves
+IoT autoscaling.
 
 | Threat | Consequence | Mitigation / reporting rule |
 | --- | --- | --- |

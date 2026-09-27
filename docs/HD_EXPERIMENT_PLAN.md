@@ -1,9 +1,13 @@
-# HD Experiment Plan — Proposed, Not Executed
+# HD experiment plan — pre-execution design
+
+This document records the design fixed before the later completed AWS study.
+Its future-tense method describes planned controls at that point in time; see
+[the final report](HD_REPORT.md) for observed results.
 
 ## Evidence separation and comparison arms
 
-This plan is **HD PLANNED EXPERIMENT** material only. It creates no new
-Distinction evidence and has not run on AWS.
+This plan was **pre-execution design** material. It created no new Distinction
+evidence and did not itself represent an AWS result.
 
 For each workload class, the matched comparison is:
 

@@ -1,8 +1,15 @@
-# SIT314 6.4HD AWS readiness gate — 24 September 2026
+# HD smoke validation and isolation decision — 24 September 2026
 
-Branch: `hd/predictive-autoscaling`. Read current HEAD with `git rev-parse HEAD`. At this original readiness decision, the 12 formal HD experiments had **not** started. No smoke workload was rerun, no queue was purged, the predictive controller and frozen workloads were not retuned, and no D resource was modified.
+This historical decision records the smoke and isolation evidence that preceded
+the formal HD matrix. At the time, the 12 formal experiments had not started.
+The later [run log](HD_AWS_RUN_LOG.md) and [final study](../HD_REPORT.md) document
+their completion. No smoke workload was rerun, no queue was purged, the
+predictive controller and frozen workloads were not retuned, and no Distinction
+resource was modified during this readiness review.
 
-**Later formal-progress update:** Formal work did begin after the READY decision. Three predictable-ramp rows (reactive r1, hybrid r1, reactive r2) are reviewed VALID; see `HD_FORMAL_PROGRESS.md`. The Academy session was then cancelled by `voc-cancel-cred`. The technical READY decision below still documents isolation, but further AWS work is operationally stopped until fresh credentials and a new clean-state preflight. Do not repeat the three valid rows.
+The subsequent formal runs used fresh credentials and per-run clean-state
+checks. The readiness observations below are dated evidence, not current AWS
+resource status.
 
 ## Smoke and notification accounting
 
@@ -20,11 +27,11 @@ The formal runner now records parsed predictor-signal/request counts and withhol
 
 Local verification: focused tests **15/15**, full `npm test` **236/236**, `npm run lint:infra` clean, PowerShell parsing clean, `npm audit --omit=dev --json` **0 production vulnerabilities** (119 production dependencies), and `git diff --check` clean.
 
-## Final isolation decision and current AWS state
+## Isolation decision and AWS state at the checkpoint
 
 HD route-impact ECS **1/1/0**, notification ECS **1/1/0**; HD scalable target **1–5**, target tracking BPT **75**, fast step scale-out **+4** and alarm **OK**. The Lambda is `Active` in `hybrid` mode with frozen controller settings. Strongly consistent predictor state has `pendingScaleRequest: null`; ECS is idle at one task. Genuine recent `SIT314/HDTransport BacklogPerTask` datapoints are **0**. All eight HD queues/DLQs (analysis, arrival FIFO, notification, telemetry and their DLQs) are **0 visible / 0 in flight**.
 
-D route-impact ECS is **1/1/0** on the original task definition; target **1–5**, BPT **75**, fast **+4** policy and final D tag `sit314-6.3d-final^{}` at `06071c37c536e73fb036bb4f60279d7e595d23c2` remain intact. D analysis and analysis DLQ are **0/0**. The separate D notification queue has **1,093,968 visible / 0 in flight** (notification DLQ 0/0). This is **KNOWN PRE-EXISTING OUT-OF-SCOPE DISTINCTION STATE** under the user's corrected readiness criterion. It was not touched by HD work and must not be purged, drained or given a D consumer as part of the HD experiment.
+D route-impact ECS was **1/1/0** on the original task definition; target **1–5**, BPT **75**, fast **+4** policy and final D tag `sit314-6.3d-final^{}` at `06071c37c536e73fb036bb4f60279d7e595d23c2` remained intact. D analysis and analysis DLQ were **0/0**. The separate D notification queue had **1,093,968 visible / 0 in flight** (notification DLQ 0/0). This was known pre-existing, out-of-scope Distinction state. It was not touched by HD work or treated as an HD experiment input.
 
 The seven required isolation checks were verified from source **and** deployed configuration on 24 September:
 
@@ -36,4 +43,4 @@ The seven required isolation checks were verified from source **and** deployed c
 6. Per-run clean-state inspection is of HD analysis/DLQ, HD arrival/DLQ, HD notification/DLQ, HD ECS and HD BPT. The formal control-plane preflight is HD-prefixed; the operator additionally checks HD notification/DLQ before each run. The historical D notification queue is excluded.
 7. D analysis queue/DLQ remained 0/0; D ECS stayed 1/1/0 on the same task definition and D target tracking 75, range 1–5 and fast +4 remained intact. No D resource was modified.
 
-**READY FOR AWS EXPERIMENT.** The historical D notification backlog is explicitly out of scope. The next task is the frozen 12-run formal HD matrix, with a fresh HD-only clean-state gate before every run and no predictor/workload retuning. Smoke and local simulator evidence must not enter the formal aggregate.
+**READY at the 24 September checkpoint.** The historical D notification backlog was explicitly out of scope. The subsequently completed frozen 12-run matrix used HD-only clean-state gates and no predictor/workload retuning. Smoke and local simulator evidence did not enter the formal aggregate.

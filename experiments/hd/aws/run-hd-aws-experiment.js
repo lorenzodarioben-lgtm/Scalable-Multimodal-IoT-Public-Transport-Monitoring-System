@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Tomorrow-only CLI. Merely importing supporting modules makes no AWS call. */
+/** Explicit-run CLI. Importing supporting modules makes no AWS call. */
 import process from 'node:process';
 import { randomUUID } from 'node:crypto';
 import { loadHdAwsConfiguration } from './workload.js';

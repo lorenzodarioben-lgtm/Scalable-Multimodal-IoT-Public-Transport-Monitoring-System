@@ -94,7 +94,7 @@ function report() {
     console.log('  npm run evidence -- --promote latest');
   }
 
-  console.log('\nScreenshot checklist: docs/EVIDENCE_CHECKLIST.md');
+  console.log('\nFormal results: docs/DISTINCTION_FINAL_RESULTS.md');
 }
 
 function promote(runId) {

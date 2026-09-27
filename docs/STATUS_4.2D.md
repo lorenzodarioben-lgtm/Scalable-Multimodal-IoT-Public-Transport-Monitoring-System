@@ -1,7 +1,10 @@
-# Project status — 4.2D checkpoint
+# Project status — historical 4.2D checkpoint
 
-Engineering status source for the progress report. This is **not** the report
-itself.
+Engineering status from early local development, before the later Distinction
+and HD AWS deployments. The "not deployed" and credential statements below
+describe that checkpoint, not current project status. See
+[final Distinction results](DISTINCTION_FINAL_RESULTS.md) and
+[final HD results](HD_REPORT.md).
 
 Status labels used throughout:
 
@@ -421,7 +424,7 @@ Evidence from `npm run verify-env` on this machine:
   has been created.
 
 **Docker is no longer a blocker.** Docker Desktop 4.47.0 (engine 28.4.0, Linux)
-was started by the user on 2026-09-04. All four images now build, run, process
+was started on 2026-09-04. All four images now build, run, process
 real work and shut down cleanly, and the six-container Compose stack runs the
 full pipeline. See section 3.
 
@@ -454,5 +457,5 @@ In priority order:
 9. Repeat each stage three times at the full 10-minute duration with the same seed.
 10. Identify the AWS-side bottleneck from CloudWatch, apply **one** targeted
     improvement, and repeat the identical workload.
-11. Capture the outstanding evidence items (see `docs/EVIDENCE_CHECKLIST.md`).
+11. The later formal evidence is summarized in `docs/DISTINCTION_FINAL_RESULTS.md`.
 12. Optional, lowest priority: a read-only dashboard.

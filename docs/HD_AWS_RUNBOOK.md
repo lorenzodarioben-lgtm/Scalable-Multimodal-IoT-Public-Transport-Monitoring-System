@@ -1,18 +1,29 @@
 # HD AWS execution runbook — frozen formal study
 
-**24 September final readiness decision:** The isolated HD notification consumer naturally drained and accounted for all 4,600 preserved smoke alerts; all HD queues/DLQs are 0/0. The corrected automatic summary passes on the existing smoke evidence. Seven source/deployed-config isolation checks confirm the historical D notification backlog is out of scope. **Read `HD_READY_FOR_AWS.md` for the READY decision.** The older `artifacts/hd-smoke-readiness/2026-09-24-smoke-gate.json` is a historical pre-consumer checkpoint. Never purge or drain the D notification queue. Gate each formal run on HD queues, ECS, BPT and mode.
+**Historical execution procedure.** The isolated HD notification consumer
+naturally drained and accounted for all 4,600 preserved smoke alerts. The
+corrected automatic smoke summary and seven source/deployed-config isolation
+checks are documented in [HD smoke validation](experiments/HD_SMOKE_READINESS.md).
+The older `artifacts/hd-smoke-readiness/2026-09-24-smoke-gate.json` is a
+pre-consumer checkpoint. The 12 formal runs were subsequently completed;
+see [the run reviews](experiments/HD_AWS_RUN_LOG.md) and
+[final results](HD_REPORT.md). The commands below are a reproducibility
+reference, not a report of current AWS resource state. A new run must inspect
+its own queues, ECS, BPT, predictor mode, credentials and budget.
 
-The user has authorised the formal HD experiment following the corrected READY gate. This runbook contains live AWS calls and HD workload injection; its original deployment and smoke sections are historical and must not be rerun. All stacks use `sit314-hd-transport`; never use `sit314-transport` as the deployment prefix. Stop on failed HD preflight, a changed D analysis reference, missing Academy permission, timing-invalid run, queue/DLQ residue, or budget concern. Do not alter the D stacks, D notification queue or tag.
+This runbook contains live AWS calls and HD workload injection. All HD stacks
+use `sit314-hd-transport`, never `sit314-transport`. A new execution should
+stop on failed HD preflight, a changed D analysis reference, missing Academy
+permission, timing-invalid run, queue/DLQ residue or budget concern. It must
+not alter Distinction stacks, queues or the frozen baseline tag.
 
 ## A. Preconditions and first checks
 
-1. Record the D video and confirm the D live deployment and formal evidence are safe. Start a fresh Academy session and configure fresh `academy` credentials in `us-east-1`.
-2. In PowerShell, from the **HD worktree** (`C:\Users\lorenzodario\Documents\UNI\UNI_T3\CLoud\Distinction\HighDistinction`), run:
+1. Confirm the Distinction baseline evidence is safe. For a new run, configure short-lived `academy` credentials in `us-east-1` and verify the account and budget.
+2. In PowerShell, from this repository's root, run:
 
 ```powershell
 git status --short
-git -C .. status --short
-git -C .. rev-parse 'sit314-6.3d-final^{}'
 $env:AWS_PROFILE = 'academy'
 $env:AWS_REGION = 'us-east-1'
 aws sts get-caller-identity
@@ -123,10 +134,15 @@ With exactly twelve **reviewed** valid runs, run the offline aggregate (no AWS c
 node experiments/hd/analysis/aggregate.js --input artifacts/hd-aws-runs --output artifacts/hd-analysis
 ```
 
-It writes raw per-run metrics, descriptive comparison tables and single-axis SVG charts (arrival vs prediction, backlog, tasks, scale timeline, peak backlog and task-seconds). `--preview` can inspect an incomplete/unreviewed set only after all 12 artifact directories exist, but output is explicitly preliminary. Do not claim statistical significance from n=3. Insert actual results into `HD_REPORT_DRAFT.md`, use `HD_EVIDENCE_CHECKLIST.md`, render the final 4–5 page report, verify citations, code commit and video, then submit.
+It writes raw per-run metrics, descriptive comparison tables and single-axis SVG charts (arrival vs prediction, backlog, tasks, scale timeline, peak backlog and task-seconds). `--preview` can inspect an incomplete/unreviewed set only after all 12 artifact directories exist, but output is explicitly preliminary. The completed [report](HD_REPORT.md) uses the reviewed aggregate and makes no statistical-significance claim from n=3.
 
 ## F. Failure and cleanup
 
 If any timing guard fires, results are incomplete, an AWS metric is missing, signal queue/DLQ is dirty, permission fails, Lambda mode mismatches, or task/metric chronology is ambiguous: **stop that run, retain its artifact, diagnose before any replacement**. Do not loosen workload/guard, force alarm or secretly adjust capacity. If the whole study cannot fit the Academy budget, report the valid subset as incomplete rather than collapsing repeats.
 
-After submission/video and only with explicit user authorisation, delete **HD-prefixed** resources in reverse dependency order: predictor stack, scaling, ECS, signals, tables/queues, ECR image/repository, code-bucket objects and code stack. First list exact stack and bucket names and verify none match `sit314-transport` D. S3 bucket objects must be removed before the HD code stack can delete its bucket. Never run broad wildcard deletion or clean D resources as part of HD cleanup.
+For a deployment being retired, delete **HD-prefixed** resources in reverse
+dependency order: predictor stack, scaling, ECS, signals, tables/queues, ECR
+image/repository, code-bucket objects and code stack. First list exact stack
+and bucket names and verify none match `sit314-transport` D. S3 bucket objects
+must be removed before the HD code stack can delete its bucket. Never use broad
+wildcard deletion or clean D resources as part of HD cleanup.

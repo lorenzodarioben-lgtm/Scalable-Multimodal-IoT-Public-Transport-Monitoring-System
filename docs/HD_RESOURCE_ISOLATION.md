@@ -1,6 +1,6 @@
 # Resource-isolation audit — local template inspection
 
-**No AWS resources were created or queried in this audit.** The frozen Distinction prefix is `sit314-transport`; the HD-only prefix is fixed to `sit314-hd-transport` in the guarded HD wrappers. Shared generic `deploy.ps1` and `build-and-push.ps1` still default to D for their original workflow, so tomorrow **must use** `deploy-hd.ps1` and `build-hd-image.ps1`, not those generic scripts directly. Both HD wrappers require an explicit execution switch and always pass the HD prefix. The run CLI also rejects a non-HD prefix. A misspelled HD stack/queue should fail preflight, never fall through to D.
+This source-level isolation audit was prepared before HD deployment; it made no AWS calls. The later [smoke validation](experiments/HD_SMOKE_READINESS.md) verified the deployed configuration. The Distinction prefix is `sit314-transport`; the HD-only prefix is fixed to `sit314-hd-transport` in the guarded HD wrappers. Shared generic `deploy.ps1` and `build-and-push.ps1` default to D for their original workflow, so HD deployment uses `deploy-hd.ps1` and `build-hd-image.ps1`. Both wrappers require an explicit execution switch and pass the HD prefix. The run CLI rejects a non-HD prefix. A misspelled HD stack/queue fails preflight rather than falling through to D.
 
 | Type | Planned HD name/namespace | Existing D equivalent | Collision? / safety check |
 | --- | --- | --- | --- |
@@ -21,4 +21,7 @@
 | EventBridge scheduled BPT rule | Derived from HD `scaling.yaml` prefix | D scheduled rule | Different rule/function target. |
 | IoT rule | Not deployed for matched direct-injection study | D IoT rule | None in HD plan; avoids D topic/rule dependency. |
 
-Potential unresolved cloud-only concern: Academy LabRole may not allow the predictor's DynamoDB/SQS/ECS/CloudWatch actions, or the Node.js runtime may lack a module expected by the packaged Lambda. These are **smoke-test gates**, not reasons to point any HD stack at D. Preserve D resources until the video is recorded and submitted.
+The original LabRole permission and Lambda module questions were tested during
+the later [HD smoke validation](experiments/HD_SMOKE_READINESS.md). Any fresh
+deployment still requires its own permission and package checks. No HD stack
+should point at Distinction resources.

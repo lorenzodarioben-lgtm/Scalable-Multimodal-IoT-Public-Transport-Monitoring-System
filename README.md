@@ -1,17 +1,19 @@
-# Scalable Multimodal IoT Public Transport Monitoring System
+# Predictive Autoscaling for a Public Transport IoT Pipeline
 
-> **Repository snapshot:** The inherited README below describes the earlier Distinction baseline. The completed High Distinction predictive-scaling study has 12 valid AWS runs; see [HD formal progress](HD_FORMAL_PROGRESS.md), [HD report draft](docs/HD_REPORT_DRAFT.md), and [final data](docs/hd-final-data/). Saved run artifacts are included. See [GitHub preparation notes](GITHUB_PREP_NOTES.md) for the export scope.
-
-SIT314 Distinction Project — Lorenzo Dario Ben
+SIT314 Distinction and High Distinction project — Lorenzo Dario Ben
 
 A simulated public transport authority monitors buses, trams, trains and passenger
 demand, detects operational disruption, and models the route impact of that
 disruption using a queue-decoupled, automatically scaled microservice pipeline.
 
-The system is built so that the scalability claims can be **measured**, not asserted:
-a seeded workload generator, per-stage experiment configurations, and a
-backlog-per-task autoscaler that can be run with a fixed worker count or with
-autoscaling enabled, using an identical workload for both.
+The Distinction baseline uses a seeded workload generator, SQS-backed workers
+and reactive backlog-per-task autoscaling. The High Distinction extension adds a
+short-horizon arrival predictor that can request extra workers while retaining
+the reactive safeguards. Twelve matched AWS runs compare reactive and hybrid
+control under a gradual ramp and an abrupt burst. The repository includes the
+source, tests, frozen workloads, raw run records, reviewed aggregate and final
+figures. See the [study and results](docs/HD_REPORT.md) and
+[reviewed comparison](artifacts/hd-analysis/comparison.md).
 
 ---
 
@@ -25,6 +27,8 @@ flowchart LR
     RULE[AWS IoT Rule]
     TQ[SQS Telemetry Queue]
     TP[Telemetry Processor]
+    ASQ[HD Arrival Signal Queue]
+    PRED[HD Predictor Lambda]
     DB[(DynamoDB)]
     AQ[SQS Analysis Queue]
     ETA[Route Impact / ETA Workers<br/>ECS Fargate, min 1 / max 5]
@@ -40,6 +44,9 @@ flowchart LR
     TQ --> TP
     TP --> DB
     TP -->|disruption fan-out| AQ
+    TP -->|published-job signal| ASQ
+    ASQ --> PRED
+    PRED -->|scale-out request| ETA
     AQ --> ETA
     ETA --> DB
     ETA --> NQ
@@ -50,7 +57,9 @@ flowchart LR
 ```
 
 The **route-impact / ETA worker is the primary autoscaling target**. It polls the
-analysis queue, so it needs no load balancer — which also keeps the cost near zero.
+analysis queue, so it needs no load balancer. The HD predictor observes accepted
+analysis-job arrivals and can request scale-out ahead of measured queue pressure;
+target tracking and the fast reactive alarm remain active in both comparison arms.
 
 Full detail, including why each component exists: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -67,11 +76,12 @@ services/
   telemetry-processor/   SQS -> DynamoDB state + disruption fan-out
   route-impact-worker/   SQS -> deterministic ETA/impact -> results + alerts
   notification-worker/   SQS -> simulated delivery records
-experiments/        Incident stages 1-4, telemetry-growth stages, experiment runner
+experiments/        Baseline and HD workloads, runners, controller and analysis
 infrastructure/     CloudFormation stacks + PowerShell/bash deployment scripts
 scripts/            Local broker, bridge, autoscaler, demos, evidence tooling
-docs/               Architecture, deployment, scalability, security, status
-evidence/           Curated measurements cited by the report
+docs/               Architecture, deployment, study, results and figures
+artifacts/          Reviewed HD AWS runs, aggregate and charts
+evidence/           Preliminary local measurements cited by baseline documents
 ```
 
 ---
@@ -83,8 +93,8 @@ evidence/           Curated measurements cited by the report
 | Node.js 20+ | Yes | Developed on v22.19.0 |
 | npm | Yes | Workspaces are used |
 | Docker | For containers only | Verified with Docker Desktop 4.47.0 |
-| AWS CLI | For AWS deployment only | Installed and verified, `aws-cli/2.36.39` |
-| AWS credentials | For AWS deployment only | Not configured on this machine |
+| AWS CLI | For a new AWS deployment only | AWS CLI v2; check with `aws --version` |
+| AWS credentials | For a new AWS deployment only | Use a short-lived profile or role; never commit credentials |
 
 Everything except container builds and AWS deployment runs with Node.js alone.
 
@@ -93,7 +103,7 @@ npm install
 npm run verify-env
 ```
 
-`verify-env` prints exactly which capabilities are available and which are blocked.
+`verify-env` reports the capabilities available in the current environment.
 
 ---
 
@@ -229,12 +239,13 @@ Deployment sequence: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md).
 npm test
 ```
 
-169 tests currently pass, covering the RNG determinism, all four generators, CLI
+The test suite covers RNG determinism, all four generators, CLI
 and config resolution, corruption injection, schema validation, the real Node-RED
 function-node source, the local queue's visibility-timeout and DLQ redrive
 behaviour, conditional-write idempotency, the telemetry processor's disruption
 detection and fan-out, the route-impact ETA model, the notification worker, and the
-CloudFormation templates.
+CloudFormation templates. It also checks the HD controller, workload timing,
+AWS signal processing, experiment accounting and evidence analysis.
 
 Static infrastructure validation is a separate gate (requires `cfn-lint`, which is
 installed with `pip install --user cfn-lint`):
@@ -243,8 +254,8 @@ installed with `pip install --user cfn-lint`):
 npm run lint:infra
 ```
 
-It reports no findings across all five stacks. It is fully offline — it never
-contacts AWS.
+This is an offline check; it never contacts AWS. Run it after changing any
+CloudFormation template or deployment script.
 
 Reliability behaviour has its own one-command demonstration:
 
@@ -304,12 +315,13 @@ notifications with nothing dead-lettered.
 Note that the Compose `node-red` service publishes host port 1880, so stop a host
 `npm run node-red` first.
 
-**Not yet done:** no image has been pushed to ECR and nothing has run on ECS
-Fargate — that is AWS deployment, which remains outstanding.
+The later Distinction and HD experiments did run on AWS ECS Fargate. The local
+Compose procedure above remains useful for development and does not reproduce
+Fargate startup or CloudWatch timing.
 
 ---
 
-## Deployment
+## Distinction baseline deployment
 
 ```powershell
 ./infrastructure/scripts/deploy.ps1 -Stacks queues,tables
@@ -390,21 +402,57 @@ npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mo
 npm run experiment:aws -- --config experiments/incident/stage-1.json --worker-mode autoscale --repeat 1
 ```
 
-It requires temporary AWS credentials and creates raw evidence under
-`artifacts/aws-runs/`; see `docs/SCALABILITY_TESTING.md` and
-`docs/AWS_DEPLOYMENT.md`. The existing `npm run experiment` command remains the
-local preliminary harness.
+It requires temporary AWS credentials and writes raw evidence under
+`artifacts/aws-runs/`; see [scalability testing](docs/SCALABILITY_TESTING.md),
+[AWS deployment](docs/AWS_DEPLOYMENT.md) and the
+[Distinction results](docs/DISTINCTION_FINAL_RESULTS.md). The existing
+`npm run experiment` command remains the local preliminary harness.
 
 Methodology, thresholds and the breaking-point definition:
 [docs/SCALABILITY_TESTING.md](docs/SCALABILITY_TESTING.md).
 
 ---
 
+## High Distinction predictive autoscaling study
+
+The HD controller fits a rolling linear trend to successfully published analysis
+jobs in eight 10-second bins, forecasts 80 seconds ahead and requests additional
+ECS tasks only when the rising trend persists. It never scales in. Both matched
+arms retain the same backlog-per-task target tracking and fast reactive alarm.
+The HD resources use their own `sit314-hd-transport` prefix and metric namespace.
+
+The frozen [experiment matrix](docs/HD_EXPERIMENT_MATRIX.md) compares reactive
+and hybrid control for a predictable ramp and a sudden burst, with three valid
+repeats per arm and workload. Each run used the same logical jobs and worker
+configuration within its pair. The [run reviews](docs/experiments/HD_AWS_RUN_LOG.md)
+and [raw artifacts](artifacts/hd-aws-runs/) retain timing, queue, CloudWatch,
+worker-readiness and accounting evidence. An invalid partial attempt remains
+preserved and excluded from the aggregate.
+
+| Reviewed AWS mean | Reactive | Hybrid | Interpretation |
+| --- | ---: | ---: | --- |
+| Ramp peak visible backlog | 913 jobs | 51.7 jobs | 94.3% lower with hybrid control. |
+| Ramp peak genuine BPT | 796.3 | 43.0 | 94.6% lower. |
+| Ramp worker task-seconds | 634.0 | 1,055.8 | 66.5% higher capacity-time. |
+| Burst peak visible backlog | 879.3 jobs | 432.0 jobs | 50.9% lower; no pre-burst prediction. |
+| Burst worker task-seconds | 1,760.0 | 2,067.7 | 17.5% higher capacity-time. |
+
+All 12 valid runs completed their declared jobs without errors, duplicate
+results, DLQ jobs or unaccounted jobs. The results are descriptive for this
+synthetic workload, one AWS region and three repeats per arm; task-seconds are
+not a monetary cost estimate. Read the [full study](docs/HD_REPORT.md),
+[reviewed aggregate](artifacts/hd-analysis/comparison.md),
+[machine-readable final data](docs/hd-final-data/) and
+[figures](docs/hd-final-figures/) for methods, contrary outcomes and limitations.
+
+---
+
 ## Security
 
 - MQTT to AWS IoT Core uses mutual TLS on port 8883.
-- No credentials, keys, certificates or account IDs are committed; `.gitignore`
-  covers `.env`, `certs/*`, `*.pem`, `*.key`, `*.crt`.
+- No credentials, keys or certificates are committed; `.gitignore` covers
+  `.env`, `certs/*`, `*.pem`, `*.key`, `*.crt`. Historical AWS artifacts contain
+  account and resource identifiers for provenance; treat those as public data.
 - No IAM users and no long-lived access keys are created. Templates accept
   existing role ARNs so restricted accounts are supported.
 - Queues and tables are never public; access is by IAM role only.
@@ -425,22 +473,22 @@ carrying this project's prefix and is never run automatically:
 ./infrastructure/scripts/cleanup.sh
 ```
 
-Local state is disposable: delete `local-data/` and `artifacts/`.
+Local `local-data/` is disposable. The tracked HD run artifacts and aggregate are
+research evidence and should be retained; generated scratch runs can be removed
+only after separating them from the committed evidence set.
 
 ---
 
-## Current project status
+## Project status and reproducibility
 
-The complete pipeline is **verified working locally**, end to end, including
-Node-RED, MQTT, queueing, idempotent processing, disruption fan-out, the ETA
-worker, simulated notifications, and a measured autoscaling comparison.
-
-**Not yet deployed to AWS.** The AWS CLI is installed and locally verified
-(`aws-cli/2.36.39`), but no credentials are configured and no authenticated call
-has been made, so no AWS resource has been created. The CloudFormation templates,
-deployment scripts and AWS SDK adapters are written and tested but remain
-unverified against a real account.
-
-Precise, per-component status with VERIFIED / IMPLEMENTED-NOT-DEPLOYED / PARTIAL /
-BLOCKED labels: [docs/STATUS_4.2D.md](docs/STATUS_4.2D.md).
-Handoff for continuing the work: [HANDOFF.md](HANDOFF.md).
+The local pipeline and the isolated HD AWS experiment were executed. The final
+HD dataset contains 12 manually reviewed valid runs plus a separately retained
+invalid attempt. The [study](docs/HD_REPORT.md) explains the outcomes and
+limitations; [raw artifacts](artifacts/hd-aws-runs/),
+[aggregate](artifacts/hd-analysis/aggregate.json),
+[reviewed run table](docs/hd-final-data/all-reviewed-runs.csv) and
+[figure source data](docs/hd-final-data/) support inspection. The
+[AWS runbook](docs/HD_AWS_RUNBOOK.md) records the guarded procedure. It is a
+historical execution guide: any new cloud run requires fresh credentials,
+resource-state checks and budget review. The repository does not assert that
+the original AWS resources are still running.

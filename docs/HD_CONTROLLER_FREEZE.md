@@ -1,6 +1,6 @@
-# Frozen HD controller before AWS evaluation
+# Frozen HD controller configuration
 
-**Status: FROZEN PRE-AWS; NO HD AWS EXPERIMENT HAS RUN.** `experiments/hd/final-controller-config.json` is the authoritative treatment configuration. Tests assert its values against the pure controller defaults, Lambda configuration and planned AWS profiles; copying a value to another deployment surface without updating the freeze must fail local verification. Do not retune this configuration because AWS results are disappointing. A demonstrable implementation/configuration defect may be fixed only with affected formal runs invalidated and restarted.
+**Historical freeze before the completed AWS study.** `experiments/hd/final-controller-config.json` is the authoritative treatment configuration. Tests assert its values against the pure controller defaults, Lambda configuration and AWS profiles. The configuration was fixed before the reviewed runs; the [final report](HD_REPORT.md) evaluates it without retrospective tuning. A demonstrable implementation/configuration defect would require affected runs to be invalidated and repeated.
 
 | Setting | Frozen value | Reason |
 | --- | ---: | --- |
@@ -26,4 +26,4 @@ Hand calculations used in deterministic tests (sample times 0,10,20 s; one runni
 | 10,10,10 | 0 | 10 | 0 | 1 | Hold: flat slope. |
 | 20,10,0 | −1 | 0 (raw −10 clamped) | 0 | 1 | Hold: falling slope. |
 
-Those small-number examples explain the formula, not the frozen treatment values; the actual deployed configuration remains the JSON above. The Lambda has not yet been smoke-tested in AWS. Verify its environment and output against this file before any formal run.
+Those small-number examples explain the formula, not the frozen treatment values; the deployed configuration remains the JSON above. The Lambda was later exercised in the [HD smoke validation](experiments/HD_SMOKE_READINESS.md). Any new deployment should verify its environment and output against this file before a formal run.

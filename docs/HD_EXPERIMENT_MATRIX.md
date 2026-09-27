@@ -1,4 +1,9 @@
-# Frozen matched HD experiment matrix — not yet executed
+# Frozen matched HD experiment matrix
+
+This is the precommitted design for the subsequently completed 12-run AWS
+comparison. Results and validity reviews are in [HD_REPORT.md](HD_REPORT.md)
+and [the run log](experiments/HD_AWS_RUN_LOG.md). The future-tense rules below
+record the controls that were fixed before execution.
 
 The intervention is **only** the predictive scale-out request path. Both HD arms retain the final-D reactive target tracking (BPT 75) and fast 60-second 1-of-1 BPT>75 +4 alarm. The same isolated HD queues, DynamoDB job semantics, worker image and task CPU/memory, 50 ms processing delay, zero CPU iterations, 1–5 bounds, fresh per-run execution namespace strategy, 10 s sampling, 30 s warm-up/600 s measurement, timing guard, drain/accounting checks and CloudWatch collection apply to both arms. A local processing-cost preflight checks the actual task definition; aggregate analysis rejects differing image/CPU/memory or unmatched logical digests. No mid-run capacity change by the operator.
 

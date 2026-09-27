@@ -26,7 +26,9 @@ only. It is not a deployment mode.
 
 ## Secrets and Git
 
-No credential, key, certificate, token, account id or password is committed.
+No credential, key, certificate, token or password is committed. Historical
+AWS evidence includes account and resource identifiers for provenance; those
+identifiers are not treated as secrets.
 
 `.gitignore` excludes:
 

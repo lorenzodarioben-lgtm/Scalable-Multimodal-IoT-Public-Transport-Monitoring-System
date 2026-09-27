@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Scalable multimodal IoT public transport monitoring system (SIT314 Distinction Project)",
+  "description": "Multimodal public transport IoT pipeline with reactive and predictive autoscaling",
   "engines": {
     "node": ">=20"
   },
